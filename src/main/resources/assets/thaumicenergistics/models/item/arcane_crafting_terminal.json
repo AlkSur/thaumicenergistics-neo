@@ -1,0 +1,12 @@
+{
+"parent": "ae2:item/display_base",
+"textures": {
+"front_base": "thaumicenergistics:part/arcane_crafting_terminal/arcane_crafting_overlay1",
+"front_bright": "thaumicenergistics:part/arcane_crafting_terminal/arcane_crafting_overlay3",
+"front_medium": "thaumicenergistics:part/arcane_crafting_terminal/arcane_crafting_overlay2",
+"front_dark": "thaumicenergistics:part/arcane_crafting_terminal/arcane_crafting_overlay1",
+"front_medium_bright": "thaumicenergistics:part/arcane_crafting_terminal/arcane_crafting_overlay2",
+"back": "ae2:part/monitor_back_no_status",
+"sides": "thaumicenergistics:part/arcane_crafting_terminal/arcane_crafting_side"
+}
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "thaumicenergistics:block/knowledge_inscriber_top",
+    "bottom": "thaumicenergistics:block/knowledge_inscriber_bottom",
+    "side": "thaumicenergistics:block/knowledge_inscriber_side"
+  }
+}

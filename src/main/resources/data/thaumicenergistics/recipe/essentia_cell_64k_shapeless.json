@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    { "item": "thaumicenergistics:storage_casing" },
+    { "item": "thaumicenergistics:storage_component_64k" }
+  ],
+  "result": {
+    "count": 1,
+    "id": "thaumicenergistics:essentia_cell_64k"
+  }
+}

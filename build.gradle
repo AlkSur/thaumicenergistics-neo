@@ -1,0 +1,74 @@
+plugins {
+    id 'net.neoforged.moddev' version '2.0.78'
+    id 'maven-publish'
+}
+
+repositories {
+    mavenCentral()
+    def localRepository = mavenLocal()
+    remove(localRepository)
+    add(0, localRepository)
+    // CurseMaven for Jade and other mods
+    maven {
+        url "https://cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
+    }
+    // Modrinth for Jade
+    maven {
+        url "https://api.modrinth.com/maven"
+    }
+}
+
+version = mod_version
+group = mod_group
+
+var modName = mod_name
+var mcVersion = minecraft_version
+base { archivesName = "${modName}-${mcVersion}-neoforge" }
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    withSourcesJar()
+}
+
+neoForge {
+    version = neoforge_version
+    runs {
+        client { client() }
+        server { server() }
+    }
+    mods { "${mod_id}" { sourceSet sourceSets.main } }
+}
+
+dependencies {
+    compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17:api"
+    compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17"   // 加这行保留！！让AE2内部类可编译
+    compileOnly files('library/thaumcraft-0.2.2.34-port.1.jar')
+    compileOnly files('library/jei-1.21.1-neoforge-19.39.0.368.jar')
+    compileOnly files('library/ae2jeiintegration-1.2.1.jar')
+    compileOnly "maven.modrinth:jade:${jade_version}"
+}
+
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = 'UTF-8'
+    it.options.release = 21
+}
+
+var modVersion = mod_version
+def loaderRange = project.findProperty('loader_version_range') ?: '[4,)'
+def neoforgeRange = project.findProperty('neoforge_version_range') ?: '[21,)'
+def mcRange = project.findProperty('minecraft_version_range') ?: '[1.21.1,1.22)'
+
+processResources {
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand([
+            'version': modVersion, 'loader_version_range': loaderRange,
+            'neoforge_version_range': neoforgeRange, 'minecraft_version_range': mcRange
+        ])
+    }
+}
+
+jar { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }

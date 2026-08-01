@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "ae2:wireless_receiver"
+    },
+    {
+      "item": "ae2:dense_energy_cell"
+    },
+    {
+      "item": "thaumicenergistics:essentia_terminal"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "thaumicenergistics:wireless_essentia_terminal"
+  }
+}

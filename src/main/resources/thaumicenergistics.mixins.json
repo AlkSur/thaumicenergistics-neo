@@ -1,0 +1,18 @@
+{
+  "required": false,
+  "package": "thaumicenergistics.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "thaumicenergistics.refmap.json",
+  "mixins": [
+    "ae2.MixinCraftingTreeProcess",
+    "ae2.MixinAbstractTerminalPart",
+    "ae2.MixinConfigMenuInventory",
+    "tc.MixinAspect",
+    "tc.MixinVisRelayBlock"
+  ],
+  "client": [
+    "tc.ResearchPageIndexMixin",
+    "tc.MixinThaumonomiconScreen"
+  ],
+  "server": []
+}

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "thaumicenergistics:storage_component_1k"
+    },
+    {
+      "item": "ae2:cell_workbench"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "thaumicenergistics:essentia_cell_workbench"
+  }
+}

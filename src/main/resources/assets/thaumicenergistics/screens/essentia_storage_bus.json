@@ -1,0 +1,38 @@
+{
+  "$schema": "schema.json",
+  "includes": [
+    "/screens/common/common.json",
+    "/screens/common/player_inventory.json",
+    "/screens/common/toolbox.json"
+  ],
+  "background": {
+    "texture": "ae2:guis/storagebus.png",
+    "srcRect": [0, 0, 176, 253]
+  },
+  "slots": {
+    "CONFIG": {
+      "left": 8,
+      "top": 29,
+      "grid": "BREAK_AFTER_9COLS"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.thaumicenergistics.essentia_storage_bus"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    }
+  },
+  "widgets": {
+    "openPriority": {
+      "left": 152,
+      "top": -5,
+      "width": 20,
+      "height": 20
+    }
+  }
+}

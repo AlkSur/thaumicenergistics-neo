@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "thaumicenergistics:block/e_vibration_face_off",
+    "side": "thaumicenergistics:block/e_vibration_input",
+    "top": "thaumicenergistics:block/e_vibration_input"
+  }
+}
