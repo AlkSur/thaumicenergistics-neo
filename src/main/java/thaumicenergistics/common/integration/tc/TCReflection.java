@@ -4,13 +4,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IAspectContainer;
-import thaumicenergistics.ThaumicEnergistics;
+import thaumcraft.common.essentia.EssentiaTransport;
 import thaumicenergistics.api.storage.AspectStack;
 
 public final class TCReflection {
@@ -18,16 +19,69 @@ public final class TCReflection {
     /** aspect tag → ResourceLocation 缓存（tag 有界：6 个源质 + 已注册方面）。 */
     private static final Map<String, ResourceLocation> ASPECT_ID_CACHE = new ConcurrentHashMap<>();
 
+    /** 荒古炼金炉类名（TC port；不实现 IAspectContainer，需反射抽内部源质）。 */
+    private static final String FURNACE_CLASS_NAME = "thaumcraft.common.blockentities.AlchemicalFurnaceBlockEntity";
+    /** 炼金炉 private aspects 字段（缓存 Field 避免每 tick getDeclaredField）。 */
+    private static volatile java.lang.reflect.Field furnaceAspectsField;
+
     private TCReflection() {}
+
+    /** 从荒古炼金炉内部源质缓存直接抽取（替代蒸馏釜/罐子中转）。 */
+    @Nullable
+    private static AspectStack extractFromFurnace(BlockEntity be, int maxAmount) {
+        try {
+            if (furnaceAspectsField == null) {
+                furnaceAspectsField = be.getClass().getDeclaredField("aspects");
+                furnaceAspectsField.setAccessible(true);
+            }
+            AspectList furnaceAspects = (AspectList) furnaceAspectsField.get(be);
+            if (furnaceAspects != null && furnaceAspects.size() > 0) {
+                Aspect[] aspects = furnaceAspects.getAspects();
+                for (Aspect aspect : aspects) {
+                    if (aspect == null) continue;
+                    int amt = furnaceAspects.getAmount(aspect);
+                    if (amt <= 0) continue;
+                    int toExtract = Math.min(amt, maxAmount);
+                    furnaceAspects.remove(aspect, toExtract);
+                    be.setChanged();
+                    ResourceLocation id = getAspectId(aspect);
+                    return id != null ? new AspectStack(id, toExtract) : null;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
 
     @Nullable
     public static AspectStack extractEssentia(@Nullable BlockEntity be, int maxAmount) {
         if (be == null) {
-            ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: be is null");
             return null;
         }
+        // ===== 路径0: 荒古炼金炉直连（AlchemicalFurnaceBlockEntity 不实现 IAspectContainer，
+        // 源质在 private aspects 缓存——直接抽取，替代"必须经蒸馏釜/罐子"）=====
+        if (FURNACE_CLASS_NAME.equals(be.getClass().getName())) {
+            AspectStack fromFurnace = extractFromFurnace(be, maxAmount);
+            if (fromFurnace != null) return fromFurnace;
+        }
+        // ===== 路径0b: TC 管道接口（EssentiaTransport——高级荒古炼金炉喷嘴/源质管道）=====
+        if (be instanceof EssentiaTransport transport) {
+            for (Direction face : Direction.values()) {
+                if (!transport.canOutputTo(face)) continue;
+                Aspect aspect = transport.getEssentiaType(face);
+                if (aspect == null) continue;
+                int amount = transport.getEssentiaAmount(face);
+                if (amount <= 0) continue;
+                int toExtract = Math.min(amount, maxAmount);
+                int taken = transport.takeEssentia(aspect, toExtract, face);
+                if (taken > 0) {
+                    be.setChanged();
+                    ResourceLocation id = getAspectId(aspect);
+                    return id != null ? new AspectStack(id, taken) : null;
+                }
+            }
+        }
         if (!(be instanceof IAspectContainer container)) {
-            ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: {} does not implement IAspectContainer", be.getClass().getName());
             return null;
         }
 
@@ -36,7 +90,6 @@ public final class TCReflection {
         if (aspectList != null && aspectList.size() > 0) {
             Aspect[] aspects = aspectList.getAspects();
             if (aspects != null) {
-                ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: found {} aspects via getAspects()", aspects.length);
                 for (Aspect aspect : aspects) {
                     if (aspect == null) continue;
                     int amt = aspectList.getAmount(aspect);
@@ -45,7 +98,6 @@ public final class TCReflection {
                     if (container.takeFromContainer(aspect, toExtract)) {
                         be.setChanged();
                         ResourceLocation id = getAspectId(aspect);
-                        ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: SUCCESS (API) - extracted {} of {}", toExtract, id);
                         return id != null ? new AspectStack(id, toExtract) : null;
                     }
                 }
@@ -53,7 +105,6 @@ public final class TCReflection {
         }
 
         // ===== 路径B: TC 移植版反射回退 (getAspect/getAmount) =====
-        ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: getAspects() empty, trying reflection fallback for {}", be.getClass().getName());
         try {
             java.lang.reflect.Method[] methods = getAspectMethods(be.getClass());
             if (methods.length < 2) {
@@ -66,18 +117,12 @@ public final class TCReflection {
                 if (container.takeFromContainer(aspect, toExtract)) {
                     be.setChanged();
                     ResourceLocation id = getAspectId(aspect);
-                    ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: SUCCESS (reflection) - extracted {} of {}", toExtract, id);
                     return id != null ? new AspectStack(id, toExtract) : null;
                 }
-                ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: takeFromContainer returned false for {} of {}", toExtract, aspect.getTag());
-            } else {
-                ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: reflection got aspect={}, amount={}", aspect, amount);
             }
-        } catch (Exception e) {
-            ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: reflection fallback error: {}", e.getMessage());
+        } catch (Exception ignored) {
         }
 
-        ThaumicEnergistics.LOG.debug("[TCReflection] extractEssentia: no extractable aspect found");
         return null;
     }
 
@@ -96,10 +141,8 @@ public final class TCReflection {
         Aspect aspect = findAspectById(stack.aspectId());
         if (aspect == null) return 0;
         int toInsert = (int) stack.amount();
-        ThaumicEnergistics.LOG.debug("[TCReflection] insertEssentia: inserting {} of {} into {}", toInsert, stack.aspectId(), be.getClass().getName());
         int leftover = container.addToContainer(aspect, toInsert);
         int added = toInsert - leftover;
-        ThaumicEnergistics.LOG.debug("[TCReflection] insertEssentia: added={}, leftover={}", added, leftover);
         if (added > 0) {
             be.setChanged();
         }

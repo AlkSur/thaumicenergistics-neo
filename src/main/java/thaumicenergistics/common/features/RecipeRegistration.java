@@ -50,6 +50,8 @@ public final class RecipeRegistration {
     public static ShapelessArcaneRecipe ARCANE_CRAFTING_TERMINAL;
     public static ShapelessArcaneRecipe VIS_INTERFACE;
     public static ShapelessArcaneRecipe ESSENTIA_VIBRATION_CHAMBER;
+    /** 赛特斯石英复制（坩埚炼金配方——研究页关联）。 */
+    public static CrucibleRecipe CERTUS_DUPE_RECIPE;
 
     private static final TagKey<Item> WISP_ESSENCES = tag("thaumicenergistics", "wisp_essences");
 
@@ -62,7 +64,19 @@ public final class RecipeRegistration {
         registerShapedArcane();
         registerShapelessArcane();
         registerInfusion();
+        registerCrucible();
         ThaumicEnergistics.LOG.info("ThaumicEnergistics recipes registered.");
+    }
+
+    /** 坩埚炼金配方：赛特斯石英复制（丢 1 赛特斯石英 + 水晶/交换要素 → 2 赛特斯石英）。 */
+    private static void registerCrucible() {
+        ItemStack quartz = ae("certus_quartz_crystal");
+        if (quartz.isEmpty()) return;
+        CERTUS_DUPE_RECIPE = ThaumcraftApi.addCrucibleRecipe(
+                "CERTUS_DUPE",
+                quartz.copyWithCount(2),
+                quartz.copyWithCount(1),
+                new AspectList().add(Aspect.CRYSTAL, 5).add(Aspect.EXCHANGE, 5));
     }
 
     private static void registerShapedArcane() {

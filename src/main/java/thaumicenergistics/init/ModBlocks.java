@@ -20,10 +20,12 @@ public final class ModBlocks {
     private ModBlocks() {}
     public static final DeferredRegister.Blocks REGISTRY = DeferredRegister.createBlocks(ThaumicEnergistics.MODID);
     private static final BlockBehaviour.Properties P = BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(2f).sound(SoundType.STONE);
+    /** 装配器专用：noOcclusion——玻璃方块不被视为不透明，相邻方块（如冰/半透明）接触面不被剔除，透明玻璃后可正常看到后方方块。 */
+    private static final BlockBehaviour.Properties PA = P.noOcclusion();
 
     public static final DeferredBlock<Block> ESSENTIA_PROVIDER = REGISTRY.register("essentia_provider", () -> new ThEBaseEntityBlock(P) { public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileEssentiaProvider(pos, st); } });
     public static final DeferredBlock<Block> INFUSION_PROVIDER = REGISTRY.register("infusion_provider", () -> new ThEBaseEntityBlock(P) { public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileInfusionProvider(pos, st); } });
-    public static final DeferredBlock<Block> ARCANE_ASSEMBLER = REGISTRY.register("arcane_assembler", () -> new ThEBaseEntityBlock(P) {
+    public static final DeferredBlock<Block> ARCANE_ASSEMBLER = REGISTRY.register("arcane_assembler", () -> new ThEBaseEntityBlock(PA) {
         public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileArcaneAssembler(pos, st); }
         @Override
         protected net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
@@ -53,6 +55,14 @@ public final class ModBlocks {
     public static final DeferredBlock<Block> KNOWLEDGE_INSCRIBER = REGISTRY.register("knowledge_inscriber", () -> new ThEBaseEntityBlock(P) {
         public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileKnowledgeInscriber(pos, st); }
         @Override
+        protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+            builder.add(OrientableEntityBlock.FACING);
+        }
+        @Override
+        public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
+            return this.defaultBlockState().setValue(OrientableEntityBlock.FACING, context.getHorizontalDirection().getOpposite());
+        }
+        @Override
         protected net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
             if (!level.isClientSide) player.openMenu(state.getMenuProvider(level, pos));
             return net.minecraft.world.ItemInteractionResult.SUCCESS;
@@ -67,6 +77,14 @@ public final class ModBlocks {
     });
     public static final DeferredBlock<Block> DISTILLATION_ENCODER = REGISTRY.register("distillation_encoder", () -> new ThEBaseEntityBlock(P) {
         public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileDistillationPatternEncoder(pos, st); }
+        @Override
+        protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+            builder.add(OrientableEntityBlock.FACING);
+        }
+        @Override
+        public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
+            return this.defaultBlockState().setValue(OrientableEntityBlock.FACING, context.getHorizontalDirection().getOpposite());
+        }
         @Override
         protected net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, net.minecraft.world.level.Level level, BlockPos pos, net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
             if (!level.isClientSide) player.openMenu(state.getMenuProvider(level, pos));

@@ -48,8 +48,8 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
 
         IItemHandler cellHandler = workbench != null ? workbench.getCellInventory() : fallbackCell;
         addSlot(new SlotItemHandler(cellHandler, 0, 152, 8));
-        for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, 169 + r * 18));
-        for (int c = 0; c < 9; c++) addSlot(new Slot(inv, c, 8 + c * 18, 227));
+        for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, 167 + r * 18));
+        for (int c = 0; c < 9; c++) addSlot(new Slot(inv, c, 8 + c * 18, 225));
     }
 
     /** 客户端打开菜单用（IMenuTypeExtension 注册）；workbench 为 null，分区操作走 C2S 到服务端。 */

@@ -28,6 +28,7 @@
   "item.thaumicenergistics.essentia_storage_bus": "源质存储总线",
   "item.thaumicenergistics.essentia_terminal": "源质终端",
   "item.thaumicenergistics.arcane_crafting_terminal": "奥术合成终端",
+"gui.thaumicenergistics.ArcaneCraftingTerminal": "奥术合成终端",
   "item.thaumicenergistics.essentia_level_emitter": "源质发信器",
   "item.thaumicenergistics.vis_interface": "要素中继接口",
   "tooltip.thaumicenergistics.essentia_import_bus.desc": "从相邻的源质容器抽取源质导入ME网络",
@@ -43,7 +44,7 @@
   "tc.research_category.THAUMICENERGISTICS": "神秘能源",
 
   "tc.research_name.BASEENERGISTICS": "基础能源学",
-  "tc.research_text.BASEENERGISTICS": "你发现AE2的机械网络与神秘学之间存在奇妙的共鸣。精密的AE设备似乎能够感知并操控源质这种神秘的物质形态。",
+  "tc.research_text.BASEENERGISTICS": "你发现AE2的机械网络与神秘学之间存在奇妙的共鸣。精密的AE设备似乎能够感知并操控源质这种神秘的物质形态。高版本材质由§b§l麦淇淋§r制作。",
 
   "tc.research_name.FOCUS_AEWRENCH": "法杖核心：AE扳手",
   "tc.research_text.FOCUS_AEWRENCH": "将AE扳手的功能凝聚到法杖核心中，让你无需切换工具即可操控AE网络设备。",

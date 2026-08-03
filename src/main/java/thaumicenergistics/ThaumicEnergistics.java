@@ -7,7 +7,6 @@ import appeng.api.stacks.AEKeyTypesInternal;
 import appeng.api.upgrades.Upgrades;
 import appeng.client.gui.style.StyleManager;
 import appeng.core.definitions.AEItems;
-import appeng.core.localization.GuiText;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -118,27 +117,30 @@ public final class ThaumicEnergistics {
 
     private void registerUpgrades(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            String essentiaIoBusGroup = GuiText.IOBuses.getTranslationKey();
-
+            // 注：不传 group——带 group 会在卡 tooltip 中与 AE2 原版 IO 总线合并显示为
+            // "ME Import/Export Bus"（同 group 跳过），ThE 设备名不显示。与存储总线一致，各自显示设备名。
             var importBusItem = ModItems.ESSENTIA_IMPORT_BUS.get();
-            Upgrades.add(AEItems.FUZZY_CARD,    importBusItem, 1, essentiaIoBusGroup);
-            Upgrades.add(AEItems.REDSTONE_CARD, importBusItem, 1, essentiaIoBusGroup);
-            Upgrades.add(AEItems.CAPACITY_CARD, importBusItem, 5, essentiaIoBusGroup);
-            Upgrades.add(AEItems.SPEED_CARD,    importBusItem, 4, essentiaIoBusGroup);
-            Upgrades.add(AEItems.INVERTER_CARD, importBusItem, 1, essentiaIoBusGroup);
+            Upgrades.add(AEItems.FUZZY_CARD,    importBusItem, 1);
+            Upgrades.add(AEItems.REDSTONE_CARD, importBusItem, 1);
+            Upgrades.add(AEItems.CAPACITY_CARD, importBusItem, 5);
+            Upgrades.add(AEItems.SPEED_CARD,    importBusItem, 4);
+            Upgrades.add(AEItems.INVERTER_CARD, importBusItem, 1);
 
             var exportBusItem = ModItems.ESSENTIA_EXPORT_BUS.get();
-            Upgrades.add(AEItems.FUZZY_CARD,     exportBusItem, 1, essentiaIoBusGroup);
-            Upgrades.add(AEItems.REDSTONE_CARD,  exportBusItem, 1, essentiaIoBusGroup);
-            Upgrades.add(AEItems.CAPACITY_CARD,  exportBusItem, 5, essentiaIoBusGroup);
-            Upgrades.add(AEItems.SPEED_CARD,     exportBusItem, 4, essentiaIoBusGroup);
-            Upgrades.add(AEItems.CRAFTING_CARD,  exportBusItem, 1, essentiaIoBusGroup);
+            Upgrades.add(AEItems.FUZZY_CARD,     exportBusItem, 1);
+            Upgrades.add(AEItems.REDSTONE_CARD,  exportBusItem, 1);
+            Upgrades.add(AEItems.CAPACITY_CARD,  exportBusItem, 5);
+            Upgrades.add(AEItems.SPEED_CARD,     exportBusItem, 4);
+            Upgrades.add(AEItems.CRAFTING_CARD,  exportBusItem, 1);
 
             var storageBusItem = ModItems.ESSENTIA_STORAGE_BUS.get();
             Upgrades.add(AEItems.FUZZY_CARD,     storageBusItem, 1);
             Upgrades.add(AEItems.INVERTER_CARD,  storageBusItem, 1);
             Upgrades.add(AEItems.CAPACITY_CARD,  storageBusItem, 5);
             Upgrades.add(AEItems.VOID_CARD,      storageBusItem, 1);
+
+            // 神秘装配台：加速卡（AEItems.SPEED_CARD = Acceleration Card，tooltip 名单 + 装配台升级槽可装——加快合成）
+            Upgrades.add(AEItems.SPEED_CARD, ModItems.ARCANE_ASSEMBLER_ITEM.get(), 4);
         });
     }
 

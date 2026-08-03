@@ -29,8 +29,8 @@ import java.util.List;
 
 public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
-    private static final int PLAYER_INV_Y = 152;
-    private static final int HOTBAR_Y = 210;
+    private static final int PLAYER_INV_Y = 150;
+    private static final int HOTBAR_Y = 208;
     private static final int PLAYER_INV_X = 8;
 
     private static final int SLOT_SOURCE_X = 15;

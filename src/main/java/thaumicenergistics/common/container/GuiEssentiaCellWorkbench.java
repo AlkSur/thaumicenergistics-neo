@@ -25,7 +25,7 @@ public class GuiEssentiaCellWorkbench extends AbstractContainerScreen<ContainerE
     private static final ResourceLocation TEX = ResourceLocation.fromNamespaceAndPath(ThaumicEnergistics.MODID, "textures/gui/essentia_cell_workbench.png");
     private static final int GUI_WIDTH = 176, GUI_HEIGHT = 251;
     /** 分区格布局常量（JEI ghost 拖拽也使用，故公开）。 */
-    public static final int WIDGET_POS_X = 7, WIDGET_POS_Y = 28;
+    public static final int WIDGET_POS_X = 8, WIDGET_POS_Y = 29;
     public static final int WIDGETS_PER_ROW = 9, WIDGET_ROWS = 7, NUMBER_OF_WIDGETS = 63;
     public static final int WIDGET_SIZE = 18;
 

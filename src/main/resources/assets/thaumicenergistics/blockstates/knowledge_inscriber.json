@@ -1,1 +1,6 @@
-{"variants":{"":{"model":"thaumicenergistics:block/knowledge_inscriber"}}}
+{"variants":{
+  "facing=north": {"model": "thaumicenergistics:block/knowledge_inscriber"},
+  "facing=south": {"model": "thaumicenergistics:block/knowledge_inscriber", "y": 180},
+  "facing=west":  {"model": "thaumicenergistics:block/knowledge_inscriber", "y": 270},
+  "facing=east":  {"model": "thaumicenergistics:block/knowledge_inscriber", "y": 90}
+}}

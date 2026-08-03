@@ -1,1 +1,6 @@
-{"variants":{"":{"model":"thaumicenergistics:block/distillation_encoder"}}}
+{"variants":{
+  "facing=north": {"model": "thaumicenergistics:block/distillation_encoder"},
+  "facing=south": {"model": "thaumicenergistics:block/distillation_encoder", "y": 180},
+  "facing=west":  {"model": "thaumicenergistics:block/distillation_encoder", "y": 270},
+  "facing=east":  {"model": "thaumicenergistics:block/distillation_encoder", "y": 90}
+}}

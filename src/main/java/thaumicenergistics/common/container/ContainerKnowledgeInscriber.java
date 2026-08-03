@@ -45,8 +45,8 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
 
     private static final int MAXIMUM_PATTERNS = HandlerKnowledgeCore.MAXIMUM_STORED_PATTERNS;
 
-    private static final int PLAYER_INV_Y = 162;
-    private static final int HOTBAR_Y = 220;
+    private static final int PLAYER_INV_Y = 160;
+    private static final int HOTBAR_Y = 218;
     private static final int PLAYER_INV_X = 8;
 
     private static final int KCORE_SLOT_X = 186;

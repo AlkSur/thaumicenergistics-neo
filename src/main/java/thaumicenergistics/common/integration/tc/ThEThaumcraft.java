@@ -58,7 +58,7 @@ public final class ThEThaumcraft {
 
         ResearchCategories.registerCategory(TAB,
                 ResourceLocation.fromNamespaceAndPath(MODID, "textures/research/tab_icon.png"),
-                ResourceLocation.fromNamespaceAndPath("thaumcraft", "textures/gui/gui_researchback.png"));
+                ResourceLocation.fromNamespaceAndPath(MODID, "textures/research/research_background.png"));
 
         registerScanEvent();
 
@@ -346,7 +346,9 @@ public final class ThEThaumcraft {
                 new AspectList().add(Aspect.CRYSTAL, 5).add(Aspect.MAGIC, 5).add(Aspect.EXCHANGE, 5),
                 -5, -5, 2, new ItemStack(appeng.core.definitions.AEItems.CERTUS_QUARTZ_CRYSTAL.asItem()))
                 .setRound().setParents("PSEUDO_ALCHEMICALDUPLICATION").setParentsHidden("BASEENERGISTICS")
-                .setPages(new ResearchPage("tc.research_text.CERTUS_DUPE"))
+                .setPages(
+                        new ResearchPage("tc.research_text.CERTUS_DUPE"),
+                        new ResearchPage(RecipeRegistration.CERTUS_DUPE_RECIPE))
                 .registerResearchItem();
     }
 

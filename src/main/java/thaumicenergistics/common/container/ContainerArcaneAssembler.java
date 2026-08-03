@@ -32,7 +32,7 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
 
     // ===== 坐标常量（1:1 对应1.7.10） =====
     private static final int PLAYER_INV_X = 8;
-    private static final int PLAYER_INV_Y = 115;
+    private static final int PLAYER_INV_Y = 113;
     private static final int HOTBAR_Y     = PLAYER_INV_Y + 58; // 173
 
     private static final int PATTERN_X = 26;
