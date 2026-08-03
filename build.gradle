@@ -72,3 +72,11 @@ processResources {
 }
 
 jar { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+
+// 获取git提交总数
+def gitCommitCount = providers.exec {
+    commandLine 'git', 'rev-list', '--count', 'HEAD'
+}.standardOutput.asText.map { it.trim() }
+
+// 最终完整版本 = 主版本+构建号
+version = "${mod_version}.${gitCommitCount.get()}-alpha"
