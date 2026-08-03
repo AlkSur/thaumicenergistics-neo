@@ -1,8 +1,8 @@
 {
 	"format_version": "1.9.0",
 	"credit": "Made with _leng",
-	"texture_size": [64, 64],
 	"render_type": "cutout",
+	"texture_size": [64, 64],
 	"textures": {
 		"model": "thaumicenergistics:block/arcane_assembler_fallback",
 		"particle": "ae2:block/molecular_assembler"
@@ -139,7 +139,7 @@
 				"south": {"uv": [6.5, 6.5, 9, 6.75], "texture": "#model"},
 				"west": {"uv": [6.75, 3, 9.25, 3.25], "texture": "#model"},
 				"up": {"uv": [3, 4, 5.5, 6.5], "texture": "#model"},
-				"down": {"uv": [3, 4, 5.5, 6.5], "texture": "#model"}
+				"down": {"uv": [3, 4, 5.5, 6.5], "texture": "#model", "cullface": "up"}
 			}
 		}
 	],
