@@ -39,12 +39,13 @@ public final class ModBlocks {
                 return net.minecraft.world.ItemInteractionResult.sidedSuccess(level.isClientSide());
             }
             if (!level.isClientSide) {
-                player.openMenu(state.getMenuProvider(level, pos));
+                ((net.neoforged.neoforge.common.extensions.IPlayerExtension) player)
+                        .openMenu(state.getMenuProvider(level, pos), pos);
             }
             return net.minecraft.world.ItemInteractionResult.SUCCESS;
         }
         @Override
-        protected net.minecraft.world.MenuProvider getMenuProvider(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
+        protected MenuProvider getMenuProvider(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
             TileArcaneAssembler tile = (TileArcaneAssembler) level.getBlockEntity(pos);
             return new SimpleMenuProvider(
                     (id, inv, p) -> new thaumicenergistics.common.container.ContainerArcaneAssembler(id, inv, tile),
@@ -68,7 +69,7 @@ public final class ModBlocks {
             return net.minecraft.world.ItemInteractionResult.SUCCESS;
         }
         @Override
-        protected net.minecraft.world.MenuProvider getMenuProvider(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
+        protected MenuProvider getMenuProvider(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
             TileKnowledgeInscriber tile = (TileKnowledgeInscriber) level.getBlockEntity(pos);
             return new SimpleMenuProvider(
                     (id, inv, p) -> new thaumicenergistics.common.container.ContainerKnowledgeInscriber(id, inv, tile),
@@ -91,7 +92,7 @@ public final class ModBlocks {
             return net.minecraft.world.ItemInteractionResult.SUCCESS;
         }
         @Override
-        protected net.minecraft.world.MenuProvider getMenuProvider(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
+        protected MenuProvider getMenuProvider(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
             TileDistillationPatternEncoder tile = (TileDistillationPatternEncoder) level.getBlockEntity(pos);
             return new SimpleMenuProvider(
                     (id, inv, p) -> new thaumicenergistics.common.container.ContainerDistillationPatternEncoder(id, inv, tile),
@@ -109,7 +110,7 @@ public final class ModBlocks {
             return net.minecraft.world.ItemInteractionResult.SUCCESS;
         }
         @Override
-        protected net.minecraft.world.MenuProvider getMenuProvider(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
+        protected MenuProvider getMenuProvider(BlockState state, net.minecraft.world.level.Level level, BlockPos pos) {
             net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof TileEssentiaCellWorkbench workbench) {
                 return new SimpleMenuProvider((id, inv, p) -> new thaumicenergistics.common.container.ContainerEssentiaCellWorkbench(id, inv, workbench),

@@ -29,6 +29,13 @@ public final class ThENetworking {
                 (pkt, ctx) -> pkt.handleOnServer(ctx)
         );
 
+        // DistillationEncoderSetSourceC2SPacket — C2S（蒸馏编码台设置源物品——JEI 拖拽）
+        registrar.playToServer(
+                DistillationEncoderSetSourceC2SPacket.TYPE,
+                DistillationEncoderSetSourceC2SPacket.STREAM_CODEC,
+                (pkt, ctx) -> pkt.handleOnServer(ctx)
+        );
+
         // CellWorkbenchC2SPacket — C2S（客户端→服务端，源质元件工作台分区操作）
         registrar.playToServer(
                 CellWorkbenchC2SPacket.TYPE,

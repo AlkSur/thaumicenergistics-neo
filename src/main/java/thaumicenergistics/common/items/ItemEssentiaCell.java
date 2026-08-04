@@ -36,7 +36,7 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
     private final int totalTypes;
     private final double idleDrain;
 
-    public ItemEssentiaCell(Item.Properties props, String tier, int kilobytes, int bytesPerType, int totalTypes, double idleDrain) {
+    public ItemEssentiaCell(Properties props, String tier, int kilobytes, int bytesPerType, int totalTypes, double idleDrain) {
         super(props.stacksTo(1));
         this.tier = tier;
         this.totalBytes = kilobytes * 1024;
@@ -77,7 +77,7 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
     @Override
     public boolean isBlackListed(ItemStack cellItem, appeng.api.stacks.AEKey requestedAddition) {
-        if (requestedAddition instanceof thaumicenergistics.common.integration.appeng.AEssentiaKey) {
+        if (requestedAddition instanceof AEssentiaKey) {
             return false;
         }
         return true;
@@ -208,19 +208,19 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
     }
 
     // ===== 工厂方法 =====
-    public static ItemEssentiaCell create1k(Item.Properties props) {
+    public static ItemEssentiaCell create1k(Properties props) {
         return new ItemEssentiaCell(props, "1k", 1, 8, ThEConfig.CELL_MAX_TYPES, 0.5);
     }
-    public static ItemEssentiaCell create4k(Item.Properties props) {
+    public static ItemEssentiaCell create4k(Properties props) {
         return new ItemEssentiaCell(props, "4k", 4, 8, ThEConfig.CELL_MAX_TYPES, 1.0);
     }
-    public static ItemEssentiaCell create16k(Item.Properties props) {
+    public static ItemEssentiaCell create16k(Properties props) {
         return new ItemEssentiaCell(props, "16k", 16, 8, ThEConfig.CELL_MAX_TYPES, 1.5);
     }
-    public static ItemEssentiaCell create64k(Item.Properties props) {
+    public static ItemEssentiaCell create64k(Properties props) {
         return new ItemEssentiaCell(props, "64k", 64, 8, ThEConfig.CELL_MAX_TYPES, 2.0);
     }
-    public static ItemEssentiaCell createCreative(Item.Properties props) {
+    public static ItemEssentiaCell createCreative(Properties props) {
         return new ItemEssentiaCell(props, "creative", Integer.MAX_VALUE / 1024, 8, 63, 0.0);
     }
 }

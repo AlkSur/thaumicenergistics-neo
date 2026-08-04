@@ -75,7 +75,7 @@ public class TileArcaneAssembler extends ThETileBase
     private static final double ACTIVE_POWER = 1.5;
     private static final double WARP_POWER_PERCENT = 0.15;
     private static final int MAX_SPEED_UPGRADES = 4;
-    private static final int VIS_REPLENISH_INTERVAL = 5;
+    private static final int VIS_REPLENISH_INTERVAL = 20;
     /** 每次实际 vis 变化累计达到该值才调用一次 setChanged（约 4×5=20 tick），避免合成期间 chunk 持续处于 unsaved 状态。 */
     private static final int SET_CHANGED_INTERVAL = 4;
 
@@ -141,7 +141,7 @@ public class TileArcaneAssembler extends ThETileBase
         super(ModBlockEntities.ARCANE_ASSEMBLER.get(), pos, state);
 
         mainNode = GridHelper.createManagedNode(this, nodeListener)
-                .setVisualRepresentation(thaumicenergistics.init.ModItems.ARCANE_ASSEMBLER_ITEM.get())
+                .setVisualRepresentation(ModItems.ARCANE_ASSEMBLER_ITEM.get())
                 .setInWorldNode(true)
                 .setTagName("proxy")
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
@@ -296,13 +296,13 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     /**
-     * replenishVis 抽到 vis 时调用：累计变化次数，每 SET_CHANGED_INTERVAL 次才标记一次 chunk dirty。
-     * 降低合成期间持续磁盘写放大；storedVis 最终仍会在合成完成路径（craftingTick）或区块保存时落盘。
+     * replenishVis 抽到 vis 时调用：累计变化次数，每 SET_CHANGED_INTERVAL 次才 markForUpdate 一次。
+     * markForUpdate = setChanged + sendBlockUpdated（同步 storedVis 到客户端 BE，GUI 进度条依赖客户端 storedVis）。
      */
     private void maybeMarkVisDirty() {
         if (++visSetChangedCounter >= SET_CHANGED_INTERVAL) {
             visSetChangedCounter = 0;
-            setChanged();
+            markForUpdate();
         }
     }
 
@@ -360,6 +360,8 @@ public class TileArcaneAssembler extends ThETileBase
             if (extracted >= need * 0.9) {
                 craftTickCounter += ticksSinceLast;
                 ThaumicEnergistics.LOG.debug("[AA] craftingTick: 推进 {}/{} (抽电 {}/{})", craftTickCounter, ticksPerCraft, extracted, need);
+                // 节流同步合成进度到客户端（GUI 第7格进度条动画）
+                maybeMarkVisDirty();
             } else {
                 ThaumicEnergistics.LOG.debug("[AA] craftingTick: 能量不足 (抽到 {}/{})，不推进", extracted, need);
             }
@@ -375,7 +377,7 @@ public class TileArcaneAssembler extends ThETileBase
             int current = storedVis.getAmount(aspect);
             storedVis.reduce(aspect, Math.min(requiredCvis, current));
         }
-        setChanged();
+        maybeMarkVisDirty();
     }
 
     private boolean hasEnoughVisForCraft() {
@@ -512,7 +514,7 @@ public class TileArcaneAssembler extends ThETileBase
 
     @Override
     public PatternContainerGroup getCraftingMachineInfo() {
-        ItemStack icon = new ItemStack(thaumicenergistics.init.ModItems.ARCANE_ASSEMBLER_ITEM.get());
+        ItemStack icon = new ItemStack(ModItems.ARCANE_ASSEMBLER_ITEM.get());
         return new PatternContainerGroup(
                 AEItemKey.of(icon),
                 net.minecraft.network.chat.Component.translatable("block.thaumicenergistics.arcane_assembler"),
@@ -575,7 +577,7 @@ public class TileArcaneAssembler extends ThETileBase
      */
     public void onMemoryCardActivate(net.minecraft.world.entity.player.Player player,
                                      appeng.api.implementations.items.IMemoryCard memoryCard,
-                                     net.minecraft.world.item.ItemStack heldItem) {
+                                     ItemStack heldItem) {
         Short freq = heldItem.get(appeng.api.ids.AEComponents.EXPORTED_P2P_FREQUENCY);
         if (freq != null) {
             // 卡上带 P2P 频率（从 vis_interface shift+右键复制来的）→ 设为 vis 源
@@ -643,6 +645,9 @@ public class TileArcaneAssembler extends ThETileBase
         if (level != null) {
             setChanged();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            // 关键：blockEntityChanged 触发 BE 数据（getUpdateTag）同步到客户端。
+            // setChanged 只标记区块保存、sendBlockUpdated 只触发重渲染——缺这个 GUI 永远拿不到 storedVis/isCrafting。
+            level.blockEntityChanged(worldPosition);
         }
     }
 

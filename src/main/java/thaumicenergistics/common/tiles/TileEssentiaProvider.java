@@ -37,14 +37,14 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     }
 
     /** getEssentiaList 短时缓存：TC 管道 suction 每 tick 调 getEssentiaType，避免每 tick 全量遍历。 */
-    private List<IAspectStack> cachedEssentiaList = java.util.List.of();
+    private List<IAspectStack> cachedEssentiaList = List.of();
     private int essentiaListCacheTimer = 0;
     private static final int ESSENTIA_LIST_CACHE_TICKS = 20;
 
-    private List<thaumicenergistics.api.storage.IAspectStack> getCachedEssentiaList() {
+    private List<IAspectStack> getCachedEssentiaList() {
         if (essentiaListCacheTimer <= 0) {
             essentiaListCacheTimer = ESSENTIA_LIST_CACHE_TICKS;
-            cachedEssentiaList = essentiaGrid != null ? essentiaGrid.getEssentiaList() : java.util.List.of();
+            cachedEssentiaList = essentiaGrid != null ? essentiaGrid.getEssentiaList() : List.of();
         }
         return cachedEssentiaList;
     }

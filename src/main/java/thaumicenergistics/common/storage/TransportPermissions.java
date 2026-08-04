@@ -19,8 +19,8 @@ public class TransportPermissions implements IThETransportPermissions {
     @Override
     public <T extends BlockEntity> boolean addTileToInject(Class<T> c, int cap) { return tileInject.putIfAbsent(c, cap) == null; }
     @Override
-    public java.util.OptionalLong getCapacityForTile(Class<? extends BlockEntity> c) {
-        Integer v = tileExtract.get(c); return v != null ? java.util.OptionalLong.of(v) : java.util.OptionalLong.empty();
+    public OptionalLong getCapacityForTile(Class<? extends BlockEntity> c) {
+        Integer v = tileExtract.get(c); return v != null ? OptionalLong.of(v) : OptionalLong.empty();
     }
     @Override
     public boolean canExtract(BlockEntity tile) { return tile != null && tileExtract.containsKey(tile.getClass()); }

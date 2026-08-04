@@ -5,6 +5,7 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.core.definitions.AEItems;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -21,6 +22,7 @@ import thaumcraft.common.research.ThaumometerScanManager;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.TCReflection;
+import thaumicenergistics.common.network.DistillationEncoderSetSourceC2SPacket;
 import thaumicenergistics.common.tiles.TileDistillationPatternEncoder;
 import thaumicenergistics.init.ModMenuTypes;
 import java.util.Arrays;
@@ -104,14 +106,18 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
         });
 
         if (encoder != null) {
-            // 源物品槽：绑定 Tile 槽 0（持久化到方块 NBT，关闭 GUI 不丢失）
+            // 源物品槽：ghost 模板（背包拖入不消耗——实际物品还在手里；空手点击清空；JEI 拖拽设置模板）
             addSlot(new SlotItemHandler(encoder.inventory, TileDistillationPatternEncoder.SLOT_SOURCE_ITEM, SLOT_SOURCE_X, SLOT_SOURCE_Y) {
                 @Override
                 public int getMaxStackSize() { return 1; }
+                @Override
+                public boolean mayPlace(ItemStack s) { return true; }
+                @Override
+                public boolean mayPickup(Player p) { return false; }
             });
             addSlot(new SlotItemHandler(encoder.inventory, TileDistillationPatternEncoder.SLOT_BLANK_PATTERNS, SLOT_BLANK_X, SLOT_BLANK_Y) {
                 @Override
-                public boolean mayPlace(ItemStack s) { return true; }
+                public boolean mayPlace(ItemStack s) { return AEItems.BLANK_PATTERN.is(s); }
                 @Override
                 public int getMaxStackSize() { return 64; }
             });
@@ -125,10 +131,14 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
             addSlot(new SlotItemHandler(dummy, TileDistillationPatternEncoder.SLOT_SOURCE_ITEM, SLOT_SOURCE_X, SLOT_SOURCE_Y) {
                 @Override
                 public int getMaxStackSize() { return 1; }
+                @Override
+                public boolean mayPlace(ItemStack s) { return true; }
+                @Override
+                public boolean mayPickup(Player p) { return false; }
             });
             addSlot(new SlotItemHandler(dummy, TileDistillationPatternEncoder.SLOT_BLANK_PATTERNS, SLOT_BLANK_X, SLOT_BLANK_Y) {
                 @Override
-                public boolean mayPlace(ItemStack s) { return true; }
+                public boolean mayPlace(ItemStack s) { return AEItems.BLANK_PATTERN.is(s); }
                 @Override
                 public int getMaxStackSize() { return 64; }
             });
@@ -148,6 +158,14 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
             return slots.get(SOURCE_SLOT).getItem();
         }
         return ItemStack.EMPTY;
+    }
+
+    /** 服务端：设置源物品（JEI 拖拽）——写入 encoder 槽 0 + 刷新 aspects。 */
+    public void setSourceItemOnServer(ItemStack stack) {
+        if (encoder == null) return;
+        encoder.inventory.setStackInSlot(TileDistillationPatternEncoder.SLOT_SOURCE_ITEM, stack.copy());
+        encoder.setChanged();
+        updateAspects();
     }
 
     /**
@@ -235,13 +253,6 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
         ItemStack source = getSourceItem();
         ItemStack blankSlot = encoder.inventory.getStackInSlot(TileDistillationPatternEncoder.SLOT_BLANK_PATTERNS);
         ItemStack encodedSlot = encoder.inventory.getStackInSlot(TileDistillationPatternEncoder.SLOT_ENCODED_PATTERN);
-        ThaumicEnergistics.LOG.info("[DE] onEncodePattern: selected={}, selIdx={}, aspects={}, source={}, blank={}isBlank={}, encoded={}",
-                selected == null ? "null" : selected.getTag(), selectedAspectIndex,
-                getSourceAspects().length,
-                source.isEmpty() ? "EMPTY" : source.getItem().getDescriptionId(),
-                blankSlot.isEmpty() ? "EMPTY" : blankSlot.getItem().getDescriptionId(),
-                AEItems.BLANK_PATTERN.is(blankSlot),
-                encodedSlot.isEmpty() ? "EMPTY" : encodedSlot.getItem().getDescriptionId());
 
         if (selected == null) return;
 
@@ -251,8 +262,6 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
         // 验证必须是 AE2 空白样板，否则不消耗不编码（日志定位 is() 运行时行为）
         if (!AEItems.BLANK_PATTERN.is(blankSlot)) {
-            ThaumicEnergistics.LOG.warn("[DE] Encode skipped: blank slot item={}, isBlankPattern={}",
-                    blankSlot.getItem().getDescriptionId(), AEItems.BLANK_PATTERN.is(blankSlot));
             return;
         }
 
@@ -288,11 +297,18 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
             Slot slot = slots.get(slotId);
 
             if (slotId == SOURCE_SLOT) {
-                // 标准拖放处理（SlotItemHandler 已限制槽内 1 个），刷新 aspects
-                super.clicked(slotId, dragType, clickType, player);
+                // ghost 模板语义：手持物品→设模板（不消耗，实际物品留在手里）；空手→清空
+                ItemStack carried = getCarried();
+                ItemStack newSource = carried.isEmpty() ? ItemStack.EMPTY : carried.copyWithCount(1);
+                if (player.level().isClientSide) {
+                    if (slotId < slots.size()) {
+                        slots.get(slotId).set(newSource);
+                    }
+                    PacketDistributor.sendToServer(new DistillationEncoderSetSourceC2SPacket(containerId, newSource));
+                } else {
+                    setSourceItemOnServer(newSource);
+                }
                 updateAspects();
-                ThaumicEnergistics.LOG.info("[DE] source slot clicked: item={}, count={}, aspects={}",
-                        getSourceItem().getItem().getDescriptionId(), getSourceItem().getCount(), getSourceAspects().length);
                 return;
             }
 
@@ -300,8 +316,6 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
                 int aspectIdx = slotId - ASPECT_SLOT_START;
                 // 始终记录用户选择（越界由 getSelectedAspect 校验），避免因 cachedAspects 状态导致服务端选择丢失
                 selectedAspectIndex = aspectIdx;
-                ThaumicEnergistics.LOG.info("[DE] aspect clicked: idx={}, cached={}, selected={}",
-                        aspectIdx, cachedAspects.length, selectedAspectIndex);
                 // selected 槽留空，图标由 GUI 绘制
                 aspectInventory.setStackInSlot(SELECTED_SLOT - ASPECT_SLOT_START, ItemStack.EMPTY);
                 return;

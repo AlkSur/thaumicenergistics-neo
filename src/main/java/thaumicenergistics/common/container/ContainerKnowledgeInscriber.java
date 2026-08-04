@@ -105,8 +105,6 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         super(ModMenuTypes.KNOWLEDGE_INSCRIBER.get(), id);
         this.tile = tile;
         this.playerInv = inv;
-        ThaumicEnergistics.LOG.info("[KLGE] ContainerKnowledgeInscriber opened, id={}, hasTile={}, isClient={}",
-                id, tile != null, inv.player.level().isClientSide());
 
         for (int r = 0; r < 3; r++)
             for (int c = 0; c < 9; c++)
@@ -240,14 +238,11 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         }
 
         activeRecipe = findArcaneRecipe();
-        ThaumicEnergistics.LOG.info("[KLGE] updateRecipe: activeRecipe={}", activeRecipe);
 
         if (activeRecipe != null) {
             ItemStack output = activeRecipe.getCraftingResult(craftingContainer);
-            ThaumicEnergistics.LOG.info("[KLGE] updateRecipe: output={}", output.isEmpty() ? "EMPTY" : output.getItem().toString());
             resultInventory.setStackInSlot(0, output);
         } else {
-            ThaumicEnergistics.LOG.info("[KLGE] updateRecipe: no recipe matched → EMPTY");
             resultInventory.setStackInSlot(0, ItemStack.EMPTY);
         }
 
@@ -257,28 +252,21 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     private IArcaneRecipe findArcaneRecipe() {
         Level level = playerInv.player.level();
         if (level == null) {
-            ThaumicEnergistics.LOG.info("[KLGE] findArcaneRecipe: level is null");
             return null;
         }
         var recipes = ThaumcraftApi.getCraftingRecipes();
-        ThaumicEnergistics.LOG.info("[KLGE] findArcaneRecipe: total recipes={}", recipes.size());
         int arcaneCount = 0;
         for (Object recipe : recipes) {
             if (recipe instanceof IArcaneRecipe arcaneRecipe) {
                 arcaneCount++;
                 try {
                     if (gridMatches(arcaneRecipe, craftingContainer)) {
-                        ThaumicEnergistics.LOG.info("[KLGE] findArcaneRecipe: MATCH FOUND! recipe={}",
-                                arcaneRecipe);
                         return arcaneRecipe;
                     }
                 } catch (Exception e) {
-                    ThaumicEnergistics.LOG.info("[KLGE] findArcaneRecipe: exception on recipe={}: {}",
-                            arcaneRecipe, e.getMessage());
                 }
             }
         }
-        ThaumicEnergistics.LOG.info("[KLGE] findArcaneRecipe: no match among {} arcane recipes", arcaneCount);
         return null;
     }
 
@@ -359,7 +347,8 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
 
     private void sendSaveState() {
         if (tile != null && tile.getLevel() != null && !tile.getLevel().isClientSide) {
-            saveStateSlot.set(getSaveState().ordinal());
+            CoreSaveState s = getSaveState();
+            saveStateSlot.set(s.ordinal());
         }
     }
 
@@ -423,25 +412,32 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     public void clicked(int slotId, int dragType, ClickType clickType, Player player) {
         if (slotId >= 0 && slotId < slots.size()) {
             Slot slot = slots.get(slotId);
+            // 图案槽（核心已有配方，slotId 37..37+MAXIMUM_PATTERNS-1）：点击加载该配方到合成网格 → 可保存/删除
+            if (slotId >= 37 && slotId < 37 + MAXIMUM_PATTERNS) {
+                int patternIdx = slotId - 37;
+                ItemStack output = patternInventory.getStackInSlot(patternIdx);
+                if (!output.isEmpty()) {
+                    ArcaneCraftingPattern pattern = kCoreHandler.getPatternForItem(output);
+                    if (pattern != null) {
+                        loadPatternToGrid(pattern, player);
+                    }
+                }
+                return;
+            }
             if (slot instanceof GhostSlot ghostSlot) {
                 int gridIndex = ghostSlot.index;
                 ItemStack carried = getCarried();
                 ItemStack newStack = carried.isEmpty()
                         ? ItemStack.EMPTY
                         : carried.copyWithCount(1);
-                ThaumicEnergistics.LOG.info("[KLGE] clicked GhostSlot idx={} side={} stack={}",
-                        gridIndex, player.level().isClientSide() ? "CLIENT" : "SERVER",
-                        newStack.isEmpty() ? "EMPTY" : newStack.getItem().toString());
 
                 ghostSlot.set(newStack);
 
                 if (player.level().isClientSide) {
-                    ThaumicEnergistics.LOG.info("[KLGE] CLIENT branch → onCraftingChangedClient + C2S");
                     onCraftingChangedClient();
                     PacketDistributor.sendToServer(
                             new KnowledgeInscriberGhostSlotPacket(containerId, gridIndex, newStack));
                 } else {
-                    ThaumicEnergistics.LOG.info("[KLGE] SERVER branch → onCraftingChanged");
                     onCraftingChanged();
                 }
                 return;
@@ -453,8 +449,6 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     public void setGhostSlotOnServer(int slotIndex, ItemStack stack) {
         if (slotIndex < 0 || slotIndex >= CRAFTING_GRID_SIZE) return;
         ItemStack s = stack == null ? ItemStack.EMPTY : stack.copy();
-        ThaumicEnergistics.LOG.info("[KLGE] setGhostSlotOnServer idx={} stack={}",
-                slotIndex, s.isEmpty() ? "EMPTY" : s.getItem().toString());
         craftingContainer.setItem(slotIndex, s);
         int slotId = 37 + MAXIMUM_PATTERNS + slotIndex;
         if (slotId < slots.size() && slots.get(slotId) instanceof GhostSlot) {
@@ -463,8 +457,37 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         onCraftingChanged();
     }
 
-    private void onCraftingChangedClient() {
-        ThaumicEnergistics.LOG.info("[KLGE] onCraftingChangedClient");
+    /** GhostSlot 的网格索引（0-8）。ghostSlot.index 是菜单槽序号（37+MAXIMUM_PATTERNS+idx），需换算。 */
+    public int getGhostGridIndex(Slot slot) {
+        if (slot instanceof GhostSlot && slot.container == craftingContainer) {
+            return slot.index - (37 + MAXIMUM_PATTERNS);
+        }
+        return -1;
+    }
+
+    /** 点击图案槽：把核心已有配方加载到合成网格（清空 + 填 9 格材料），供保存/删除。 */
+    private void loadPatternToGrid(ArcaneCraftingPattern pattern, Player player) {
+        ItemStack[] ingredients = pattern.getIngredients();
+        boolean client = player.level().isClientSide;
+        for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
+            ItemStack s = i < ingredients.length && ingredients[i] != null ? ingredients[i].copy() : ItemStack.EMPTY;
+            craftingContainer.setItem(i, s.copy());
+            int slotId = 37 + MAXIMUM_PATTERNS + i;
+            if (slotId < slots.size() && slots.get(slotId) instanceof GhostSlot gs) {
+                gs.set(s.copy());
+            }
+            if (client) {
+                PacketDistributor.sendToServer(new KnowledgeInscriberGhostSlotPacket(containerId, i, s.copy()));
+            }
+        }
+        if (client) {
+            onCraftingChangedClient();
+        } else {
+            onCraftingChanged();
+        }
+    }
+
+    public void onCraftingChangedClient() {
         for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
             craftingInventory.setStackInSlot(i, craftingContainer.getItem(i).copy());
         }
@@ -472,7 +495,6 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     }
 
     private void onCraftingChanged() {
-        ThaumicEnergistics.LOG.info("[KLGE] onCraftingChanged");
         for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
             craftingInventory.setStackInSlot(i, craftingContainer.getItem(i).copy());
         }

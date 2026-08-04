@@ -90,11 +90,24 @@ public class ThEJeiPlugin implements IModPlugin {
         // 注册 IRecipeTransferHandler 让点击 "+" 时走 ME 网络
         registration.addRecipeTransferHandler(new ThEUseCraftingRecipeTransfer(registration.getTransferHelper()), CRAFTING);
         registration.addRecipeTransferHandler(new ThEUseArcaneRecipeTransfer(registration.getTransferHelper()), ThaumcraftJeiPlugin.ARCANE);
+
+        // 知识记录仪：奥术配方 "+" 一键放置到 3×3 ghost 合成网格
+        registration.addRecipeTransferHandler(new KnowledgeInscriberTransferInfo());
+        registration.addRecipeTransferHandler(
+                new KnowledgeInscriberArcaneRecipeTransfer(registration.getTransferHelper()), ThaumcraftJeiPlugin.ARCANE);
     }
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
         // 源质元件工作台：从 JEI 拖拽要素到分区格添加分区（纯 JEI API，可选功能）
         registration.addGhostIngredientHandler(GuiEssentiaCellWorkbench.class, new CellWorkbenchGhostIngredientHandler());
+        // 知识记录仪：从 JEI 拉取物品到 3×3 合成网格（复用 GhostSlot + KnowledgeInscriberGhostSlotPacket）
+        registration.addGhostIngredientHandler(
+                thaumicenergistics.common.container.GuiKnowledgeInscriber.class,
+                new KnowledgeInscriberGhostIngredientHandler());
+        // 蒸馏编码台：从 JEI 拉取物品到源物品槽（C2S 设置源物品）
+        registration.addGhostIngredientHandler(
+                thaumicenergistics.common.container.GuiDistillationPatternEncoder.class,
+                new DistillationEncoderGhostIngredientHandler());
     }
 }

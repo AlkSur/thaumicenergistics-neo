@@ -47,7 +47,7 @@ public class GuiArcaneCraftingTerminal extends MEStorageScreen<ContainerArcaneCr
         if (cachedAnchorY < 0) {
             for (var slot : this.menu.slots) {
                 // CRAFTING_RESULT 槽在 style JSON 中 bottom:140
-                if (slot instanceof appeng.menu.slot.AppEngCraftingSlot) {
+                if (slot instanceof AppEngCraftingSlot) {
                     cachedAnchorY = slot.y;
                     break;
                 }

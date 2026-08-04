@@ -88,6 +88,13 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
                 return 1;
             }
 
+
+            @Override
+            public boolean mayPlace(ItemStack stack) {
+                //只允许 TCFunctionalItems.WandCastingItem 类型的物品放入
+                return stack.getItem() instanceof TCFunctionalItems.WandCastingItem;
+            }
+
             @Override
             public void setChanged() {
                 super.setChanged();

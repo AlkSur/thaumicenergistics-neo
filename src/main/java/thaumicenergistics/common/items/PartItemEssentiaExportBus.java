@@ -16,7 +16,7 @@ import java.util.List;
 public class PartItemEssentiaExportBus extends Item implements IPartItem<EssentiaExportBusPart> {
 
     public static PartItemEssentiaExportBus create() {
-        return new PartItemEssentiaExportBus(new Item.Properties().stacksTo(64));
+        return new PartItemEssentiaExportBus(new Properties().stacksTo(64));
     }
 
     public PartItemEssentiaExportBus(Properties properties) {

@@ -5,9 +5,8 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import thaumcraft.api.aspects.Aspect;
+import net.minecraft.world.inventory.ContainerData;
 import thaumicenergistics.ThaumicEnergistics;
-import thaumicenergistics.common.tiles.TileArcaneAssembler;
 
 /**
  * 奥术装配器 GUI。
@@ -27,17 +26,15 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
             ThaumicEnergistics.MODID, "textures/gui/arcane_assembler.png");
 
     // ===== 第4块 Vis条 =====
-    private static final int VIS_BAR_X     = 42;
-    private static final int VIS_BAR_Y     = 202;
+    /** 纹理中空槽（暗色背景）的 Y 坐标 = 进度条在 GUI 中的显示位置 */
+    private static final int VIS_EMPTY_Y    = 87;
+    /** 纹理中满亮条的 Y 坐标（裁剪源，不直接显示） */
+    private static final int VIS_FULL_Y     = 202;
     private static final int VIS_BAR_W     = 4;
     private static final int VIS_BAR_H     = 16;
     private static final int VIS_BAR_STEP  = 18;
-
-    // ===== 6原质 =====
-    private static final Aspect[] VIS_ASPECTS = {
-            Aspect.AIR, Aspect.FIRE, Aspect.WATER,
-            Aspect.EARTH, Aspect.ORDER, Aspect.ENTROPY
-    };
+    /** 贴图规范起始 X = 41（步长18：41,59,77,95,113,131,149） */
+    private static final int VIS_BAR_X     = 41;
 
     public GuiArcaneAssembler(ContainerArcaneAssembler menu, Inventory inv, Component title) {
         super(menu, inv, title);
@@ -64,35 +61,48 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
         // 第3块：右下正方形 68×68
         g.blit(TEX, left + 180, top + 129, 180, 129, 68, 68);
 
-        // ===== 第4块：Vis条（纹理裁剪方式，仿1.7.10 drawVisBar） =====
-        TileArcaneAssembler tile = this.menu.assembler;
+        // ===== 第4块：Vis条（1.7.10 裁剪方式：Y=87 空槽背景 + Y=202 亮条裁剪） =====
+        // 数据源：容器同步（menu.visData，服务端每 tick 同步 storedVis/isCrafting/进度——不依赖 BE 网络同步）
+        ContainerData data = this.menu.visData;
         final int maxCvis = 187 * 10;
         for (int i = 0; i < 7; i++) {
             int bx = left + VIS_BAR_X + i * VIS_BAR_STEP;
-            int by = top  + VIS_BAR_Y;
+            int by = top  + VIS_EMPTY_Y;
+
+            // 从纹理 Y=87 裁剪空槽背景
+            g.blit(TEX, bx, by, VIS_BAR_X + i * VIS_BAR_STEP, VIS_EMPTY_Y, VIS_BAR_W, VIS_BAR_H);
 
             float ratio = 0f;
-            if (tile != null) {
-                if (i < 6) {
-                    int cvis = tile.getStoredVis() != null ? tile.getStoredVis().getAmount(VIS_ASPECTS[i]) : 0;
-                    ratio = Math.min(1f, (float) cvis / maxCvis);
+            if (i < 6) {
+                // 1-6格：源质充能比例
+                int cvis = data.get(ContainerArcaneAssembler.DATA_AIR + i);
+                ratio = Math.min(1f, (float) cvis / maxCvis);
+            } else {
+                // 第7格：非合成时要素接入常亮，合成时显示渐变进度
+                if (data.get(ContainerArcaneAssembler.DATA_CRAFTING) == 1) {
+                    int tick = data.get(ContainerArcaneAssembler.DATA_CRAFT_TICK);
+                    int total = Math.max(1, data.get(ContainerArcaneAssembler.DATA_TICKS_PER_CRAFT));
+                    ratio = Math.min(1f, (float) tick / total);
                 } else {
-                    ratio = tile.getCraftProgress();
+                    // 要素接入达成：任一原质充入（源质已从网络流入）→ 常亮
+                    boolean anyVis = false;
+                    for (int a = 0; a < 6; a++) {
+                        if (data.get(ContainerArcaneAssembler.DATA_AIR + a) > 0) { anyVis = true; break; }
+                    }
+                    ratio = anyVis ? 1f : 0f;
                 }
             }
 
-            // 空bar暗色背景（满bar不在此处，由纹理裁剪提供）
-            g.fill(bx, by, bx + VIS_BAR_W, by + VIS_BAR_H, 0x77222222);
-
-            // 从纹理Y=202处裁剪满bar，按高度百分比叠加
+            // 从纹理 Y=202 裁剪满亮条，按高度百分比叠加
             int fillHeight = Math.round(VIS_BAR_H * ratio);
             if (fillHeight > 0) {
                 int srcX = VIS_BAR_X + i * VIS_BAR_STEP;
-                int srcY = VIS_BAR_Y + (VIS_BAR_H - fillHeight);
-                g.blit(TEX, bx, by + (VIS_BAR_H - fillHeight), srcX, srcY, VIS_BAR_W, fillHeight);
+                int srcY = VIS_FULL_Y + (VIS_BAR_H - fillHeight);
+                int dstY = by + (VIS_BAR_H - fillHeight);
+                g.blit(TEX, bx, dstY, srcX, srcY, VIS_BAR_W, fillHeight);
             }
 
-            // bar边框
+            // bar 边框
             g.fill(bx - 1, by - 1, bx, by + VIS_BAR_H + 1, 0xAA000000);
             g.fill(bx + VIS_BAR_W, by - 1, bx + VIS_BAR_W + 1, by + VIS_BAR_H + 1, 0xAA000000);
             g.fill(bx - 1, by - 1, bx + VIS_BAR_W + 1, by, 0xAA000000);

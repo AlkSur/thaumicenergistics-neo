@@ -5,12 +5,15 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import thaumcraft.api.IVisDiscountGear;
 import thaumcraft.api.IWarpingGear;
+import thaumcraft.api.aspects.Aspect;
+import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.tiles.TileArcaneAssembler;
 import thaumicenergistics.init.ModMenuTypes;
 
@@ -81,6 +84,47 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
 
     public final TileArcaneAssembler assembler;
 
+    /** 可视数据同步：服务端读 tile，客户端存同步值（GUI 进度条/源质条不依赖 BE 网络同步，靠容器每 tick 同步） */
+    public final ContainerData visData;
+
+    /** 索引约定 */
+    public static final int DATA_AIR = 0, DATA_WATER = 1, DATA_FIRE = 2, DATA_ORDER = 3,
+            DATA_ENTROPY = 4, DATA_EARTH = 5, DATA_CRAFTING = 6, DATA_CRAFT_TICK = 7, DATA_TICKS_PER_CRAFT = 8;
+    public static final int DATA_COUNT = 9;
+
+    /** 服务端：每次 get 都从 tile 读实时值（broadcastChanges 每 tick 调用） */
+    private static class TileVisData implements ContainerData {
+        private final TileArcaneAssembler tile;
+        TileVisData(TileArcaneAssembler tile) { this.tile = tile; }
+        /** 节流：每 4 单位才变一次（broadcastChanges 只发变化的值 → 发包频率降 4 倍，进度条仍流畅） */
+        private static int throttle(int v) { return (v / 4) * 4; }
+        @Override public int get(int index) {
+            if (tile == null || tile.getStoredVis() == null) return 0;
+            return switch (index) {
+                case DATA_AIR -> throttle(tile.getStoredVis().getAmount(Aspect.AIR));
+                case DATA_WATER -> throttle(tile.getStoredVis().getAmount(Aspect.WATER));
+                case DATA_FIRE -> throttle(tile.getStoredVis().getAmount(Aspect.FIRE));
+                case DATA_ORDER -> throttle(tile.getStoredVis().getAmount(Aspect.ORDER));
+                case DATA_ENTROPY -> throttle(tile.getStoredVis().getAmount(Aspect.ENTROPY));
+                case DATA_EARTH -> throttle(tile.getStoredVis().getAmount(Aspect.EARTH));
+                case DATA_CRAFTING -> tile.isCrafting() ? 1 : 0;
+                case DATA_CRAFT_TICK -> throttle(tile.getCraftTickCounter());
+                case DATA_TICKS_PER_CRAFT -> tile.getTicksPerCraft();
+                default -> 0;
+            };
+        }
+        @Override public void set(int index, int value) { /* 服务端只读 */ }
+        @Override public int getCount() { return DATA_COUNT; }
+    }
+
+    /** 客户端：保存服务端同步来的值 */
+    private static class ClientVisData implements ContainerData {
+        private final int[] values = new int[DATA_COUNT];
+        @Override public int get(int index) { return index >= 0 && index < DATA_COUNT ? values[index] : 0; }
+        @Override public void set(int index, int value) { if (index >= 0 && index < DATA_COUNT) values[index] = value; }
+        @Override public int getCount() { return DATA_COUNT; }
+    }
+
     /** 服务端构造（由 Block#getMenuProvider 调用，不带 tile） */
     public ContainerArcaneAssembler(int id, Inventory inv) {
         this(id, inv, (TileArcaneAssembler) null);
@@ -90,6 +134,13 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
     public ContainerArcaneAssembler(int id, Inventory inv, TileArcaneAssembler tile) {
         super(ModMenuTypes.ARCANE_ASSEMBLER.get(), id);
         this.assembler = tile;
+        // 可视数据同步：服务端从 tile 读实时值；客户端存同步值（不依赖 BE 网络同步）
+        if (inv.player.level().isClientSide) {
+            this.visData = new ClientVisData();
+        } else {
+            this.visData = new TileVisData(tile);
+        }
+        this.addDataSlots(this.visData);
 
         // ===== 1. 玩家背包 3行 =====
         for (int r = 0; r < 3; r++)
@@ -166,7 +217,16 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
 
     /** 客户端构造（IMenuTypeExtension 反射调用） */
     public ContainerArcaneAssembler(int id, Inventory inv, RegistryFriendlyByteBuf buf) {
-        this(id, inv);
+        this(id, inv, resolveTile(inv, buf));
+    }
+
+    /** 临时诊断：确认客户端能否拿到 tile（定位后删除） */
+    private static TileArcaneAssembler resolveTile(Inventory inv, RegistryFriendlyByteBuf buf) {
+        var pos = buf.readBlockPos();
+        var be = inv.player.level().getBlockEntity(pos);
+        ThaumicEnergistics.LOG.info("[AA-DEBUG] client ctor: pos={}, be={}",
+                pos, be == null ? "null" : be.getClass().getSimpleName());
+        return (TileArcaneAssembler) be;
     }
 
     private ItemStackHandler wrapMachineInventory() {
