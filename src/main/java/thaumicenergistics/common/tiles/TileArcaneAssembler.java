@@ -141,7 +141,7 @@ public class TileArcaneAssembler extends ThETileBase
         super(ModBlockEntities.ARCANE_ASSEMBLER.get(), pos, state);
 
         mainNode = GridHelper.createManagedNode(this, nodeListener)
-                .setVisualRepresentation(ModItems.ARCANE_ASSEMBLER_ITEM.get())
+                .setVisualRepresentation(thaumicenergistics.init.ModItems.ARCANE_ASSEMBLER_ITEM.get())
                 .setInWorldNode(true)
                 .setTagName("proxy")
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
@@ -514,7 +514,7 @@ public class TileArcaneAssembler extends ThETileBase
 
     @Override
     public PatternContainerGroup getCraftingMachineInfo() {
-        ItemStack icon = new ItemStack(ModItems.ARCANE_ASSEMBLER_ITEM.get());
+        ItemStack icon = new ItemStack(thaumicenergistics.init.ModItems.ARCANE_ASSEMBLER_ITEM.get());
         return new PatternContainerGroup(
                 AEItemKey.of(icon),
                 net.minecraft.network.chat.Component.translatable("block.thaumicenergistics.arcane_assembler"),
@@ -577,7 +577,7 @@ public class TileArcaneAssembler extends ThETileBase
      */
     public void onMemoryCardActivate(net.minecraft.world.entity.player.Player player,
                                      appeng.api.implementations.items.IMemoryCard memoryCard,
-                                     ItemStack heldItem) {
+                                     net.minecraft.world.item.ItemStack heldItem) {
         Short freq = heldItem.get(appeng.api.ids.AEComponents.EXPORTED_P2P_FREQUENCY);
         if (freq != null) {
             // 卡上带 P2P 频率（从 vis_interface shift+右键复制来的）→ 设为 vis 源

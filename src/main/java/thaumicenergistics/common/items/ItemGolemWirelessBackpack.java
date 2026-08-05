@@ -17,7 +17,7 @@ public class ItemGolemWirelessBackpack extends Item {
     public static final IGridLinkableHandler LINKABLE_HANDLER = new LinkableHandler();
 
     public ItemGolemWirelessBackpack() {
-        super(new Properties().stacksTo(1).durability(0));
+        super(new Item.Properties().stacksTo(1).durability(0));
     }
 
     @Override

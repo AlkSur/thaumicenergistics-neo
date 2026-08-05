@@ -45,11 +45,11 @@ public class ArcaneCraftingTransferInfo
 
     @Override
     public List<Slot> getRecipeSlots(ContainerArcaneCraftingTerminal menu, RecipeHolder<CraftingRecipe> recipe) {
-        return menu.getSlots(SlotSemantics.CRAFTING_GRID);
+        return menu.getSlots(appeng.menu.SlotSemantics.CRAFTING_GRID);
     }
 
     @Override
     public List<Slot> getInventorySlots(ContainerArcaneCraftingTerminal menu, RecipeHolder<CraftingRecipe> recipe) {
-        return menu.getSlots(SlotSemantics.PLAYER_INVENTORY);
+        return menu.getSlots(appeng.menu.SlotSemantics.PLAYER_INVENTORY);
     }
 }

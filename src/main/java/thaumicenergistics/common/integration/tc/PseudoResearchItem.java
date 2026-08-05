@@ -87,7 +87,7 @@ public class PseudoResearchItem extends ResearchItem {
         } else {
             // 最终备选：ThE 研究 tab 图标
             pseudo = new PseudoResearchItem(pseudoKey, category, column, row,
-                    ResourceLocation.fromNamespaceAndPath(ThaumicEnergistics.MODID, "textures/research/tab_icon.png"),
+                    ResourceLocation.fromNamespaceAndPath(thaumicenergistics.ThaumicEnergistics.MODID, "textures/research/tab_icon.png"),
                     realKey, realCategory);
         }
 

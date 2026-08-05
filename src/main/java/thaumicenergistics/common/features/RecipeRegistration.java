@@ -383,11 +383,11 @@ public final class RecipeRegistration {
         return new ItemStack(s.get());
     }
     private static ItemStack tc(String name) {
-        return new ItemStack(BuiltInRegistries.ITEM.get(
+        return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
                 ResourceLocation.fromNamespaceAndPath("thaumcraft", name)));
     }
     private static ItemStack ae(String name) {
-        return new ItemStack(BuiltInRegistries.ITEM.get(
+        return new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
                 ResourceLocation.fromNamespaceAndPath("ae2", name)));
     }
 }

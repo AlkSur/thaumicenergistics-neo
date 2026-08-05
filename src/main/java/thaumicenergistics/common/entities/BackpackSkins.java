@@ -5,22 +5,22 @@ import thaumicenergistics.ThaumicEnergistics;
 
 /**
  * 傀儡无线背包皮肤枚举。
- * 每种皮肤对应一个纹理文件：{@code textures/model/golemBackpack/{texId}.png}。
+ * 每种皮肤对应一个纹理文件：{@code textures/model/golembackpack/{texId}.png}。
  * 皮肤通过 AE2 Facade 物品右键傀儡来更换。
  * 对应 1.7.10 的 {@code ItemGolemWirelessBackpack.BackpackSkins}。
  */
 public enum BackpackSkins {
 
-    Thaumium("Thaum"),
-    Stone("Stone"),
-    Straw("Straw"),
-    Wood("Wood"),
-    Flesh("Flesh"),
-    Clay("Clay"),
-    Iron("Iron"),
-    Tallow("Tallow"),
-    Gold("Gold"),
-    Diamond("Diamond");
+    Thaumium("thaum"),
+    Stone("stone"),
+    Straw("straw"),
+    Wood("wood"),
+    Flesh("flesh"),
+    Clay("clay"),
+    Iron("iron"),
+    Tallow("tallow"),
+    Gold("gold"),
+    Diamond("diamond");
 
     public static final BackpackSkins[] VALUES = values();
 
@@ -41,7 +41,7 @@ public enum BackpackSkins {
     public ResourceLocation getTextureLocation() {
         if (this.texture == null) {
             this.texture = ResourceLocation.fromNamespaceAndPath(
-                    ThaumicEnergistics.MODID, "textures/model/golemBackpack/" + this.texId + ".png");
+                    ThaumicEnergistics.MODID, "textures/model/golembackpack/" + this.texId + ".png");
         }
         return this.texture;
     }
