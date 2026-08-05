@@ -4,10 +4,8 @@ run/
 library/
 .idea/
 .vscode/
-.reasonix/
 .superpowers/
 .workbuddy/
-.trae/
 .iml
 *.log
 task_plan.md
