@@ -483,7 +483,8 @@ public class TileArcaneAssembler extends ThETileBase
             }
         }
 
-        return new ArcaneAssemblerPattern(AEItemKey.of(result), null, aspects, result, inputs);
+        return new ArcaneAssemblerPattern(AEItemKey.of(result), null, aspects, result, inputs,
+                acp.getResearch());
     }
 
     private boolean beginCrafting(ArcaneAssemblerPattern arcanePattern) {
@@ -751,14 +752,22 @@ public class TileArcaneAssembler extends ThETileBase
         private final AspectList aspects;
         private final ItemStack resultStack;
         private final IInput[] inputs;
+        private final String research;
 
         public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
                                       AspectList aspects, ItemStack resultStack,
                                       List<GenericStack> inputStacks) {
+            this(definition, recipe, aspects, resultStack, inputStacks, null);
+        }
+
+        public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
+                                      AspectList aspects, ItemStack resultStack,
+                                      List<GenericStack> inputStacks, String research) {
             this.definition = definition;
             this.recipe = recipe;
             this.aspects = aspects;
             this.resultStack = resultStack;
+            this.research = research;
             this.inputs = new IInput[inputStacks.size()];
             for (int i = 0; i < inputStacks.size(); i++) {
                 GenericStack stack = inputStacks.get(i);
@@ -820,5 +829,8 @@ public class TileArcaneAssembler extends ThETileBase
         public IArcaneRecipe getRecipe() { return recipe; }
         public AspectList getAspects() { return aspects; }
         public ItemStack getResultStack() { return resultStack; }
+        /** 对应 TC 奥术配方的研究键；无研究要求/老数据时可能为 null。 */
+        @Nullable
+        public String getResearch() { return research; }
     }
 }

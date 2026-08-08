@@ -49,5 +49,12 @@ public final class ThENetworking {
                 CellWorkbenchSyncPacket.STREAM_CODEC,
                 (pkt, ctx) -> pkt.handleOnClient(ctx)
         );
+
+        // ResearchGateErrorPacket — S2C（服务端→客户端，研究未解锁拦截提示，携带研究键）
+        registrar.playToClient(
+                ResearchGateErrorPacket.TYPE,
+                ResearchGateErrorPacket.STREAM_CODEC,
+                (pkt, ctx) -> pkt.handleOnClient(ctx)
+        );
     }
 }

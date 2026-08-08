@@ -164,13 +164,14 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
 
     /**
      * 找到面对中继的隧道端：优先 P2P 输入端，其次任一输出端，最后自身。
+     * 注意：内部使用 super.getOutputs() 而非 getOutputs()，避免覆写导致递归。
      */
     private VisInterfacePart findRelayEnd() {
         VisInterfacePart input = getInput();
         if (input != null && input.getRelay() != null) {
             return input;
         }
-        for (VisInterfacePart output : getOutputs()) {
+        for (VisInterfacePart output : super.getOutputs()) {
             if (output.getRelay() != null) {
                 return output;
             }
@@ -179,6 +180,25 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
             return this;
         }
         return null;
+    }
+
+    /**
+     * 覆写输出端列表：半 P2P 场景下（装配器直接按频率查输入，无标准 P2P 输出端），
+     * 若存在有效的中继端（findRelayEnd 非空，含自身面对中继的情况），
+     * 将其视为已链接，使 AE2 P2P 状态显示（Jade/TOP）不再显示"Unlinked"。
+     */
+    @Override
+    public List<VisInterfacePart> getOutputs() {
+        List<VisInterfacePart> outputs = super.getOutputs();
+        if (!outputs.isEmpty()) {
+            return outputs;
+        }
+        VisInterfacePart relayEnd = findRelayEnd();
+        if (relayEnd != null) {
+            // 含自身面对中继的情况：返回 relayEnd（可能是 this），让 P2P 状态显示已链接
+            return relayEnd == this ? List.of(this) : List.of(relayEnd);
+        }
+        return outputs;
     }
 
     private int drawFromRelay(VisRelayBlockEntity relay, ResourceLocation aspectId, int centivis) {

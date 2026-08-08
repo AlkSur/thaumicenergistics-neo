@@ -23,6 +23,7 @@ import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.crafting.IArcaneRecipe;
 import thaumcraft.api.crafting.ShapedArcaneRecipe;
 import thaumcraft.api.crafting.ShapelessArcaneRecipe;
+import thaumcraft.common.research.TCResearchManager;
 import thaumicenergistics.common.container.slot.GhostSlot;
 import thaumicenergistics.common.integration.tc.ArcaneCraftingPattern;
 import thaumicenergistics.common.inventory.HandlerKnowledgeCore;
@@ -220,6 +221,13 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
             return CoreSaveState.Disabled_InvalidRecipe;
         }
 
+        // 研究限制：配方有研究要求且玩家未解锁 → 禁止保存
+        String research = activeRecipe.getResearch();
+        if (research != null && !research.isEmpty()
+                && !TCResearchManager.has(playerInv.player, research)) {
+            return CoreSaveState.Disabled_InvalidRecipe;
+        }
+
         boolean isNew = !kCoreHandler.hasPatternFor(result);
         if (isNew) {
             return kCoreHandler.hasRoomToStorePattern()
@@ -364,6 +372,14 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     private void savePattern() {
         if (activeRecipe == null) return;
 
+        // 研究限制：配方有研究要求时，操作者必须已解锁对应研究才能编码
+        String research = activeRecipe.getResearch();
+        if (research != null && !research.isEmpty()
+                && !TCResearchManager.has(playerInv.player, research)) {
+            ThaumicEnergistics.LOG.info("[KnowledgeInscriber] 玩家未解锁研究 {}，拒绝保存奥术样板", research);
+            return;
+        }
+
         ItemStack[] inputs = new ItemStack[CRAFTING_GRID_SIZE];
         for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
             ItemStack stack = craftingInventory.getStackInSlot(i);
@@ -376,7 +392,7 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         }
         ItemStack result = resultInventory.getStackInSlot(0).copy();
 
-        ArcaneCraftingPattern pattern = new ArcaneCraftingPattern(aspects, result, inputs);
+        ArcaneCraftingPattern pattern = new ArcaneCraftingPattern(aspects, result, inputs, research);
         kCoreHandler.addPattern(pattern);
         updatePatternSlots();
         sendSaveState();

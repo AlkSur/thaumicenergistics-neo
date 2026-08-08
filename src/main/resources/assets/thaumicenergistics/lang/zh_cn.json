@@ -38,6 +38,9 @@
   "tooltip.thaumicenergistics.essentia_storage_bus.desc": "将相邻的源质容器与ME网络双向同步",
   "tooltip.thaumicenergistics.essentia_storage_bus.hint": "贴在线缆上，把外部源质容器当作ME存储单元使用",
   "tooltip.thaumicenergistics.essentia_terminal.desc": "查看并取出/存入源质",
+  "tooltip.thaumicenergistics.arcane_crafting_terminal.desc": "在ME网络上进行奥术合成",
+  "tooltip.thaumicenergistics.essentia_level_emitter.desc": "根据网络中源质数量输出红石信号",
+  "tooltip.thaumicenergistics.vis_interface.desc": "将TC要素网络与ME网络桥接，可抽取/供给要素",
   "ae2.keytype.thaumicenergistics.essentia": "源质",
 
 

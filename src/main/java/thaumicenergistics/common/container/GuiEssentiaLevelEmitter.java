@@ -72,10 +72,6 @@ public class GuiEssentiaLevelEmitter extends UpgradeableScreen<ContainerEssentia
             guiGraphics.drawString(this.font, aspect.getName(),
                     ASPECT_SLOT_X + 20, ASPECT_SLOT_Y + 4, 0xFFFFFF, false);
         }
-
-        guiGraphics.drawString(this.font,
-                "Current: " + this.menu.currentLevel,
-                8, 70, 0xAAAAAA, false);
     }
 
     @Override

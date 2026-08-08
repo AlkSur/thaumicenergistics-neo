@@ -17,6 +17,7 @@ public class ArcaneCraftingPattern {
     private static final String NBTKEY_INGREDIENT_NUM = "input#";
     private static final String NBTKEY_RESULT = "output";
     private static final String NBTKEY_ASPECTS = "aspects";
+    private static final String NBTKEY_RESEARCH = "research";
     private static final int GRID_SIZE = 9;
 
     /** 全局 RegistryAccess，用于 NBT 读写 */
@@ -27,10 +28,17 @@ public class ArcaneCraftingPattern {
     protected ItemStack[] ingredients = new ItemStack[GRID_SIZE];
     protected ItemStack result = ItemStack.EMPTY;
     protected boolean isValid;
+    /** 对应 TC 奥术配方的研究键（用于使用端按玩家校验解锁）。可为空（老数据/无研究配方）。 */
+    protected String research;
 
     public ArcaneCraftingPattern(AspectList aspects, ItemStack result, ItemStack[] ingredients) {
+        this(aspects, result, ingredients, null);
+    }
+
+    public ArcaneCraftingPattern(AspectList aspects, ItemStack result, ItemStack[] ingredients, String research) {
         this.aspects = aspects.copy();
         this.result = result.copy();
+        this.research = research;
 
         boolean hasValidInput = false;
         for (int i = 0; i < GRID_SIZE && i < ingredients.length; i++) {
@@ -72,6 +80,12 @@ public class ArcaneCraftingPattern {
         return aspects.getAmount(aspect);
     }
 
+    /** 对应 TC 奥术配方的研究键；无研究要求/老数据时可能为 null。 */
+    @org.jetbrains.annotations.Nullable
+    public String getResearch() {
+        return research;
+    }
+
     @SuppressWarnings("unchecked")
     public static boolean canSubstituteFor(Object target, ItemStack input) {
         if (target instanceof ItemStack targetStack) {
@@ -90,6 +104,10 @@ public class ArcaneCraftingPattern {
 
         this.ingredients = new ItemStack[GRID_SIZE];
         this.isValid = true;
+
+        if (data.contains(NBTKEY_RESEARCH)) {
+            this.research = data.getString(NBTKEY_RESEARCH);
+        }
 
         if (data.contains(NBTKEY_ASPECTS)) {
             this.aspects.readFromNBT(data.getCompound(NBTKEY_ASPECTS));
@@ -132,6 +150,10 @@ public class ArcaneCraftingPattern {
         CompoundTag aspectTag = new CompoundTag();
         this.aspects.writeToNBT(aspectTag);
         data.put(NBTKEY_ASPECTS, aspectTag);
+
+        if (this.research != null && !this.research.isEmpty()) {
+            data.putString(NBTKEY_RESEARCH, this.research);
+        }
 
         for (int i = 0; i < GRID_SIZE; i++) {
             if (this.ingredients[i] == null || this.ingredients[i].isEmpty()) continue;

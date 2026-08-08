@@ -4,8 +4,10 @@ import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.core.definitions.AEItems;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -13,11 +15,13 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import thaumcraft.api.ThaumcraftApiHelper;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
+import thaumcraft.common.research.TCResearchManager;
 import thaumcraft.common.research.ThaumometerScanManager;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
@@ -30,6 +34,10 @@ import java.util.Comparator;
 import java.util.List;
 
 public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
+
+    /** 蒸馏编码统一要求的研究节点（要素蒸馏）。 */
+    private static final String RESEARCH_DISTILESSENTIA = "DISTILESSENTIA";
+    private static final String NBTKEY_RESEARCH = "research";
 
     private static final int PLAYER_INV_Y = 150;
     private static final int HOTBAR_Y = 208;
@@ -249,6 +257,13 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
     public void onEncodePattern() {
         if (encoder == null) return;
+
+        // 研究限制：必须解锁"要素蒸馏"才能配置物品→源质蒸馏样板
+        if (!TCResearchManager.has(playerInv.player, RESEARCH_DISTILESSENTIA)) {
+            ThaumicEnergistics.LOG.info("[DistillationEncoder] 玩家未解锁研究 {}，拒绝编码蒸馏样板", RESEARCH_DISTILESSENTIA);
+            return;
+        }
+
         Aspect selected = getSelectedAspect();
         ItemStack source = getSourceItem();
         ItemStack blankSlot = encoder.inventory.getStackInSlot(TileDistillationPatternEncoder.SLOT_BLANK_PATTERNS);
@@ -287,6 +302,11 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
                 List.of(input),
                 List.of(output)
         );
+
+        // 在样板上标记研究键（供使用端按玩家校验）
+        CompoundTag researchTag = new CompoundTag();
+        researchTag.putString(NBTKEY_RESEARCH, RESEARCH_DISTILESSENTIA);
+        encoded.set(DataComponents.CUSTOM_DATA, CustomData.of(researchTag));
 
         encoder.inventory.setStackInSlot(TileDistillationPatternEncoder.SLOT_ENCODED_PATTERN, encoded);
     }
