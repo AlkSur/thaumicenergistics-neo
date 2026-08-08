@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import thaumcraft.api.ThaumcraftApi;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.events.ResearchCompletedEvent;
@@ -60,8 +59,6 @@ public final class ThEThaumcraft {
                 ResourceLocation.fromNamespaceAndPath(MODID, "textures/research/tab_icon.png"),
                 ResourceLocation.fromNamespaceAndPath(MODID, "textures/research/research_background.png"));
 
-        registerScanEvent();
-
         // ⚠ 必须先在当前 tab 注册伪前置节点（替代 TC 原版研究），
         //   否则 setParents 跨分类引用时线画不出来。
         registerPseudoParents();
@@ -69,45 +66,25 @@ public final class ThEThaumcraft {
         // 注册事件监听：当 TC 原版研究解锁时，自动 complete 对应伪前置节点
         registerPseudoSync();
 
-        // 严格按照 1.7.10 FeatureRegistry 构造函数中的注册顺序
-        // 1.  FeatureThaumicEnergistics    → BASEENERGISTICS (0,0)
+        // 注册顺序沿袭 1.7.10 移植（决定研究 tab 内节点坐标布局），勿随意调整。
         registerBaseEnergistics();
-        // 2.  FeatureAutocrafting_Arcane   → ARCANE_ASSEMBLER + KNOWLEDGE_INSCRIBER
         registerArcaneAssembler();
         registerKnowledgeInscriber();
-        // 3.  FeatureCells                → ESSENTIASTORAGE (0,2) 向左延伸 1k/4k/16k/64k
         registerEssentiaStorage();
-        // 4.  FeatureACT                  → ARCANECRAFTINGTERMINAL (2,-1)
         registerArcaneCraftingTerminal();
-        // 5.  FeatureVisRelayInterface    → VISINTERFACE (4,-1)
         registerVisInterface();
-        // 6.  FeatureEssentiaIOBuses      → ESSENTIABUSES (-2,-2)
         registerEssentiaBuses();
-        // 7.  FeatureInfusionProvider     → INFUSIONPROVIDER (-5,-2)
         registerInfusionProvider();
-        // 8.  FeatureEssentiaProvider     → ESSENTIAPROVIDER (-2,-4)
         registerEssentiaProvider();
-        // 9.  FeatureEssentiaMonitoring   → ESSENTIATERMINAL (-1,-4)
         registerEssentiaTerminal();
-        // 10. FeatureConversionCores      → DIGISENTIA (0,-2)
         registerDigisentia();
-        // 12. FeatureWrenchFocus          → FOCUS_AEWRENCH (-3,-7)
         registerFocusAEWrench();
-        // 13. FeatureQuartzDupe           → CERTUS_DUPE (-5,-5)
         registerCertusDupe();
-        // 14. FeatureEssentiaVibrationChamber → VIBRATIONCHAMBER (1,-4)
         registerEssentiaVibrationChamber();
-        // 15. FeatureAutocrafting_Essentia → DISTILLATIONENCODER (-4,-4)
         registerDistillationEncoder();
-        // 16. FeatureGolemBackpack        → GOLEMWIFIBACKPACK (0,-6)
         registerGolemWifiBackpack();
 
-        LOG.info("ThaumicEnergistics research registered ({} nodes).", 13);
-    }
-
-    private static void registerScanEvent() {
-        ThaumcraftApi.registerScanEventhandler((scanner, level, player) ->
-                java.util.Optional.empty());
+        LOG.info("ThaumicEnergistics research registered.");
     }
 
     // ==================== 伪前置节点（跨分类引用 TC 原版研究） ====================

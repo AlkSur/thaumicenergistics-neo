@@ -16,7 +16,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 
 import appeng.api.config.Actionable;
@@ -47,7 +46,6 @@ import appeng.api.util.AECableType;
 
 import thaumcraft.api.IVisDiscountGear;
 import thaumcraft.api.IWarpingGear;
-import thaumcraft.api.ThaumcraftApi;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.crafting.IArcaneRecipe;
@@ -68,6 +66,8 @@ public class TileArcaneAssembler extends ThETileBase
             Aspect.EARTH, Aspect.ORDER, Aspect.ENTROPY
     };
 
+    /** 基础 vis 折扣（0.8 = 80% 成本）。calculateVisDiscounts 从该值起再减护甲折扣；无护甲时即此值。 */
+    private static final float BASE_VIS_DISCOUNT = 0.8F;
     private static final int CVIS_MULTIPLIER = 10;
     private static final int MAX_STORED_CVIS = 187 * CVIS_MULTIPLIER;
     private static final int BASE_TICKS_PER_CRAFT = 20;
@@ -152,7 +152,7 @@ public class TileArcaneAssembler extends ThETileBase
         actionSource = IActionSource.ofMachine(this);
 
         for (Aspect primal : PRIMALS) {
-            visDiscount.put(primal, 0.8F);
+            visDiscount.put(primal, BASE_VIS_DISCOUNT);
         }
     }
 
@@ -392,7 +392,7 @@ public class TileArcaneAssembler extends ThETileBase
     private int getRequiredCvisForAspect(Aspect aspect) {
         if (currentRecipeAspects == null) return 0;
         int baseCost = currentRecipeAspects.getAmount(aspect) * CVIS_MULTIPLIER;
-        float discount = visDiscount.getOrDefault(aspect, 1.0F);
+        float discount = visDiscount.getOrDefault(aspect, BASE_VIS_DISCOUNT);
         return Math.max(0, Math.round(baseCost * discount));
     }
 
@@ -402,7 +402,7 @@ public class TileArcaneAssembler extends ThETileBase
 
     private void calculateVisDiscounts() {
         for (Aspect primal : PRIMALS) {
-            float discount = 0.8F;
+            float discount = BASE_VIS_DISCOUNT;
 
             for (int i = 0; i < 4; i++) {
                 ItemStack armor = internalInventory.getItem(ARMOR_SLOT_START + i);
@@ -536,21 +536,6 @@ public class TileArcaneAssembler extends ThETileBase
         return !isCrafting;
     }
 
-    @Nullable
-    public IArcaneRecipe findMatchingArcaneRecipe(Container craftingGrid) {
-        if (level == null) return null;
-        for (Object recipeObj : ThaumcraftApi.getCraftingRecipes()) {
-            if (recipeObj instanceof IArcaneRecipe recipe) {
-                try {
-                    if (recipe.matches(craftingGrid, level, null)) {
-                        return recipe;
-                    }
-                } catch (Exception ignored) {}
-            }
-        }
-        return null;
-    }
-
     public boolean isCrafting() { return isCrafting; }
     public int getSpeedUpgrades() { return speedUpgrades; }
     public int getCraftTickCounter() { return craftTickCounter; }
@@ -561,7 +546,7 @@ public class TileArcaneAssembler extends ThETileBase
     }
     public AspectList getStoredVis() { return storedVis; }
     public SimpleContainer getInternalInventory() { return internalInventory; }
-    public float getVisDiscountForAspect(Aspect aspect) { return visDiscount.getOrDefault(aspect, 1.0F); }
+    public float getVisDiscountForAspect(Aspect aspect) { return visDiscount.getOrDefault(aspect, BASE_VIS_DISCOUNT); }
     public float getWarpPowerMultiplier() { return warpPowerMultiplier; }
 
     public void setSpeedUpgrades(int count) {

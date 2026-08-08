@@ -58,14 +58,6 @@
   
   "tc.research_name.ESSENTIASTORAGE": "源质存储",
   "tc.research_text.ESSENTIASTORAGE": "利用凝聚核心和天域之华制造ME源质存储元件，有1k、4k、16k、64k四种容量。",
-  "tc.research_name.ESSENTIASTORAGE1K": "源质存储：1k",
-  "tc.research_text.ESSENTIASTORAGE1K": "利用凝聚核心和天域之华，你可以制造出能够存储源质的ME存储元件。1k元件是最基础的型号，可以存储少量单一类型的源质。",
-  "tc.research_name.ESSENTIASTORAGE4K": "源质存储：4k",
-  "tc.research_text.ESSENTIASTORAGE4K": "在1k元件的基础上，你可以制造容量更大的4k源质存储元件。",
-  "tc.research_name.ESSENTIASTORAGE16K": "源质存储：16k",
-  "tc.research_text.ESSENTIASTORAGE16K": "16k源质存储元件能够存储相当可观的源质。",
-  "tc.research_name.ESSENTIASTORAGE64K": "源质存储：64k",
-  "tc.research_text.ESSENTIASTORAGE64K": "64k源质存储元件是当前技术的极限，能够存储海量源质。",
 
   "tc.research_name.ESSENTIABUSES": "源质总线",
   "tc.research_text.ESSENTIABUSES.stage.1": "通过扩散核心和凝聚核心，你可以制造出三种源质总线：输入总线从外部容器抽取源质进入ME网络，输出总线将网络中的源质输出到外部容器，存储总线则将外部容器映射为ME网络的存储单元。",

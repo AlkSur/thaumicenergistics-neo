@@ -54,6 +54,8 @@ public final class RecipeRegistration {
     public static CrucibleRecipe CERTUS_DUPE_RECIPE;
 
     private static final TagKey<Item> WISP_ESSENCES = tag("thaumicenergistics", "wisp_essences");
+    /** AE2 三种显示器（普通/暗/半暗）任一可用。 */
+    private static final TagKey<Item> MONITORS = tag("thaumicenergistics", "monitors");
 
     @SuppressWarnings("SameParameterValue")
     private static TagKey<Item> tag(String ns, String path) {
@@ -80,7 +82,7 @@ public final class RecipeRegistration {
     }
 
     private static void registerShapedArcane() {
-        STORAGE_COMPONENT_1K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE1K", stack(ModItems.STORAGE_COMPONENT_1K),
+        STORAGE_COMPONENT_1K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_1K),
                 new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 1),
                 "EQ ",
                 "QPQ",
@@ -89,7 +91,7 @@ public final class RecipeRegistration {
                 'Q', ae("certus_quartz_crystal"),
                 'P', ae("logic_processor"));
 
-        STORAGE_COMPONENT_4K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE4K", stack(ModItems.STORAGE_COMPONENT_4K),
+        STORAGE_COMPONENT_4K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_4K),
                 new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 2),
                 "EPE",
                 "1G1",
@@ -99,7 +101,7 @@ public final class RecipeRegistration {
                 '1', stack(ModItems.STORAGE_COMPONENT_1K),
                 'G', ae("quartz_glass"));
 
-        STORAGE_COMPONENT_16K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE16K", stack(ModItems.STORAGE_COMPONENT_16K),
+        STORAGE_COMPONENT_16K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_16K),
                 new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 4),
                 "SPE",
                 "4G4",
@@ -110,7 +112,7 @@ public final class RecipeRegistration {
                 'G', ae("quartz_glass"),
                 'E', WISP_ESSENCES);
 
-        STORAGE_COMPONENT_64K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE64K", stack(ModItems.STORAGE_COMPONENT_64K),
+        STORAGE_COMPONENT_64K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_64K),
                 new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 8),
                 "SPS",
                 "6G6",
@@ -140,7 +142,7 @@ public final class RecipeRegistration {
                 'F', tc("fire_shard"),
                 'W', ae("certus_quartz_wrench"));
 
-        GOLEM_WIFI_BACKPACK_RECIPE = ThaumcraftApi.addArcaneCraftingRecipe("GOLEMWIFI", stack(ModItems.GOLEM_WIFI_BACKPACK),
+        GOLEM_WIFI_BACKPACK_RECIPE = ThaumcraftApi.addArcaneCraftingRecipe("GOLEMWIFIBACKPACK", stack(ModItems.GOLEM_WIFI_BACKPACK),
                 new AspectList().add(Aspect.AIR, 6).add(Aspect.FIRE, 4).add(Aspect.ORDER, 3),
                 "tIt",
                 "nRn",
@@ -189,30 +191,9 @@ public final class RecipeRegistration {
                 " T ",
                 "IPI",
                 'I', new ItemStack(Items.IRON_INGOT, 4),
-                'L', ae("monitor"),
+                'L', MONITORS,
                 'T', tc("thaumonomicon"),
                 'P', ae("logic_processor"));
-
-        ThaumcraftApi.addArcaneCraftingRecipe("KNOWLEDGEINSCRIBER", stack(ModBlocks.KNOWLEDGE_INSCRIBER),
-                new AspectList().add(Aspect.WATER, 5).add(Aspect.EARTH, 5).add(Aspect.FIRE, 5).add(Aspect.AIR, 5).add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5),
-                "ILI",
-                " T ",
-                "IPI",
-                'I', new ItemStack(Items.IRON_INGOT, 4),
-                'L', ae("dark_monitor"),
-                'T', tc("thaumonomicon"),
-                'P', ae("logic_processor"));
-
-        ThaumcraftApi.addArcaneCraftingRecipe("KNOWLEDGEINSCRIBER", stack(ModBlocks.KNOWLEDGE_INSCRIBER),
-                new AspectList().add(Aspect.WATER, 5).add(Aspect.EARTH, 5).add(Aspect.FIRE, 5).add(Aspect.AIR, 5).add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5),
-                "ILI",
-                " T ",
-                "IPI",
-                'I', new ItemStack(Items.IRON_INGOT, 4),
-                'L', ae("semi_dark_monitor"),
-                'T', tc("thaumonomicon"),
-                'P', ae("logic_processor"));
-
 
         DISTILLATION_ENCODER_BLOCK = ThaumcraftApi.addArcaneCraftingRecipe("DISTILLATIONENCODER", stack(ModBlocks.DISTILLATION_ENCODER),
                 new AspectList().add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5).add(Aspect.FIRE, 3),
@@ -220,27 +201,7 @@ public final class RecipeRegistration {
                 " G ",
                 "IPI",
                 'I', new ItemStack(Items.IRON_INGOT, 4),
-                'L', ae("monitor"),
-                'G', tc("thaumometer"),
-                'P', ae("engineering_processor"));
-
-        ThaumcraftApi.addArcaneCraftingRecipe("DISTILLATIONENCODER", stack(ModBlocks.DISTILLATION_ENCODER),
-                new AspectList().add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5).add(Aspect.FIRE, 3),
-                "ILI",
-                " G ",
-                "IPI",
-                'I', new ItemStack(Items.IRON_INGOT, 4),
-                'L', ae("dark_monitor"),
-                'G', tc("thaumometer"),
-                'P', ae("engineering_processor"));
-
-        ThaumcraftApi.addArcaneCraftingRecipe("DISTILLATIONENCODER", stack(ModBlocks.DISTILLATION_ENCODER),
-                new AspectList().add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5).add(Aspect.FIRE, 3),
-                "ILI",
-                " G ",
-                "IPI",
-                'I', new ItemStack(Items.IRON_INGOT, 4),
-                'L', ae("semi_dark_monitor"),
+                'L', MONITORS,
                 'G', tc("thaumometer"),
                 'P', ae("engineering_processor"));
     }
@@ -250,23 +211,23 @@ public final class RecipeRegistration {
         // 1. 扩散核心
         DIFFUSION_CORE = ThaumcraftApi.addShapelessArcaneCraftingRecipe("DIGISENTIA", stack(ModItems.DIFFUSION_CORE),
                 new AspectList().add(Aspect.WATER, 2).add(Aspect.ENTROPY, 2),
-                tc("quicksilver"),
-                tc("quicksilver"),
-                tc("quicksilver"),
+                tc("quicksilver_drop"),
+                tc("quicksilver_drop"),
+                tc("quicksilver_drop"),
                 tc("entropy_shard"),
                 ae("annihilation_core"));
 
         // 2. 凝聚核心
         COALESCENCE_CORE = ThaumcraftApi.addShapelessArcaneCraftingRecipe("DIGISENTIA", stack(ModItems.COALESCENCE_CORE),
                 new AspectList().add(Aspect.WATER, 2).add(Aspect.ORDER, 2),
-                tc("quicksilver"),
-                tc("quicksilver"),
-                tc("quicksilver"),
+                tc("quicksilver_drop"),
+                tc("quicksilver_drop"),
+                tc("quicksilver_drop"),
                 tc("order_shard"),
                 ae("formation_core"));
 
         // 3. 原质等级发射器
-        ESSENTIA_LEVEL_EMITTER = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIAMONITORING", new ItemStack(ModItems.ESSENTIA_LEVEL_EMITTER.get(), 1),
+        ESSENTIA_LEVEL_EMITTER = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIATERMINAL", new ItemStack(ModItems.ESSENTIA_LEVEL_EMITTER.get(), 1),
                 new AspectList().add(Aspect.FIRE, 4),
                 ae("calculation_processor"),
                 new ItemStack(Items.REDSTONE_TORCH),
@@ -275,26 +236,7 @@ public final class RecipeRegistration {
         // 4. 原质终端
         ESSENTIA_TERMINAL = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIATERMINAL", stack(ModItems.ESSENTIA_TERMINAL_ITEM),
                 new AspectList().add(Aspect.WATER, 5).add(Aspect.ORDER, 2).add(Aspect.FIRE, 1),
-                //'ae2:semi_dark_monitor' 'ae2:monitor' 'ae2:dark_monitor'三者任一
-                ae("monitor"),
-                stack(ModItems.DIFFUSION_CORE),
-                stack(ModItems.COALESCENCE_CORE),
-                ae("logic_processor"),
-                tc("vis_filter"));
-
-        ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIATERMINAL", stack(ModItems.ESSENTIA_TERMINAL_ITEM),
-                new AspectList().add(Aspect.WATER, 5).add(Aspect.ORDER, 2).add(Aspect.FIRE, 1),
-                //'ae2:semi_dark_monitor' 'ae2:monitor' 'ae2:dark_monitor'三者任一
-                ae("dark_monitor"),
-                stack(ModItems.DIFFUSION_CORE),
-                stack(ModItems.COALESCENCE_CORE),
-                ae("logic_processor"),
-                tc("vis_filter"));
-
-        ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIATERMINAL", stack(ModItems.ESSENTIA_TERMINAL_ITEM),
-                new AspectList().add(Aspect.WATER, 5).add(Aspect.ORDER, 2).add(Aspect.FIRE, 1),
-                //'ae2:semi_dark_monitor' 'ae2:monitor' 'ae2:dark_monitor'三者任一
-                ae("semi_dark_monitor"),
+                MONITORS,
                 stack(ModItems.DIFFUSION_CORE),
                 stack(ModItems.COALESCENCE_CORE),
                 ae("logic_processor"),

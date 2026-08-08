@@ -5,24 +5,38 @@ import java.util.List;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import appeng.api.implementations.items.IMemoryCard;
+import appeng.api.implementations.items.MemoryCardMessages;
+import appeng.api.ids.AEComponents;
 import appeng.api.inventories.InternalInventory;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.IGridNode;
+import appeng.api.networking.ticking.IGridTickable;
+import appeng.api.networking.ticking.TickRateModulation;
+import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.core.AppEng;
 import appeng.items.parts.PartModels;
+import appeng.me.service.P2PService;
 import appeng.menu.locator.MenuLocators;
 import appeng.menu.MenuOpener;
 import appeng.parts.PartModel;
+import appeng.parts.p2p.P2PTunnelPart;
 import appeng.parts.reporting.AbstractTerminalPart;
 import appeng.util.inv.AppEngInternalInventory;
+import thaumcraft.api.aspects.Aspect;
+import thaumcraft.common.items.TCFunctionalItems;
 import thaumicenergistics.ThaumicEnergistics;
+import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModMenuTypes;
 
-public class ArcaneCraftingTerminalPart extends AbstractTerminalPart {
+public class ArcaneCraftingTerminalPart extends AbstractTerminalPart implements IGridTickable {
 
     public static final ResourceLocation INV_CRAFTING = AppEng.makeId("arcane_crafting_terminal_crafting");
     public static final ResourceLocation INV_WAND = ThaumicEnergistics.id("arcane_crafting_terminal_wand");
@@ -42,12 +56,22 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart {
 
     public static final int WAND_SLOT_INDEX = 0;
 
+    /** 充能间隔：每 tick 抽取一次。与 TC 能量节点池子每 tick 重置的频率、原版充能中继一致；无需放大。 */
+    private static final int VIS_REPLENISH_INTERVAL = 1;
+    /** 每 tick 每要素最大充能 cV，与原版奥术工作台充能中继（MagicWorkbenchCharger）一致（5 cV/tick = 1 vis/s）。 */
+    private static final int MAX_CVIS_PER_TICK = 5;
+    private static final String NBT_KEY_VIS_SOURCE_FREQ = "visSourceFreq";
+
+    /** 内存卡设定的 vis 源 P2P 频率；0 = 未设置（不自动充能）。 */
+    private short visSourceFreq = 0;
+
     private final AppEngInternalInventory craftingGrid = new AppEngInternalInventory(this, 9);
     private final AppEngInternalInventory wandInv = new AppEngInternalInventory(this, 1);
 
     public ArcaneCraftingTerminalPart(IPartItem<?> partItem) {
         super(partItem);
         this.getMainNode().setIdlePowerUsage(0.5);
+        this.getMainNode().addService(IGridTickable.class, this);
     }
 
     @Override
@@ -61,6 +85,88 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart {
             MenuOpener.open(getMenuType(player), player, MenuLocators.forPart(this));
         }
         return true;
+    }
+
+    /**
+     * 内存卡右键终端：读取 Vis Interface 的 P2P 频率，设为法杖充能的 vis 源。
+     * 复刻奥术装配器 {@code TileArcaneAssembler.onMemoryCardActivate} 的行为：
+     * 卡上带 P2P 频率（从 vis_interface shift+右键复制来的）→ 设为 vis 源；
+     * 空白卡 → 清空；其它 → 交给 AE2 标准内存卡逻辑。
+     */
+    @Override
+    public boolean onUseItemOn(ItemStack heldItem, Player player, InteractionHand hand, Vec3 pos) {
+        if (heldItem.getItem() instanceof IMemoryCard memoryCard) {
+            Short freq = heldItem.get(AEComponents.EXPORTED_P2P_FREQUENCY);
+            if (freq != null) {
+                this.visSourceFreq = freq;
+                getHost().markForSave();
+                memoryCard.notifyUser(player, MemoryCardMessages.SETTINGS_LOADED);
+                return true;
+            } else if (heldItem.get(AEComponents.EXPORTED_SETTINGS_SOURCE) == null) {
+                // 空白卡 → 清空 vis 源
+                if (this.visSourceFreq != 0) {
+                    this.visSourceFreq = 0;
+                    getHost().markForSave();
+                }
+                memoryCard.notifyUser(player, MemoryCardMessages.SETTINGS_CLEARED);
+                return true;
+            }
+        }
+        return super.onUseItemOn(heldItem, player, hand, pos);
+    }
+
+    // ===== 法杖自动充能（内存卡链接 Vis Interface 作为 vis 源） =====
+
+    @Override
+    public TickingRequest getTickingRequest(IGridNode node) {
+        return new TickingRequest(VIS_REPLENISH_INTERVAL, VIS_REPLENISH_INTERVAL, false);
+    }
+
+    @Override
+    public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+        if (visSourceFreq == 0) {
+            return TickRateModulation.SAME;
+        }
+        ItemStack wandStack = wandInv.getStackInSlot(0);
+        if (wandStack.isEmpty() || !(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) {
+            return TickRateModulation.SAME;
+        }
+        IGrid grid = node.getGrid();
+        if (grid == null) {
+            return TickRateModulation.SAME;
+        }
+        P2PService p2p = P2PService.get(grid);
+        if (p2p == null) {
+            return TickRateModulation.SAME;
+        }
+        P2PTunnelPart<?> input = p2p.getInput(visSourceFreq);
+        if (!(input instanceof VisInterfacePart visSource)) {
+            return TickRateModulation.SAME;
+        }
+
+        boolean changed = false;
+        int maxVis = wand.getMaxVis(wandStack);
+        for (Aspect primal : Aspect.getPrimalAspects()) {
+            int needed = maxVis - wand.getVis(wandStack, primal);
+            if (needed <= 0) {
+                continue;
+            }
+            ResourceLocation id = TCReflection.getAspectId(primal);
+            if (id == null) {
+                continue;
+            }
+            // 每 tick 申请真实量（与池子每 tick 重置对齐），充入真实量，vis 守恒
+            int got = visSource.consumeVis(id, Math.min(MAX_CVIS_PER_TICK, needed));
+            if (got > 0) {
+                wand.addRealVis(wandStack, primal, got, true);
+                changed = true;
+            }
+        }
+        if (changed) {
+            // 法杖 vis 存储在 ItemStack NBT，手动标记保存
+            getHost().markForSave();
+        }
+        return TickRateModulation.SAME;
     }
 
     @Override
@@ -95,6 +201,7 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart {
         super.readFromNBT(data, registries);
         this.craftingGrid.readFromNBT(data, "craftingGrid", registries);
         this.wandInv.readFromNBT(data, "wandInv", registries);
+        this.visSourceFreq = data.contains(NBT_KEY_VIS_SOURCE_FREQ) ? data.getShort(NBT_KEY_VIS_SOURCE_FREQ) : 0;
     }
 
     @Override
@@ -102,6 +209,9 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart {
         super.writeToNBT(data, registries);
         this.craftingGrid.writeToNBT(data, "craftingGrid", registries);
         this.wandInv.writeToNBT(data, "wandInv", registries);
+        if (visSourceFreq != 0) {
+            data.putShort(NBT_KEY_VIS_SOURCE_FREQ, visSourceFreq);
+        }
     }
 
     @Override

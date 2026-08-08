@@ -1,6 +1,7 @@
 package thaumicenergistics;
 
 import appeng.api.features.GridLinkables;
+import appeng.api.features.P2PTunnelAttunement;
 import appeng.api.parts.PartModels;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.AEKeyTypesInternal;
@@ -19,7 +20,6 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import thaumicenergistics.common.container.*;
-import thaumicenergistics.common.features.FeatureRegistry;
 import thaumicenergistics.common.features.RecipeRegistration;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 import thaumicenergistics.common.integration.appeng.ThEAppliedEnergistics;
@@ -107,12 +107,11 @@ public final class ThaumicEnergistics {
         event.enqueueWork(() -> {
             RecipeRegistration.registerAll();
             ThEThaumcraft.init();
+            P2PTunnelAttunement.registerAttunementTag(ModItems.VIS_INTERFACE.get());
             GridLinkables.register(ModItems.GOLEM_WIFI_BACKPACK.get(), ItemGolemWirelessBackpack.LINKABLE_HANDLER);
             GridLinkables.register(ModItems.WIRELESS_ESSENTIA_TERMINAL.get(),
                     appeng.items.tools.powered.WirelessTerminalItem.LINKABLE_HANDLER);
         });
-
-        FeatureRegistry.registerAll();
     }
 
     private void registerUpgrades(FMLCommonSetupEvent event) {
