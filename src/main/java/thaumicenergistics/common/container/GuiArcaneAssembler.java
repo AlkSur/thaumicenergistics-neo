@@ -7,9 +7,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ContainerData;
 import thaumicenergistics.ThaumicEnergistics;
+import org.anti_ad.mc.ipn.api.IPNIgnore;
 
 /**
- * 奥术装配器 GUI。
+ * 奥术装配器 GUI。标 @IPNIgnore：IPN 一键整理完全跳过此界面（不渲染排序按钮、不执行整理）。
  *
  * 贴图 arcane_assembler.png = 256×256 画布，包含4块不连续区域：
  *   第1块 主矩形：(0,0) → 176×197
@@ -20,6 +21,7 @@ import thaumicenergistics.ThaumicEnergistics;
  * 仿1.7.10纹理裁剪方式：GUI分块blit，bar区域不随纹理整体绘制，
  * 而是先画暗色背景，再从纹理Y=202处裁剪满bar按百分比叠加。
  */
+@IPNIgnore
 public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneAssembler> {
 
     static final ResourceLocation TEX = ResourceLocation.fromNamespaceAndPath(

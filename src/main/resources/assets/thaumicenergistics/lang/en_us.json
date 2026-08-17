@@ -111,5 +111,8 @@
   "thaumicenergistics.jade.energy_stored": "Stored: %s / %s",
   "thaumicenergistics.jade.energy_output": "Output Limit: %s AE/tick",
   "thaumicenergistics.jade.tank_full": "Tank full, generation stopped",
-  "thaumicenergistics.gui.distillation_encoder.not_scanned": "Not scanned"
+  "thaumicenergistics.gui.distillation_encoder.not_scanned": "Not scanned",
+  "thaumicenergistics.jei.transfer.missing": "Missing: %d",
+  "thaumicenergistics.jei.transfer.craftable": "Craftable: %d",
+  "thaumicenergistics.jei.transfer.ctrl_click": "Use Ctrl to craft missing items"
 }

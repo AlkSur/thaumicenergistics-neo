@@ -25,6 +25,7 @@ import thaumcraft.api.crafting.ShapedArcaneRecipe;
 import thaumcraft.api.crafting.ShapelessArcaneRecipe;
 import thaumcraft.common.research.TCResearchManager;
 import thaumicenergistics.common.container.slot.GhostSlot;
+import thaumicenergistics.common.container.slot.ReadOnlySlot;
 import thaumicenergistics.common.integration.tc.ArcaneCraftingPattern;
 import thaumicenergistics.common.inventory.HandlerKnowledgeCore;
 import thaumicenergistics.common.network.KnowledgeInscriberGhostSlotPacket;
@@ -121,12 +122,7 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         initPatternSlots();
         initCraftingSlots();
 
-        addSlot(new SlotItemHandler(resultInventory, 0, RESULT_SLOT_X, RESULT_SLOT_Y) {
-            @Override
-            public boolean mayPlace(ItemStack s) { return false; }
-            @Override
-            public boolean mayPickup(Player p) { return false; }
-        });
+        addSlot(new ReadOnlySlot(resultInventory, 0, RESULT_SLOT_X, RESULT_SLOT_Y));
 
         saveStateSlot = addDataSlot(DataSlot.standalone());
         saveStateSlot.set(0);

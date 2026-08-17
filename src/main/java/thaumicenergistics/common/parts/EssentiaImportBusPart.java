@@ -62,6 +62,14 @@ public class EssentiaImportBusPart extends IOBusPart
 
     private boolean isWorkingFlag = false;
 
+    /**
+     * 单次传输量 = 基础速率 × 每 tick 操作次数（受加速卡影响）。
+     * AE2 加速卡语义：0卡=1、1卡=8、2卡=32、3卡=64、4卡=96（getOperationsPerTick）。
+     */
+    private int getTransferRate() {
+        return TRANSFER_RATE * Math.max(1, getOperationsPerTick());
+    }
+
     private final KeyTypeSelection keyTypeSelection = new KeyTypeSelection(
             selection -> { },
             keyType -> keyType == AEssentiaKeyType.INSTANCE);
@@ -104,7 +112,7 @@ public class EssentiaImportBusPart extends IOBusPart
         BlockEntity adjacentBE = level.getBlockEntity(adjacentPos);
         if (adjacentBE == null) return false;
 
-        AspectStack extracted = TCReflection.extractEssentia(adjacentBE, TRANSFER_RATE);
+        AspectStack extracted = TCReflection.extractEssentia(adjacentBE, getTransferRate());
         if (extracted == null || extracted.isEmpty()) return false;
 
         long injected = this.injectToNetwork(grid, extracted);

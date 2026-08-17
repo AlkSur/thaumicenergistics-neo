@@ -13,7 +13,7 @@ import net.neoforged.neoforge.items.SlotItemHandler;
 import thaumcraft.api.IVisDiscountGear;
 import thaumcraft.api.IWarpingGear;
 import thaumcraft.api.aspects.Aspect;
-import thaumicenergistics.ThaumicEnergistics;
+import thaumicenergistics.common.container.slot.ReadOnlySlot;
 import thaumicenergistics.common.tiles.TileArcaneAssembler;
 import thaumicenergistics.init.ModMenuTypes;
 
@@ -160,16 +160,12 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
             }
         });
 
-        // ===== 4. 3×7 配方槽（只读展示） =====
+        // ===== 4. 3×7 配方槽（只读展示，AE2 式防整理） =====
         for (int r = 0; r < PATTERN_ROWS; r++)
             for (int c = 0; c < PATTERN_COLS; c++) {
                 int invIdx = TileArcaneAssembler.PATTERN_SLOT_START + r * PATTERN_COLS + c;
-                addSlot(new SlotItemHandler(machineHandler, invIdx,
-                        PATTERN_X + c * 18, PATTERN_Y + r * 18) {
-                    @Override public boolean mayPlace(ItemStack s) { return false; }
-                    @Override public boolean mayPickup(Player p) { return false; }
-                    @Override public int getMaxStackSize() { return 1; }
-                });
+                addSlot(new ReadOnlySlot(machineHandler, invIdx,
+                        PATTERN_X + c * 18, PATTERN_Y + r * 18));
             }
 
         // ===== 5. 4张AE2速度卡 =====
@@ -182,11 +178,8 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
             });
         }
 
-        // ===== 6. 目标产物输出槽（只读展示） =====
-        addSlot(new SlotItemHandler(machineHandler, TileArcaneAssembler.TARGET_SLOT, TARGET_X, TARGET_Y) {
-            @Override public boolean mayPlace(ItemStack s) { return false; }
-            @Override public boolean mayPickup(Player p) { return false; }
-        });
+        // ===== 6. 目标产物输出槽（只读展示，AE2 式防整理） =====
+        addSlot(new ReadOnlySlot(machineHandler, TileArcaneAssembler.TARGET_SLOT, TARGET_X, TARGET_Y));
 
         // ===== 7. 4个护甲折扣槽 =====
         for (int i = 0; i < ARMOR_COUNT; i++) {
@@ -202,9 +195,9 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
                 @Override public boolean mayPlace(ItemStack s) {
                     if (s.getItem() instanceof IVisDiscountGear) return true;
                     if (s.getItem() instanceof IWarpingGear) return true;
-                    if (s.getItem() instanceof net.minecraft.world.item.Equipable eqItem
-                            && eqItem.getEquipmentSlot() == eq) return true;
-                    return s.canEquip(eq, null);
+                    if (s.getItem() instanceof net.minecraft.world.item.Equipable eqItem)
+                        return eqItem.getEquipmentSlot() == eq;
+                    return false;
                 }
                 @Override public void setChanged() {
                     super.setChanged();
@@ -220,13 +213,9 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
         this(id, inv, resolveTile(inv, buf));
     }
 
-    /** 临时诊断：确认客户端能否拿到 tile（定位后删除） */
     private static TileArcaneAssembler resolveTile(Inventory inv, RegistryFriendlyByteBuf buf) {
         var pos = buf.readBlockPos();
-        var be = inv.player.level().getBlockEntity(pos);
-        ThaumicEnergistics.LOG.info("[AA-DEBUG] client ctor: pos={}, be={}",
-                pos, be == null ? "null" : be.getClass().getSimpleName());
-        return (TileArcaneAssembler) be;
+        return (TileArcaneAssembler) inv.player.level().getBlockEntity(pos);
     }
 
     private ItemStackHandler wrapMachineInventory() {

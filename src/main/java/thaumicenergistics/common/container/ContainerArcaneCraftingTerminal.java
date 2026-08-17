@@ -33,9 +33,11 @@ import appeng.me.storage.LinkStatusRespectingInventory;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
+import thaumcraft.api.wands.WandCap;
 import net.minecraft.world.item.crafting.Ingredient;
 import thaumcraft.common.items.TCFunctionalItems;
 import thaumcraft.common.lib.crafting.ThaumcraftCraftingManager;
+import thaumcraft.common.vis.TCVisHelper;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.slot.ArcaneCraftingResultSlot;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
@@ -54,6 +56,34 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
      * 在 ArcaneCraftingResultSlot.onTake 开始前设为 true，完成后设为 false。
      */
     private boolean isCraftingResultBeingTaken = false;
+
+    /** vis 恢复检测节流：每 10 tick（0.5 秒）检查一次，避免持续遍历配方。 */
+    private static final int VIS_RECOVERY_CHECK_INTERVAL = 10;
+    private int visRecoveryTickCounter = 0;
+
+    @Override
+    public void broadcastChanges() {
+        super.broadcastChanges();
+        // vis 充能恢复后自动重算结果槽：结果槽空 + 奥术配方有效 + vis 已足够 → 重新显示产物。
+        // 节流：仅"待恢复"状态每 10 tick 检查一次（findMatchingArcaneRecipe 只在满足时执行）
+        var player = getPlayerInventory().player;
+        if (player.level().isClientSide() || !hasValidRecipe || !resultSlot.getItem().isEmpty()) {
+            return;
+        }
+        if (++visRecoveryTickCounter < VIS_RECOVERY_CHECK_INTERVAL) {
+            return;
+        }
+        visRecoveryTickCounter = 0;
+        var craftContainer = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING).toContainer();
+        ItemStack arcaneResult = ThaumcraftCraftingManager.findMatchingArcaneRecipe(craftContainer, player);
+        if (!arcaneResult.isEmpty()) {
+            AspectList aspects = ThaumcraftCraftingManager.findMatchingArcaneRecipeAspects(craftContainer, player);
+            if (aspects != null && hasEnoughVis(aspects)) {
+                resultSlot.setRequiredAspects(aspects);
+                resultSlot.setDisplayedCraftingOutput(arcaneResult);
+            }
+        }
+    }
 
     private final ISegmentedInventory craftingInventoryHost;
     private final CraftingMatrixSlot[] craftingSlots = new CraftingMatrixSlot[9];
@@ -76,9 +106,9 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         }
 
         var linkStatusInventory = new LinkStatusRespectingInventory(host.getInventory(), this::getLinkStatus);
-        this.resultSlot = new ArcaneCraftingResultSlot(getPlayerInventory().player, craftingGridInv);
-        this.resultSlot.setRefreshCallback(() -> updateCurrentRecipeAndOutput(false));
-        this.resultSlot.setContainer(this);
+        this.resultSlot = new ArcaneCraftingResultSlot(
+                getPlayerInventory().player, this, craftingGridInv, craftingGridInv,
+                linkStatusInventory, this.getEnergySource(), this.getActionSource());
         this.addSlot(this.resultSlot, SlotSemantics.CRAFTING_RESULT);
 
         var wandInv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
@@ -87,7 +117,6 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
             public int getMaxStackSize() {
                 return 1;
             }
-
 
             @Override
             public boolean mayPlace(ItemStack stack) {
@@ -145,6 +174,26 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
 
     private static final int CENTIVIS = 100;
 
+    /**
+     * 复刻 TC port {@code WandCastingItem.consumptionModifier}：法杖 cap 折扣 − 玩家装备/饰品折扣 − 法杖折扣。
+     * 仅用于显示（GUI 所需 vis），实际扣费由 consumeVisCost 内部同公式处理。
+     */
+    private float getConsumptionModifier(Aspect aspect, boolean crafting) {
+        var wandInv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
+        var wandStack = wandInv.getStackInSlot(0);
+        if (wandStack.isEmpty() || !(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) {
+            return 1.0f;
+        }
+        float modifier = wand.consumptionModifier(wandStack, getPlayerInventory().player, aspect, crafting);
+        return modifier;
+    }
+
+    /** 折扣后的 vis 成本（GUI 显示用）。 */
+    private int getDiscountedVisCost(Aspect aspect, int rawCost) {
+        if (rawCost <= 0 || aspect == null) return 0;
+        return Math.max(0, Math.round(rawCost * getConsumptionModifier(aspect, true)));
+    }
+
     private boolean hasEnoughVis(AspectList cost) {
         ThaumicEnergistics.LOG.debug("[V] hasEnoughVis: cost={}", cost);
         if (cost == null || cost.isEmpty()) {
@@ -172,7 +221,6 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
     }
 
     private void updateCurrentRecipeAndOutput(boolean forceUpdate) {
-        ThaumicEnergistics.LOG.debug("[R] === updateCurrentRecipeAndOutput forceUpdate={} ===", forceUpdate);
         var player = getPlayerInventory().player;
         var level = player.level();
 
@@ -183,27 +231,20 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
             var craftContainer = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING).toContainer();
 
             ItemStack arcaneResult = ThaumcraftCraftingManager.findMatchingArcaneRecipe(craftContainer, player);
-            ThaumicEnergistics.LOG.debug("[R] findMatchingArcaneRecipe result={}", arcaneResult);
 
             if (!arcaneResult.isEmpty()) {
                 requiredAspects = ThaumcraftCraftingManager.findMatchingArcaneRecipeAspects(craftContainer, player);
-                ThaumicEnergistics.LOG.debug("[R] ARCANE MATCH! aspects={}, result={}", requiredAspects, arcaneResult);
                 foundArcane = true;
 
                 if (hasEnoughVis(requiredAspects)) {
-                    ThaumicEnergistics.LOG.debug("[R] Vis OK → showing result");
                     resultSlot.setDisplayedCraftingOutput(arcaneResult);
                 } else {
-                    ThaumicEnergistics.LOG.debug("[R] Vis INSUFFICIENT → result empty, but recipe recognized");
                     resultSlot.setDisplayedCraftingOutput(ItemStack.EMPTY);
                 }
-            } else {
-                ThaumicEnergistics.LOG.debug("[R] No arcane recipe match");
             }
         }
 
         if (!foundArcane) {
-            ThaumicEnergistics.LOG.debug("[R] No arcane match, trying vanilla...");
             var testItems = new ArrayList<ItemStack>(this.craftingSlots.length);
             for (var craftingSlot : this.craftingSlots) {
                 testItems.add(craftingSlot.getItem().copy());
@@ -212,10 +253,8 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
             var recipeHolder = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, testInput, level);
             if (recipeHolder.isPresent()) {
                 ItemStack result = recipeHolder.get().value().assemble(testInput, level.registryAccess());
-                ThaumicEnergistics.LOG.debug("[R] Vanilla match: {}, setting result slot", result);
                 resultSlot.setDisplayedCraftingOutput(result);
             } else {
-                ThaumicEnergistics.LOG.debug("[R] No vanilla match either, clearing result slot");
                 // 客户端不清空产物槽，@GuiSync 会同步服务端的正确状态
                 if (!level.isClientSide()) {
                     resultSlot.setDisplayedCraftingOutput(ItemStack.EMPTY);
@@ -225,9 +264,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
 
         if (foundArcane) {
             // 服务端设置 @GuiSync 字段；客户端不应覆盖来自服务端的同步值
-            ThaumicEnergistics.LOG.debug("[R] foundArcane branch: isClientSide={}", level.isClientSide());
             if (level.isClientSide()) {
-                ThaumicEnergistics.LOG.debug("[R] Client: keeping server-synced values, not overriding");
                 return;
             }
             this.hasValidRecipe = true;
@@ -235,32 +272,27 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
             var wandInv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
             var ws = wandInv.getStackInSlot(0);
             resultSlot.setWandStack(ws);
-            ThaumicEnergistics.LOG.debug("[R] SET state: hasValidRecipe=true, wandStack={}", ws);
 
             if (requiredAspects != null && requiredAspects.size() > 0) {
                 StringBuilder sb = new StringBuilder();
                 for (Map.Entry<Aspect, Integer> entry : requiredAspects.aspects.entrySet()) {
                     if (!sb.isEmpty()) sb.append(",");
-                    sb.append(entry.getKey().getTag()).append("=").append(entry.getValue());
+                    // 存折扣后数值（GUI 显示实际所需 vis，含法杖 + 装备 + 饰品减免）
+                    sb.append(entry.getKey().getTag()).append("=")
+                            .append(getDiscountedVisCost(entry.getKey(), entry.getValue()));
                 }
                 this.requiredAspectsData = sb.toString();
-                ThaumicEnergistics.LOG.debug("[R] aspectsData={}", this.requiredAspectsData);
             } else {
                 this.requiredAspectsData = "";
-                ThaumicEnergistics.LOG.debug("[R] aspectsData=empty (no aspects)");
             }
         } else {
-            ThaumicEnergistics.LOG.debug("[R] else branch: isClientSide={}, levelClass={}",
-                    level.isClientSide(), level.getClass().getSimpleName());
             if (level.isClientSide()) {
-                ThaumicEnergistics.LOG.debug("[R] Client: not overriding synced values (no arcane recipe on client)");
                 return;
             }
             this.requiredAspectsData = "";
             this.hasValidRecipe = false;
             resultSlot.setRequiredAspects(null);
             resultSlot.setWandStack(ItemStack.EMPTY);
-            ThaumicEnergistics.LOG.debug("[R] SET state: hasValidRecipe=false (no arcane recipe)");
         }
     }
 

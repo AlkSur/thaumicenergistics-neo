@@ -121,7 +121,7 @@
   "tc.research_name.PSEUDO_SCEPTRE": "工艺权杖",
   "tc.research_name.PSEUDO_COREGATHER": "傀儡核心：聚集",
 
-  "thaumicenergistics.jade.suction_type": "吸力: %s",
+  "thaumicenergistics.jade.current_aspect": "燃料: %s",
   "thaumicenergistics.jade.essentia_stored": "源质: %d / %d",
   "thaumicenergistics.jade.burning": "燃烧 %d%%, %.1f AE/tick",
   "thaumicenergistics.aspect.ignis": "火",
@@ -130,5 +130,8 @@
   "thaumicenergistics.jade.energy_stored": "已存储: %s / %s",
   "thaumicenergistics.jade.energy_output": "输出上限: %s AE/tick",
   "thaumicenergistics.jade.tank_full": "能量槽已满，停止发电",
-  "thaumicenergistics.gui.distillation_encoder.not_scanned": "未扫描"
+  "thaumicenergistics.gui.distillation_encoder.not_scanned": "未扫描",
+  "thaumicenergistics.jei.transfer.missing": "缺少: %d",
+  "thaumicenergistics.jei.transfer.craftable": "可合成: %d",
+  "thaumicenergistics.jei.transfer.ctrl_click": "按住 Ctrl 合成缺失物品"
 }

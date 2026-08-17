@@ -40,12 +40,16 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
 
     private static final int MAX_ESSENTIA = 64;
     private static final int BASE_BURN_TICKS = 800;
-    private static final double BASE_AE_PER_TICK = 20.0;
+    private static final double BASE_AE_PER_TICK = 200.0;
     private static final int IDLE_POWER = 1;
 
-    // 能量槽配置：8KFE = 8000 AE，对外最大输出 400 AE/t
-    public static final double MAX_ENERGY_STORAGE = 8000.0;
-    public static final double MAX_OUTPUT_PER_TICK = 400.0;
+    // 能量槽配置：16KFE = 16000 AE，对外最大输出 1000 AE/t
+    public static final double MAX_ENERGY_STORAGE = 16000.0;
+    public static final double MAX_OUTPUT_PER_TICK = 2000.0;
+
+    // 懒 tick 周期：燃烧中 10 tick、空闲 40 tick（能量生产无需实时响应，低频即可）
+    private static final int TICK_RATE_BURNING = 10;
+    private static final int TICK_RATE_IDLE = 40;
 
     protected final IManagedGridNode mainNode;
     private final IGridNodeListener<TileEssentiaVibrationChamber> nodeListener = new IGridNodeListener<>() {
@@ -62,7 +66,6 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
     private double aePerTick;
     private int storedEssentia;
     private Aspect currentAspect;
-    private Aspect suctionAspect = Aspect.ENERGY;
 
     private double storedEnergy;
 
@@ -97,7 +100,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(10, 40, false);
+        return new TickingRequest(TICK_RATE_BURNING, TICK_RATE_IDLE, false);
     }
 
     @Override
@@ -177,8 +180,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
             int srcAmt = source.getEssentiaAmount(sourceSide);
             if (!canOut) continue;
             if (srcType == null) continue;
-            String srcTag = srcType.getTag();
-            if (!srcTag.equals("ignis") && !srcTag.equals("potentia") && !srcTag.equals("energy")) continue;
+            // 所有要素均可作为燃料（火/能量效率更高，其他要素 1/2）
 
             if (space <= 0) return;
 
@@ -187,7 +189,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
             if (taken > 0) {
                 storedEssentia += taken;
                 currentAspect = srcType;
-                suctionAspect = srcType;
+                // suctionAspect 固定为 null（通配吸力），不锁定单一类型
                 setChanged();
                 return;
             }
@@ -240,9 +242,25 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
     private boolean startBurning() {
         if (currentAspect == null) currentAspect = Aspect.FIRE;
 
-        boolean isPotentia = currentAspect != null && (currentAspect == Aspect.ENERGY || currentAspect.getTag().equals("potentia") || currentAspect.getTag().equals("energy"));
-        int burnTime = isPotentia ? (int)(BASE_BURN_TICKS / 1.6f) : BASE_BURN_TICKS / 2;
-        double power = isPotentia ? BASE_AE_PER_TICK * 1.6 : BASE_AE_PER_TICK;
+        String tag = currentAspect.getTag();
+        boolean isPotentia = currentAspect == Aspect.ENERGY || tag.equals("potentia") || tag.equals("energy");
+        boolean isOther = !tag.equals("ignis") && !isPotentia;
+
+        int burnTime;
+        double power;
+        if (isPotentia) {
+            // 能量：1.6 倍功率，燃烧更久
+            burnTime = (int)(BASE_BURN_TICKS / 1.6f);
+            power = BASE_AE_PER_TICK * 1.6;
+        } else if (isOther) {
+            // 其他所有要素：基础效率的 1/2
+            burnTime = BASE_BURN_TICKS / 2;
+            power = BASE_AE_PER_TICK / 2.0;
+        } else {
+            // 火：基础效率
+            burnTime = BASE_BURN_TICKS / 2;
+            power = BASE_AE_PER_TICK;
+        }
 
         burnTicksRemaining = burnTime;
         totalBurnTicks = burnTime;
@@ -254,17 +272,16 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
     @Override public boolean canInputFrom(Direction side) { return true; }
     @Override public boolean canOutputTo(Direction side) { return true; }
     @Override public void setSuction(Aspect aspect, int amount) {
-        this.suctionAspect = aspect;
+        // 通配吸力：始终吸所有源质类型，忽略外部设置
     }
     @Override public Aspect getSuctionType(Direction side) {
-        return suctionAspect;
+        return null; // null = 通配吸力：管道可输送任意类型源质
     }
     @Override public int getSuctionAmount(Direction side) { return 128; }
 
     private boolean isFuelAspect(Aspect aspect) {
-        if (aspect == null) return false;
-        String tag = aspect.getTag();
-        return tag.equals("ignis") || tag.equals("potentia") || tag.equals("energy");
+        // 所有要素均可作为燃料（火/能量效率更高，其他要素 1/2）
+        return aspect != null;
     }
 
     @Override
@@ -298,11 +315,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
     @Override public boolean renderExtendedTube() { return false; }
 
     public void setSuctionType(Aspect aspect) {
-        if (aspect == Aspect.FIRE || aspect == Aspect.ENERGY) {
-            suctionAspect = aspect;
-            setChanged();
-            markForUpdate();
-        }
+        // 通配吸力模式下无需设置类型；保留方法避免编译错误
     }
 
     public int getStoredEssentia() { return storedEssentia; }
@@ -338,7 +351,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         storedEnergy = tag.getDouble("StoredEnergy");
         if (storedEnergy > MAX_ENERGY_STORAGE) storedEnergy = MAX_ENERGY_STORAGE;
         if (tag.contains("AspectTag")) currentAspect = Aspect.getAspect(tag.getString("AspectTag"));
-        if (tag.contains("SuctionTag")) suctionAspect = Aspect.getAspect(tag.getString("SuctionTag"));
+        // suctionAspect 固定为 null（通配吸力），不读取 SuctionTag
     }
 
     @Override
@@ -352,6 +365,6 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         tag.putInt("StoredEssentia", storedEssentia);
         tag.putDouble("StoredEnergy", storedEnergy);
         if (currentAspect != null) tag.putString("AspectTag", currentAspect.getTag());
-        if (suctionAspect != null) tag.putString("SuctionTag", suctionAspect.getTag());
+        // suctionAspect 固定为 null（通配吸力），不写入 SuctionTag
     }
 }

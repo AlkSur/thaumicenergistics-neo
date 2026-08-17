@@ -53,6 +53,9 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
     /** 抽取颜色在没有新抽取后保持点亮的时间（ms），超时清除。 */
     private static final long TIME_TO_CLEAR = 500L;
 
+    /** 懒 tick 周期：固定 30 tick（vis 传输为低频操作，无需实时轮询）。 */
+    private static final int TICK_RATE = 30;
+
     private static final String NBT_KEY_UID = "uid";
     private static final String NBT_KEY_IS_PROVIDER = "isProvider";
 
@@ -290,7 +293,7 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(30, 30, false);
+        return new TickingRequest(TICK_RATE, TICK_RATE, false);
     }
 
     @Override

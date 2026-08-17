@@ -8,11 +8,13 @@
     "ae2.MixinCraftingTreeProcess",
     "ae2.MixinAbstractTerminalPart",
     "ae2.MixinConfigMenuInventory",
+    "ae2.MixinMEStorageMenuAccessors",
     "tc.MixinAspect",
     "tc.MixinVisRelayBlock"
   ],
   "client": [
     "ae2.MixinCraftConfirmScreen",
+    "ae2.MixinMEStorageScreen",
     "tc.ResearchPageIndexMixin",
     "tc.MixinThaumonomiconScreen"
   ],

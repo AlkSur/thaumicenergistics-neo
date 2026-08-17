@@ -51,7 +51,6 @@ import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.crafting.IArcaneRecipe;
 
 import thaumicenergistics.api.grid.IEssentiaGrid;
-import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.tc.ArcaneCraftingPattern;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.inventory.HandlerKnowledgeCore;
@@ -314,7 +313,6 @@ public class TileArcaneAssembler extends ThETileBase
 
         boolean enoughVis = hasEnoughVisForCraft();
         if (!enoughVis) {
-            ThaumicEnergistics.LOG.debug("[AA] craftingTick: vis 不足，等待补充 (storedVis cvis={})", storedVis.visSize());
             return TickRateModulation.SAME;
         }
 
@@ -331,7 +329,6 @@ public class TileArcaneAssembler extends ThETileBase
             long inserted = storage.getInventory().insert(
                     outputKey, output.getCount(), Actionable.SIMULATE, actionSource);
             if (inserted < output.getCount()) {
-                ThaumicEnergistics.LOG.debug("[AA] craftingTick: 产物无法插入网络(模拟 inserted={}/{})，等待", inserted, output.getCount());
                 return TickRateModulation.SAME;
             }
 
@@ -339,7 +336,6 @@ public class TileArcaneAssembler extends ThETileBase
 
             storage.getInventory().insert(
                     outputKey, output.getCount(), Actionable.MODULATE, actionSource);
-            ThaumicEnergistics.LOG.debug("[AA] craftingTick: 完成！插入产物 {}x{} 到网络", outputKey, output.getCount());
 
             isCrafting = false;
             currentRecipe = null;
@@ -359,11 +355,8 @@ public class TileArcaneAssembler extends ThETileBase
             double extracted = energy.extractAEPower(need, Actionable.MODULATE, PowerMultiplier.CONFIG);
             if (extracted >= need * 0.9) {
                 craftTickCounter += ticksSinceLast;
-                ThaumicEnergistics.LOG.debug("[AA] craftingTick: 推进 {}/{} (抽电 {}/{})", craftTickCounter, ticksPerCraft, extracted, need);
                 // 节流同步合成进度到客户端（GUI 第7格进度条动画）
                 maybeMarkVisDirty();
-            } else {
-                ThaumicEnergistics.LOG.debug("[AA] craftingTick: 能量不足 (抽到 {}/{})，不推进", extracted, need);
             }
         }
 
@@ -446,19 +439,13 @@ public class TileArcaneAssembler extends ThETileBase
             ArcaneAssemblerPattern ap = buildArcanePattern(acp);
             if (ap != null) {
                 result.add(ap);
-                ThaumicEnergistics.LOG.debug("[AA] getAvailablePatterns: pattern primaryOutput={}, definition={}",
-                        ap.getPrimaryOutput(), ap.getDefinition());
             }
         }
-        ThaumicEnergistics.LOG.debug("[AA] getAvailablePatterns: kCore valid={}, handler patterns={}, returned={}",
-                !kCore.isEmpty(), patterns.size(), result.size());
         return result;
     }
 
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
-        ThaumicEnergistics.LOG.info("[AA] pushPattern(provider) called, pattern={}, isArcanePattern={}",
-                patternDetails, patternDetails instanceof ArcaneAssemblerPattern);
         if (patternDetails instanceof ArcaneAssemblerPattern arcanePattern) {
             return beginCrafting(arcanePattern);
         }
@@ -490,9 +477,6 @@ public class TileArcaneAssembler extends ThETileBase
     private boolean beginCrafting(ArcaneAssemblerPattern arcanePattern) {
         AspectList aspects = arcanePattern.getAspects();
         ItemStack result = arcanePattern.getResultStack();
-        ThaumicEnergistics.LOG.info("[AA] beginCrafting: isCrafting={}, active={}, aspectsEmpty={}, resultEmpty={}",
-                isCrafting, mainNode.isActive(),
-                aspects == null || aspects.isEmpty(), result.isEmpty());
         if (isCrafting || !mainNode.isActive()) return false;
         if (aspects == null || aspects.isEmpty() || result.isEmpty()) return false;
 
@@ -504,7 +488,6 @@ public class TileArcaneAssembler extends ThETileBase
         this.internalInventory.setItem(TARGET_SLOT, result.copy());
         setChanged();
         markForUpdate();
-        ThaumicEnergistics.LOG.info("[AA] beginCrafting: STARTED, result={}, aspects={}", result, aspects.visSize());
         return true;
     }
 
@@ -593,7 +576,6 @@ public class TileArcaneAssembler extends ThETileBase
             // 守卫 getGrid()!=null：装配器未连 ME 网络（无相邻 cable）时 getGrid() 为 null，
             // 此时 requestUpdate 内部 node.getGrid().getCraftingService() 会 NPE，导致 kCore 插入事务回滚 → "无法绑定"。
             if (level != null && !level.isClientSide() && mainNode.getGrid() != null) {
-                ThaumicEnergistics.LOG.info("[AA] kCore slot changed → requestUpdate");
                 ICraftingProvider.requestUpdate(mainNode);
             }
         }

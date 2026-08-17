@@ -60,7 +60,6 @@ public class EssentiaExportBusPart extends IOBusPart
 
     private static final double IDLE_POWER = 0.5;
     private static final double TRANSFER_POWER = EssentiaConversionHelper.AE_PER_ESSENTIA;
-    private static final int TRANSFER_RATE = 8;
 
     private boolean isWorkingFlag = false;
 
@@ -69,6 +68,14 @@ public class EssentiaExportBusPart extends IOBusPart
             keyType -> keyType == AEssentiaKeyType.INSTANCE);
 
     private long storedEnergy = 0;
+
+    /**
+     * 单次导出量 = 基础速率 8 × 每 tick 操作次数（受加速卡影响）。
+     * AE2 加速卡语义：0卡=1、1卡=8、2卡=32、3卡=64、4卡=96（getOperationsPerTick）。
+     */
+    private long getExportRate() {
+        return 8L * Math.max(1, getOperationsPerTick());
+    }
 
     public EssentiaExportBusPart(IPartItem<?> partItem) {
         super(TickRates.ExportBus, Set.of(AEssentiaKeyType.INSTANCE), partItem);
@@ -122,7 +129,7 @@ public class EssentiaExportBusPart extends IOBusPart
         if (key == null) return false;
 
         long extracted = grid.getStorageService().getInventory().extract(
-                key, TRANSFER_RATE, Actionable.MODULATE, IActionSource.ofMachine(this));
+                key, getExportRate(), Actionable.MODULATE, IActionSource.ofMachine(this));
         if (extracted <= 0) return false;
 
         // 尝试注入到相邻方块：先 IAspectContainer，再回退到 IEssentiaTransport

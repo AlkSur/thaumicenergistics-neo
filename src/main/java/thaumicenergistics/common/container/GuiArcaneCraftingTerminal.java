@@ -11,17 +11,13 @@ import appeng.client.gui.style.ScreenStyle;
 
 import java.util.Map;
 
-public class GuiArcaneCraftingTerminal extends MEStorageScreen<ContainerArcaneCraftingTerminal> {
+import org.anti_ad.mc.ipn.api.IPNIgnore;
 
-    /** 6 个要素图标位置（左上角坐标） */
-    private static final int[][] ASPECT_POSITIONS = {
-            {10, 95},   // 左列 第1行
-            {10, 112},  // 左列 第2行
-            {10, 128},  // 左列 第3行
-            {80, 95},   // 右列 第1行
-            {80, 112},  // 右列 第2行
-            {80, 128},  // 右列 第3行
-    };
+/**
+ * 奥术合成终端 GUI。标 @IPNIgnore：IPN 一键整理完全跳过此界面（不渲染排序按钮、不执行整理）。
+ */
+@IPNIgnore
+public class GuiArcaneCraftingTerminal extends MEStorageScreen<ContainerArcaneCraftingTerminal> {
 
     private static final int ICON_SIZE = 14;
 
@@ -29,9 +25,6 @@ public class GuiArcaneCraftingTerminal extends MEStorageScreen<ContainerArcaneCr
                                      Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
     }
-
-    /** 合成结果槽锚点 Y（首次计算缓存，避免每帧遍历 slots）。 */
-    private int cachedAnchorY = -1;
 
     @Override
     public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
@@ -42,22 +35,17 @@ public class GuiArcaneCraftingTerminal extends MEStorageScreen<ContainerArcaneCr
         Map<String, Integer> aspectMap = this.menu.getParsedAspects();
         if (aspectMap.isEmpty()) return;
 
-        // 获取合成结果槽的 Y 位置作为锚点（槽位置不变，首次计算后缓存，避免每帧遍历）
-        int anchorY;
-        if (cachedAnchorY < 0) {
-            for (var slot : this.menu.slots) {
-                // CRAFTING_RESULT 槽在 style JSON 中 bottom:140
-                if (slot instanceof appeng.menu.slot.AppEngCraftingSlot) {
-                    cachedAnchorY = slot.y;
-                    break;
-                }
+        // 锚点取合成结果槽的 Y：圆环紧贴结果槽左侧，窗口缩放时随槽位一起移动
+        int anchorY = -1;
+        for (var slot : this.menu.slots) {
+            if (slot instanceof appeng.menu.slot.AppEngCraftingSlot) {
+                anchorY = slot.y;
+                break;
             }
-            // 若找不到锚点则回退到硬编码值
-            if (cachedAnchorY < 0) cachedAnchorY = 95;
         }
-        anchorY = cachedAnchorY;
+        if (anchorY < 0) anchorY = 95;
 
-        // 要素圆圈 Y = 锚点 + 偏移（-16/1/17，对应纹理 95/112/128）
+        // 两列三行：左列 x=10，右列 x=80；行偏移对应三行圆环
         int[] aspectOffsets = { -16, 1, 17 };
 
         int index = 0;

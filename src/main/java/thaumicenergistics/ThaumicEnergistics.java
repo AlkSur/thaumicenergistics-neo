@@ -63,6 +63,8 @@ public final class ThaumicEnergistics {
 
         thaumicenergistics.common.network.ThENetworking.init(modBus);
 
+        thaumicenergistics.common.blocks.ThEWrenchHandler.register();
+
         modBus.addListener(this::registerCapabilities);
 
         PartModels.registerModels(
@@ -147,7 +149,14 @@ public final class ThaumicEnergistics {
         event.register(ModMenuTypes.ESSENTIA_CELL_WORKBENCH.get(), GuiEssentiaCellWorkbench::new);
         event.register(ModMenuTypes.EVC.get(), GuiEssentiaVibrationChamber::new);
         event.register(ModMenuTypes.ARCANE_ASSEMBLER.get(), GuiArcaneAssembler::new);
-        event.register(ModMenuTypes.ESSENTIA_TERMINAL.get(), GuiEssentiaCellTerminal::new);
+        event.register(ModMenuTypes.ESSENTIA_TERMINAL.get(),
+                (EssentiaTerminalMenu menu, Inventory inv, Component title)
+                        -> new GuiEssentiaTerminal(menu, inv, title,
+                        StyleManager.loadStyleDoc("/screens/terminals/terminal.json")));
+        event.register(ModMenuTypes.WIRELESS_ESSENTIA_TERMINAL.get(),
+                (EssentiaTerminalMenu menu, Inventory inv, Component title)
+                        -> new GuiEssentiaTerminal(menu, inv, title,
+                        StyleManager.loadStyleDoc("/screens/terminals/wireless_terminal.json")));
         event.register(ModMenuTypes.KNOWLEDGE_INSCRIBER.get(), GuiKnowledgeInscriber::new);
         event.register(ModMenuTypes.DISTILLATION_ENCODER.get(), GuiDistillationPatternEncoder::new);
 

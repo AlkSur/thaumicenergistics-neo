@@ -7,13 +7,13 @@ import java.util.Map;
 
 import net.minecraft.resources.ResourceLocation;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridServiceProvider;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.storage.IStorageService;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
-import appeng.api.networking.security.IActionSource;
 import thaumicenergistics.api.grid.IEssentiaGrid;
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.api.storage.IAspectStack;
@@ -101,11 +101,28 @@ public class EssentiaGridService implements IEssentiaGrid, IGridServiceProvider 
     @Override
     public long injectEssentia(ResourceLocation aspectId, long amount, boolean simulate) {
         if (amount <= 0) return 0;
-        if (!simulate) {
-            long current = monitor.get(aspectId);
-            monitor.set(aspectId, current + amount);
+        // 写入 AE2 原生存储（源质存储元件/存储总线可见、持久化）
+        var nativeInjected = injectNative(aspectId, amount, simulate);
+        if (nativeInjected < amount) {
+            // 原生存储空间不足时剩余部分退回内存 monitor（供注魔供应器等内部读取）
+            long remaining = amount - nativeInjected;
+            if (!simulate) {
+                long current = monitor.get(aspectId);
+                monitor.set(aspectId, current + remaining);
+            }
+            return amount - nativeInjected - remaining; // 全部接受（monitor 兜底）
         }
-        return 0;
+        return 0; // 全部写入原生存储
+    }
+
+    private long injectNative(ResourceLocation aspectId, long amount, boolean simulate) {
+        var storage = getNativeStorage();
+        if (storage == null) return 0;
+        var key = AEssentiaKey.of(aspectId);
+        if (key == null) return 0;
+        return StorageHelper.poweredInsert(
+                grid.getEnergyService(), storage, key, amount,
+                IActionSource.empty(), simulate ? Actionable.SIMULATE : Actionable.MODULATE);
     }
 
     @Override

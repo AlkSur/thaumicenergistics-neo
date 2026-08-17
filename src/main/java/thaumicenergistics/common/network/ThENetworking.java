@@ -50,6 +50,20 @@ public final class ThENetworking {
                 (pkt, ctx) -> pkt.handleOnClient(ctx)
         );
 
+        // EssentiaTerminalFillC2SPacket — C2S（客户端→服务端，源质终端右键装罐）
+        registrar.playToServer(
+                EssentiaTerminalFillC2SPacket.TYPE,
+                EssentiaTerminalFillC2SPacket.STREAM_CODEC,
+                (pkt, ctx) -> pkt.handleOnServer(ctx)
+        );
+
+        // EssentiaTerminalDepositC2SPacket — C2S（客户端→服务端，手持源质容器右键存入网络）
+        registrar.playToServer(
+                EssentiaTerminalDepositC2SPacket.TYPE,
+                EssentiaTerminalDepositC2SPacket.STREAM_CODEC,
+                (pkt, ctx) -> pkt.handleOnServer(ctx)
+        );
+
         // ResearchGateErrorPacket — S2C（服务端→客户端，研究未解锁拦截提示，携带研究键）
         registrar.playToClient(
                 ResearchGateErrorPacket.TYPE,

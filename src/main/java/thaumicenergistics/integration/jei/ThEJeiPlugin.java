@@ -49,9 +49,8 @@ public class ThEJeiPlugin implements IModPlugin {
             Class.forName("tamaized.ae2jeiintegration.api.integrations.jei.IngredientConverters");
             Class.forName("thaumicenergistics.integration.jei.Ae2JeiCompat")
                     .getMethod("register").invoke(null);
-            ThaumicEnergistics.LOG.info("[JEI] AE2-JEI-Integration detected, essentia drag-conversion registered");
         } catch (ClassNotFoundException e) {
-            ThaumicEnergistics.LOG.info("[JEI] AE2-JEI-Integration not present, essentia drag-conversion unavailable (optional)");
+            // AE2-JEI-Integration 未安装：跳过源质拖拽转换（可选功能，不影响其他 JEI 功能）
         } catch (ReflectiveOperationException e) {
             ThaumicEnergistics.LOG.warn("[JEI] AE2-JEI-Integration registration failed: {}", e.toString());
         }
@@ -83,7 +82,6 @@ public class ThEJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
-        ThaumicEnergistics.LOG.info("[JEI] Registering ThEUseCraftingRecipeTransfer for ArcaneCraftingTerminal");
         // 注册 IRecipeTransferInfo 让 JEI 显示 "+" 按钮
         registration.addRecipeTransferHandler(new ArcaneCraftingTransferInfo());
         registration.addRecipeTransferHandler(new ArcaneRecipeTransferInfo());

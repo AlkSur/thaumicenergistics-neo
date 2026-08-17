@@ -34,11 +34,11 @@ public enum VibrationChamberProvider implements IBlockComponentProvider, IServer
         CompoundTag data = accessor.getServerData();
         if (data == null || data.isEmpty()) return;
 
-        // 吸力类型
+        // 当前仓内源质类型（通配吸力模式下显示仓内实际燃料）
         if (data.contains(TAG_ASPECT)) {
             String aspect = data.getString(TAG_ASPECT);
             String aspectKey = "thaumicenergistics.aspect." + aspect;
-            tooltip.add(Component.translatable("thaumicenergistics.jade.suction_type",
+            tooltip.add(Component.translatable("thaumicenergistics.jade.current_aspect",
                     Component.translatable(aspectKey)));
         }
 
@@ -93,8 +93,8 @@ public enum VibrationChamberProvider implements IBlockComponentProvider, IServer
             data.putDouble(TAG_ENERGY_MAX, chamber.getMaxEnergyStorage());
             data.putDouble(TAG_ENERGY_OUTPUT, chamber.getMaxOutputPerTick());
             data.putBoolean(TAG_GENERATING, chamber.isActive());
-            if (chamber.getSuctionType(null) != null) {
-                data.putString(TAG_ASPECT, chamber.getSuctionType(null).getTag());
+            if (chamber.getEssentiaType(null) != null) {
+                data.putString(TAG_ASPECT, chamber.getEssentiaType(null).getTag());
             }
         }
     }

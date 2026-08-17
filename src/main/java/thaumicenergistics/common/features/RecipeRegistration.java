@@ -128,7 +128,7 @@ public final class RecipeRegistration {
                 "lBl",
                 "QPQ",
                 'Q', ae("quartz_glass"),
-                'l', new ItemStack(Items.LAPIS_LAZULI, 4),
+                'l', new ItemStack(Items.LAPIS_LAZULI, 1),
                 'B', tc("zombie_brain"),
                 'P', ae("calculation_processor"));
 
@@ -138,7 +138,7 @@ public final class RecipeRegistration {
                 "qWq",
                 "FqA",
                 'A', tc("air_shard"),
-                'q', new ItemStack(Items.QUARTZ, 4),
+                'q', new ItemStack(Items.QUARTZ, 1),
                 'F', tc("fire_shard"),
                 'W', ae("certus_quartz_wrench"));
 
@@ -156,22 +156,23 @@ public final class RecipeRegistration {
 
         ESSENTIA_IMPORT_BUS = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIABUSES", stack(ModItems.ESSENTIA_IMPORT_BUS),
                 new AspectList().add(Aspect.FIRE, 2).add(Aspect.EARTH, 2).add(Aspect.WATER, 1),
-                "JDJ",
+                // 注意：TC ShapedArcaneRecipe 要求模式为矩形（各行等长），删 J 后必须补空格占位
+                "JD ",
                 "IFI",
                 "   ",
-                'J', tc("warded_jar"),
+                'J', tc("jar_of_essentia"),
                 'D', stack(ModItems.DIFFUSION_CORE),
-                'I', new ItemStack(Items.IRON_INGOT, 2),
+                'I', new ItemStack(Items.IRON_INGOT, 1),
                 'F', tc("essentia_filter"));
 
         ESSENTIA_EXPORT_BUS = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIABUSES", stack(ModItems.ESSENTIA_EXPORT_BUS),
                 new AspectList().add(Aspect.FIRE, 2).add(Aspect.EARTH, 2).add(Aspect.WATER, 1),
-                "JCJ",
+                "JC ",
                 "IFI",
                 "   ",
-                'J', tc("warded_jar"),
+                'J', tc("jar_of_essentia"),
                 'C', stack(ModItems.COALESCENCE_CORE),
-                'I', new ItemStack(Items.IRON_INGOT, 2),
+                'I', new ItemStack(Items.IRON_INGOT, 1),
                 'F', tc("essentia_filter"));
 
         ESSENTIA_STORAGE_BUS = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIABUSES", stack(ModItems.ESSENTIA_STORAGE_BUS),
@@ -182,7 +183,7 @@ public final class RecipeRegistration {
                 'D', stack(ModItems.DIFFUSION_CORE),
                 'C', stack(ModItems.COALESCENCE_CORE),
                 'F', tc("essentia_filter"),
-                'I', new ItemStack(Items.IRON_INGOT, 2),
+                'I', new ItemStack(Items.IRON_INGOT, 1),
                 'G', ae("quartz_glass"));
 
         KNOWLEDGE_INSCRIBER_BLOCK = ThaumcraftApi.addArcaneCraftingRecipe("KNOWLEDGEINSCRIBER", stack(ModBlocks.KNOWLEDGE_INSCRIBER),
@@ -190,7 +191,7 @@ public final class RecipeRegistration {
                 "ILI",
                 " T ",
                 "IPI",
-                'I', new ItemStack(Items.IRON_INGOT, 4),
+                'I', new ItemStack(Items.IRON_INGOT, 1),
                 'L', MONITORS,
                 'T', tc("thaumonomicon"),
                 'P', ae("logic_processor"));
@@ -200,7 +201,7 @@ public final class RecipeRegistration {
                 "ILI",
                 " G ",
                 "IPI",
-                'I', new ItemStack(Items.IRON_INGOT, 4),
+                'I', new ItemStack(Items.IRON_INGOT, 1),
                 'L', MONITORS,
                 'G', tc("thaumometer"),
                 'P', ae("engineering_processor"));
@@ -252,7 +253,7 @@ public final class RecipeRegistration {
         // 6. 源流接口
         VIS_INTERFACE = ThaumcraftApi.addShapelessArcaneCraftingRecipe("VISINTERFACE", stack(ModItems.VIS_INTERFACE),
                 new AspectList().add(Aspect.AIR, 2).add(Aspect.EARTH, 2).add(Aspect.FIRE, 2).add(Aspect.WATER, 2).add(Aspect.ORDER, 2).add(Aspect.ENTROPY, 2),
-                tc("balance_shard"),
+                tc("balanced_shard"),
                 ae("me_p2p_tunnel"));
 
         // 7. 原质振荡室
@@ -293,27 +294,38 @@ public final class RecipeRegistration {
                 tc("salis_mundus"));
 
         // 3. 奥术装配器
+        // 权杖要求：6 个原质要素值全满（满充能）。createFullVisScepter() 生成"满充能"预期栈，
+        // TC port 的 InfusionRecipe.hasExpectedComponents 会逐键比对 custom_data——
+        // 预期键必须全部存在于实物且数值相等 → 未满充能的权杖无法匹配。
+        // 组件数：8 个（1.7.10 原版一致）。实测 9 组件（含世界盐）注魔祭坛无法启动——
+        // TC 自身所有注魔配方组件数上限就是 8。
         ARCANE_ASSEMBLER = ThaumcraftApi.addInfusionCraftingRecipe("ARCANEASSEMBLER", stack(ModBlocks.ARCANE_ASSEMBLER),
                 5, new AspectList().add(Aspect.CRAFT, 64).add(Aspect.EXCHANGE, 32).add(Aspect.AURA, 16).add(Aspect.MAGIC, 16).add(Aspect.METAL, 8).add(Aspect.CRYSTAL, 8),
                 ae("molecular_assembler"),
                 tc("fire_shard"),
                 tc("entropy_shard"),
                 tc("order_shard"),
-                tc("balance_shard"),
+                tc("balanced_shard"),
                 tc("water_shard"),
                 tc("earth_shard"),
                 tc("air_shard"),
-                tc("salis_mundus"),
                 createFullVisScepter());
-
-
-
     }
 
+    /**
+     * 生成"满充能"银木神秘权杖作为注魔配方的预期组件。
+     *
+     * ⚠ 关键：不要调用 TCVisHelper.setWandParts()！玩家实际合成的权杖（ArcaneSceptreRecipe →
+     * WandCastingItem.createWandFor）是纯物品，custom_data 只有充能时写入的 tc_vis_* 键，
+     * 没有 tc_wand_rod/tc_wand_cap。若在预期侧写入这些键，hasExpectedComponents 逐键比对时
+     * 会因实物缺少而永不匹配——满充能权杖也放不进去。
+     *
+     * getWandMaxVis 用 fallbackVariant "silverwood_thaumium_scepter" 解析即可得 15000
+     * （银木杆 10000 × 权杖 1.5），无需依赖栈上的部件数据。
+     */
     private static ItemStack createFullVisScepter() {
         ItemStack scepter = tc("silverwood_thaumium_scepter");
         if (scepter.isEmpty()) return scepter;
-        TCVisHelper.setWandParts(scepter, "silverwood", "thaumium", true);
         int max = TCVisHelper.getWandMaxVis(scepter, "silverwood_thaumium_scepter");
         for (Aspect a : Aspect.getPrimalAspects()) {
             TCVisHelper.storeVis(scepter, a, max, max);

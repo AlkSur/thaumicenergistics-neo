@@ -82,8 +82,6 @@ public class ThEUseCraftingRecipeTransfer
             boolean doTransfer) {
 
         var recipe = recipeHolder.value();
-        ThaumicEnergistics.LOG.info("[JEI] transferRecipe called, recipeId={}, doTransfer={}, player={}",
-                recipeHolder.id(), doTransfer, player.getName().getString());
         if (recipe.getType() != RecipeType.CRAFTING) {
             ThaumicEnergistics.LOG.warn("[JEI] Not a crafting recipe, type={}", recipe.getType());
             return helper.createInternalError();
@@ -96,16 +94,14 @@ public class ThEUseCraftingRecipeTransfer
         }
 
         boolean craftMissing = AbstractContainerScreen.hasControlDown();
-        // 自行构建 slot→ingredient 映射（0-8 对应 3x3 合成格），
-        // 不依赖 helper.getGuiSlotIndexToIngredientMap（需要 IRecipeTransferInfo 才能正确工作）
-        var slotToIngredientMap = buildSlotToIngredientMap(recipe);
+        // 用 JEI 官方映射 helper.getGuiSlotIndexToIngredientMap：配方居中摆入 3x3 网格，
+        // 键空间与 JEI 输入槽视图完全一致。之前用 ensure3by3CraftingMatrix（左上对齐填充），
+        // 对非 3x3 配方（如 2x2 笔与墨）索引错位，导致缺失高亮画到错误的格子上。
+        var slotToIngredientMap = helper.getGuiSlotIndexToIngredientMap(recipeHolder);
         var missingSlots = menu.findMissingIngredients(slotToIngredientMap);
-        ThaumicEnergistics.LOG.info("[JEI] missingSlots: missing={}, craftable={}, total={}",
-                missingSlots.missingSlots().size(), missingSlots.craftableSlots().size(), missingSlots.totalSize());
 
         // 全部缺失 → 红色，无法点击
         if (missingSlots.missingSlots().size() == slotToIngredientMap.size()) {
-            ThaumicEnergistics.LOG.info("[JEI] All items missing, returning NO_ITEMS error");
             var inputSlots = display.getSlotViews(RecipeIngredientRole.INPUT);
             var missingSlotViews = missingSlots.missingSlots().stream()
                     .map(idx -> idx < inputSlots.size() ? inputSlots.get(idx) : null)
@@ -119,7 +115,8 @@ public class ThEUseCraftingRecipeTransfer
         if (!doTransfer) {
             if (missingSlots.totalSize() != 0) {
                 int color = missingSlots.anyMissing() ? ORANGE_PLUS_BUTTON_COLOR : BLUE_PLUS_BUTTON_COLOR;
-                return new MissingSlotsError(missingSlots, craftMissing, color);
+                // 有缺料 → USER_FACING 阻止转移（按钮不可点）；仅可合成（craftable）不阻止（可触发自动合成）
+                return new MissingSlotsError(missingSlots, craftMissing, color, missingSlots.anyMissing(), menu);
             }
             // 全部物品都有 → null = 绿色按钮
             return null;
@@ -145,42 +142,28 @@ public class ThEUseCraftingRecipeTransfer
         }
 
         var packet = new FillCraftingGridFromRecipePacket(recipeId, templateItems, craftMissing);
-        ThaumicEnergistics.LOG.info("[JEI] Sending FillCraftingGridFromRecipePacket, recipeId={}, templateCount={}, craftMissing={}",
-                recipeId, templateItems.stream().filter(s -> !s.isEmpty()).count(), craftMissing);
         PacketDistributor.sendToServer(packet);
 
         return null;
     }
 
     /**
-     * 根据配方构建 3x3 合成格的 slot index → ingredient 映射。
-     * 使用 CraftingRecipeUtil.ensure3by3CraftingMatrix 确保 9 格对齐，
-     * 与实际转移时的索引体系完全一致。
-     */
-    private static Map<Integer, Ingredient> buildSlotToIngredientMap(CraftingRecipe recipe) {
-        var ingredients = CraftingRecipeUtil.ensure3by3CraftingMatrix(recipe);
-        Map<Integer, Ingredient> map = new HashMap<>();
-        for (int i = 0; i < ingredients.size() && i < 9; i++) {
-            var ing = ingredients.get(i);
-            if (!ing.isEmpty()) {
-                map.put(i, ing);
-            }
-        }
-        return map;
-    }
-
-    /**
      * 缺失/可合成物品的预览错误渲染器。
      * 参考 AE2-JEI-Integration.UseCraftingRecipeTransfer.ErrorRenderer。
+     * 供奥术配方转移（ThEUseArcaneRecipeTransfer）复用。
+     * blockTransfer=true 时返回 ERROR（阻止转移，按钮灰/橙不可点）。
      */
-    private record MissingSlotsError(
+    public record MissingSlotsError(
             ContainerArcaneCraftingTerminal.MissingIngredientSlots indices,
             boolean craftMissing,
-            int color) implements IRecipeTransferError {
+            int color,
+            boolean blockTransfer,
+            ContainerArcaneCraftingTerminal menu) implements IRecipeTransferError {
 
         @Override
         public Type getType() {
-            return Type.COSMETIC;
+            // USER_FACING 阻止转移（allowsTransfer=false）且显示错误；COSMETIC 仅预览
+            return blockTransfer ? Type.USER_FACING : Type.COSMETIC;
         }
 
         @Override
@@ -195,16 +178,20 @@ public class ThEUseCraftingRecipeTransfer
             poseStack.pushPose();
             poseStack.translate(recipeX, recipeY, 0);
 
-            var slotViews = slots.getSlotViews(RecipeIngredientRole.INPUT);
-            for (int i = 0; i < slotViews.size(); i++) {
-                var slotView = slotViews.get(i);
+            // 用 JEI 槽视图 drawHighlight 画高亮（AE2-JEI-Integration 官方做法）。
+            // 不能用 menu.slots 的容器坐标：奥术终端槽位顺序与配方格不对应，
+            // 且 translate(recipeX,recipeY) 后再用相对坐标会双重偏移 → 红框画到屏幕外。
+            var inputSlots = slots.getSlotViews(RecipeIngredientRole.INPUT);
+            for (int i = 0; i < 9; i++) {
                 boolean missing = indices.missingSlots().contains(i);
                 boolean craftable = indices.craftableSlots().contains(i);
-                if (missing || craftable) {
-                    slotView.drawHighlight(
-                            guiGraphics,
-                            missing ? RED_SLOT_HIGHLIGHT_COLOR : BLUE_SLOT_HIGHLIGHT_COLOR);
-                }
+                if (!missing && !craftable) continue;
+                if (i >= inputSlots.size()) continue;
+                var slotView = inputSlots.get(i);
+                slotView.drawHighlight(guiGraphics,
+                        missing ? RED_SLOT_HIGHLIGHT_COLOR : BLUE_SLOT_HIGHLIGHT_COLOR);
+                ThaumicEnergistics.LOG.info("[JEI-Transfer] showError slot={} missing={} craftable={}",
+                        i, missing, craftable);
             }
 
             poseStack.popPose();
@@ -221,15 +208,15 @@ public class ThEUseCraftingRecipeTransfer
             int craftable = indices.craftableSlots().size();
             if (missing > 0) {
                 tooltip.add(net.minecraft.network.chat.Component.translatable(
-                        "jei.tooltip.transfer.missing", missing));
+                        "thaumicenergistics.jei.transfer.missing", missing));
             }
             if (craftable > 0) {
                 tooltip.add(net.minecraft.network.chat.Component.translatable(
-                        "jei.tooltip.transfer.craftable", craftable));
+                        "thaumicenergistics.jei.transfer.craftable", craftable));
             }
             if (craftMissing) {
                 tooltip.add(net.minecraft.network.chat.Component.translatable(
-                        "jei.tooltip.transfer.ctrl.click"));
+                        "thaumicenergistics.jei.transfer.ctrl_click"));
             }
         }
     }

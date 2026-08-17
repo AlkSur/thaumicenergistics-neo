@@ -35,7 +35,7 @@ side="BOTH"
 [[dependencies.thaumicenergistics]]
 modId="thaumcraft"
 type="required"
-versionRange="[0,)"
+versionRange="[0.2.2.95,)"
 ordering="AFTER"
 side="BOTH"
 

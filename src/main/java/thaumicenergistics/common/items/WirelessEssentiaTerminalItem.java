@@ -11,7 +11,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import appeng.helpers.WirelessTerminalMenuHost;
 import appeng.items.tools.powered.WirelessTerminalItem;
 import appeng.menu.locator.ItemMenuHostLocator;
-import appeng.menu.me.common.MEStorageMenu;
 
 /**
  * 无线源质终端物品。继承 AE2 的WirelessTerminalItem
@@ -25,7 +24,7 @@ public class WirelessEssentiaTerminalItem extends WirelessTerminalItem {
 
     @Override
     public MenuType<?> getMenuType() {
-        return MEStorageMenu.WIRELESS_TYPE;
+        return thaumicenergistics.init.ModMenuTypes.WIRELESS_ESSENTIA_TERMINAL.get();
     }
 
     @Override

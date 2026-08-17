@@ -1,5 +1,7 @@
 package thaumicenergistics.integration.jei;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -24,9 +26,13 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import thaumcraft.integration.jei.JeiArcaneRecipe;
 import thaumcraft.integration.jei.ThaumcraftJeiPlugin;
-import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
 import thaumicenergistics.init.ModMenuTypes;
+
+import static appeng.integration.modules.itemlists.TransferHelper.BLUE_PLUS_BUTTON_COLOR;
+import static appeng.integration.modules.itemlists.TransferHelper.BLUE_SLOT_HIGHLIGHT_COLOR;
+import static appeng.integration.modules.itemlists.TransferHelper.ORANGE_PLUS_BUTTON_COLOR;
+import static appeng.integration.modules.itemlists.TransferHelper.RED_SLOT_HIGHLIGHT_COLOR;
 
 /**
  * 奥术合成终端专用的 JEI 奥术配方转移处理器。
@@ -65,13 +71,31 @@ public class ThEUseArcaneRecipeTransfer
             boolean maxTransfer,
             boolean doTransfer) {
 
-        ThaumicEnergistics.LOG.info("[JEI-Arcane] transferRecipe called, recipeId={}, doTransfer={}",
-                recipe.id(), doTransfer);
-
         boolean craftMissing = AbstractContainerScreen.hasControlDown();
 
-        // 预览：始终 null（绿色按钮），由服务端处理实际缺失
+        // 构建 3x3 合成格 slot→ingredient 映射，检测材料缺失（与普通配方一致）
+        var slotToIngredientMap = buildSlotToIngredientMap(recipe);
+        var missingSlots = menu.findMissingIngredients(slotToIngredientMap);
+
+        // 全部缺失 → 红色，无法点击
+        if (missingSlots.missingSlots().size() == slotToIngredientMap.size()) {
+            var inputSlots = display.getSlotViews(RecipeIngredientRole.INPUT);
+            var missingSlotViews = missingSlots.missingSlots().stream()
+                    .map(idx -> idx < inputSlots.size() ? inputSlots.get(idx) : null)
+                    .filter(Objects::nonNull)
+                    .toList();
+            return helper.createUserErrorForMissingSlots(
+                    appeng.core.localization.ItemModText.NO_ITEMS.text(), missingSlotViews);
+        }
+
+        // 预览：检查缺失情况，返回对应的错误渲染
         if (!doTransfer) {
+            if (missingSlots.totalSize() != 0) {
+                int color = missingSlots.anyMissing() ? ORANGE_PLUS_BUTTON_COLOR : BLUE_PLUS_BUTTON_COLOR;
+                // 有缺料 → Type.ERROR 阻止转移（按钮不可点），有料也不允许部分填充
+                return new ThEUseCraftingRecipeTransfer.MissingSlotsError(
+                        missingSlots, craftMissing, color, missingSlots.anyMissing(), menu);
+            }
             return null;
         }
 
@@ -88,10 +112,23 @@ public class ThEUseArcaneRecipeTransfer
         // 奥术配方不在 vanilla 配方管理器中，recipeId 传 null
         // 服务端会用 Ingredient.of(templateItems) 重建，然后从 ME 网络提取
         var packet = new FillCraftingGridFromRecipePacket(null, templateItems, craftMissing);
-        ThaumicEnergistics.LOG.info("[JEI-Arcane] Sending FillCraftingGridFromRecipePacket, templateCount={}",
-                templateItems.stream().filter(s -> !s.isEmpty()).count());
         PacketDistributor.sendToServer(packet);
 
         return null;
+    }
+
+    /**
+     * 根据奥术配方 inputs（9 槽 List<List<ItemStack>>）构建 3x3 合成格 slot → ingredient 映射。
+     */
+    private static Map<Integer, Ingredient> buildSlotToIngredientMap(JeiArcaneRecipe recipe) {
+        Map<Integer, Ingredient> map = new HashMap<>();
+        var inputs = recipe.inputs();
+        for (int i = 0; i < inputs.size() && i < 9; i++) {
+            var variants = inputs.get(i);
+            if (variants != null && !variants.isEmpty()) {
+                map.put(i, Ingredient.of(variants.stream()));
+            }
+        }
+        return map;
     }
 }

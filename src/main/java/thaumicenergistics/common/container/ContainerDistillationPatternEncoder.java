@@ -24,6 +24,7 @@ import thaumcraft.api.aspects.AspectList;
 import thaumcraft.common.research.TCResearchManager;
 import thaumcraft.common.research.ThaumometerScanManager;
 import thaumicenergistics.ThaumicEnergistics;
+import thaumicenergistics.common.container.slot.ReadOnlySlot;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.network.DistillationEncoderSetSourceC2SPacket;
@@ -98,20 +99,10 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
         for (int i = 0; i < SLOT_ASPECTS_COUNT; i++) {
             int y = SLOT_ASPECTS_Y + i * 18;
-            addSlot(new SlotItemHandler(aspectInventory, i, SLOT_ASPECTS_X, y) {
-                @Override
-                public boolean mayPlace(ItemStack s) { return false; }
-                @Override
-                public boolean mayPickup(Player p) { return false; }
-            });
+            addSlot(new ReadOnlySlot(aspectInventory, i, SLOT_ASPECTS_X, y));
         }
 
-        addSlot(new SlotItemHandler(aspectInventory, SLOT_ASPECTS_COUNT, SLOT_SELECTED_X, SLOT_SELECTED_Y) {
-            @Override
-            public boolean mayPlace(ItemStack s) { return false; }
-            @Override
-            public boolean mayPickup(Player p) { return false; }
-        });
+        addSlot(new ReadOnlySlot(aspectInventory, SLOT_ASPECTS_COUNT, SLOT_SELECTED_X, SLOT_SELECTED_Y));
 
         if (encoder != null) {
             // 源物品槽：ghost 模板（背包拖入不消耗——实际物品还在手里；空手点击清空；JEI 拖拽设置模板）

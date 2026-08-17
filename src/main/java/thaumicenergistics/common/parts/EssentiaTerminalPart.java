@@ -10,7 +10,6 @@ import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.api.util.KeyTypeSelection;
 import appeng.items.parts.PartModels;
-import appeng.menu.me.common.MEStorageMenu;
 import appeng.parts.PartModel;
 import appeng.parts.reporting.AbstractTerminalPart;
 import thaumicenergistics.ThaumicEnergistics;
@@ -54,7 +53,7 @@ public class EssentiaTerminalPart extends AbstractTerminalPart {
 
     @Override
     public MenuType<?> getMenuType(Player player) {
-        return MEStorageMenu.TYPE;
+        return thaumicenergistics.init.ModMenuTypes.ESSENTIA_TERMINAL.get();
     }
 
     @Override
