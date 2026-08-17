@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "thaumicenergistics:essentia_provider",
+    "thaumicenergistics:infusion_provider",
+    "thaumicenergistics:arcane_assembler",
+    "thaumicenergistics:essentia_vibration_chamber",
+    "thaumicenergistics:knowledge_inscriber",
+    "thaumicenergistics:essentia_cell_workbench",
+    "thaumicenergistics:distillation_encoder"
+  ]
+}
