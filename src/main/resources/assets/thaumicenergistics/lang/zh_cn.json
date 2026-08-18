@@ -1,4 +1,4 @@
-{
+﻿{
   "itemGroup.thaumicenergistics": "神秘能源",
   "block.thaumicenergistics.essentia_provider": "源质供应器",
   "block.thaumicenergistics.infusion_provider": "注魔供应器",
@@ -28,7 +28,7 @@
   "item.thaumicenergistics.essentia_storage_bus": "源质存储总线",
   "item.thaumicenergistics.essentia_terminal": "源质终端",
   "item.thaumicenergistics.arcane_crafting_terminal": "奥术合成终端",
-"gui.thaumicenergistics.ArcaneCraftingTerminal": "奥术合成终端",
+  "gui.thaumicenergistics.ArcaneCraftingTerminal": "奥术合成终端",
   "item.thaumicenergistics.essentia_level_emitter": "源质发信器",
   "item.thaumicenergistics.vis_interface": "要素中继接口",
   "tooltip.thaumicenergistics.essentia_import_bus.desc": "从相邻的源质容器抽取源质导入ME网络",
@@ -133,5 +133,17 @@
   "thaumicenergistics.gui.distillation_encoder.not_scanned": "未扫描",
   "thaumicenergistics.jei.transfer.missing": "缺少: %d",
   "thaumicenergistics.jei.transfer.craftable": "可合成: %d",
-  "thaumicenergistics.jei.transfer.ctrl_click": "按住 Ctrl 合成缺失物品"
+  "thaumicenergistics.jei.transfer.ctrl_click": "按住 Ctrl 合成缺失物品",
+  "block.thaumicenergistics.infusion_monitor": "韵魔观测器",
+  "thaumicenergistics.jade.monitor.title": "韵魔观测器",
+  "thaumicenergistics.jade.monitor.no_matrix": "未检测到注魔祭坛",
+  "thaumicenergistics.jade.monitor.instability": "不稳定度: %s (基础 %s + 祭坛 %s)",
+  "thaumicenergistics.jade.monitor.crafting": "注魔进行中",
+  "thaumicenergistics.jade.monitor.shortages": "源质缺口: %s",
+  "thaumicenergistics.jade.monitor.essence_ok": "源质充足",
+  "block.thaumicenergistics.alkusure86fumo": "Alkusure86 玩偶",
+  "tc.research_text.INFUSIONMONITOR.stage.1": "观测即是驾驭。你将魔导手册置于祭坛之侧，以侦测器窥探注魔的每一次脉动——灵光、裂隙、咒波的先兆，尽收眼底。当它与 ME 网络相连，观测者便真正睁开眼。",
+  "tc.research_text.INFUSIONMONITOR.stage.2": "韵魔观测器以魔导手册为钥、以网络为眼。放上手册并接入网络，它便会悬浮于虚空之中，如实告知你注魔之仪的风险——而按住右键，它将低语出更深层的告诫。",
+  "tc.research_name.INFUSIONMONITOR": "韵魔观测器",
+  "tc.research_name.GOLEMWIFIBACKPACK": "傀儡WiFi背包"
 }

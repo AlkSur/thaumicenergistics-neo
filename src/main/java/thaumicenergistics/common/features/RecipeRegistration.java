@@ -29,6 +29,8 @@ public final class RecipeRegistration {
     public static InfusionRecipe ESSENTIA_PROVIDER;
     public static InfusionRecipe INFUSION_PROVIDER;
     public static InfusionRecipe ARCANE_ASSEMBLER;
+    /** 韵魔观测器注魔配方。 */
+    public static InfusionRecipe INFUSION_MONITOR;
     // 奥术有序配方
     public static ShapedArcaneRecipe STORAGE_COMPONENT_1K;
     public static ShapedArcaneRecipe STORAGE_COMPONENT_4K;
@@ -310,6 +312,19 @@ public final class RecipeRegistration {
                 tc("earth_shard"),
                 tc("air_shard"),
                 createFullVisScepter());
+
+        // 4. 韵魔观测器
+        // 中央：原版侦测器；外围：元始护符 + 揭示护目镜 + 世界盐×2。
+        // 需要灵气：魔力×16、灵气(AURA)×32、感官(SENSES, tag=sensus)×16。
+        // 不稳定度 3（配方基础，参与"总不稳定 = 基础 + 祭坛对称度"，可自由调整：
+        // 1~2 低风险 / 3~5 中等 / 6~8 高）。
+        INFUSION_MONITOR = ThaumcraftApi.addInfusionCraftingRecipe("INFUSIONMONITOR", stack(ModBlocks.INFUSION_MONITOR),
+                3, new AspectList().add(Aspect.MAGIC, 16).add(Aspect.AURA, 32).add(Aspect.SENSES, 16),
+                new ItemStack(Items.OBSERVER),
+                tc("primal_charm"),
+                tc("goggles_revealing"),
+                tc("salis_mundus"),
+                tc("salis_mundus"));
     }
 
     /**

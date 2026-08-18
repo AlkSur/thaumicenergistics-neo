@@ -46,10 +46,13 @@ public record EssentiaTerminalFillC2SPacket(int containerId, ResourceLocation as
                     && ctx.player().containerMenu instanceof appeng.menu.me.common.MEStorageMenu menu
                     && menu instanceof thaumicenergistics.common.container.ThEEssentiaMenuAccess acc) {
                 var player = menu.getPlayerInventory().player;
-                // 源质物品：优先包携带的 sourceStack（客户端真实来源）；否则回退菜单 carried/主手
-                var source = !this.sourceStack.isEmpty() ? this.sourceStack
-                        : (!menu.getCarried().isEmpty() ? menu.getCarried()
-                           : player.getMainHandItem());
+                // ⚠ 必须用玩家真实栈（carried/主手）而非包里的拷贝：装罐会原地消耗空安瓿（shrink）
+                // 或修改罐子内容（setAspects）。若用 sourceStack（拷贝），消耗/修改不落真实物品——
+                // 空安瓿不消耗却能凭空得到满安瓿。
+                // 顺序与客户端一致：优先 carried（拾取），其次主手；sourceStack 仅兜底。
+                var source = !menu.getCarried().isEmpty() ? menu.getCarried()
+                        : (!player.getMainHandItem().isEmpty() ? player.getMainHandItem()
+                           : this.sourceStack);
                 thaumicenergistics.common.container.EssentiaFillHelper.fillContainerFromGrid(
                         acc.thE_getStorage(), acc.thE_getEnergySource(),
                         menu.getActionSource(), player, source, this.aspectId);

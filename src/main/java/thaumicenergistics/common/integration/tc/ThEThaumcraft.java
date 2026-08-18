@@ -75,6 +75,7 @@ public final class ThEThaumcraft {
         registerVisInterface();
         registerEssentiaBuses();
         registerInfusionProvider();
+        registerInfusionMonitor();
         registerEssentiaProvider();
         registerEssentiaTerminal();
         registerDigisentia();
@@ -256,6 +257,20 @@ public final class ThEThaumcraft {
                         new ResearchPage("tc.research_text.INFUSIONPROVIDER.stage.1"),
                         new ResearchPage(RecipeRegistration.INFUSION_PROVIDER),
                         new ResearchPage("tc.research_text.INFUSIONPROVIDER.stage.2"))
+                .registerResearchItem();
+    }
+
+    // ==================== 8. (-7,-2) INFUSIONMONITOR 韵魔观测器====================
+    // 前置: INFUSIONPROVIDER（注魔供应器）；位于其左侧。无需研究比较，直接花费要素解锁。
+    private static void registerInfusionMonitor() {
+        new ResearchItem("INFUSIONMONITOR", TAB,
+                new AspectList().add(Aspect.MAGIC, 4).add(Aspect.AURA, 4).add(Aspect.SENSES, 6),
+                -7, -2, 1, new ItemStack(ModItems.INFUSION_MONITOR_ITEM.get()))
+                .setRound().setParents("INFUSIONPROVIDER")
+                .setPages(
+                        new ResearchPage("tc.research_text.INFUSIONMONITOR.stage.1"),
+                        new ResearchPage(RecipeRegistration.INFUSION_MONITOR),
+                        new ResearchPage("tc.research_text.INFUSIONMONITOR.stage.2"))
                 .registerResearchItem();
     }
 

@@ -214,5 +214,10 @@ public final class ThaumicEnergistics {
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.ARCANE_ASSEMBLER.get(),
                 (be, context) -> (appeng.api.networking.IInWorldGridNodeHost) be);
+        // 注魔监视器：连接 AE 网络（network 状态）需要网格节点 capability
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.INFUSION_MONITOR.get(),
+                (be, context) -> (appeng.api.networking.IInWorldGridNodeHost) be);
     }
 }

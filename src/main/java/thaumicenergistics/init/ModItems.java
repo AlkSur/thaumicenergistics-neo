@@ -78,4 +78,6 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> KNOWLEDGE_INSCRIBER_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.KNOWLEDGE_INSCRIBER);
     public static final DeferredItem<BlockItem> ESSENTIA_CELL_WORKBENCH_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.ESSENTIA_CELL_WORKBENCH);
     public static final DeferredItem<BlockItem> DISTILLATION_ENCODER_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.DISTILLATION_ENCODER);
+    public static final DeferredItem<BlockItem> INFUSION_MONITOR_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.INFUSION_MONITOR);
+    public static final DeferredItem<BlockItem> ALKUSURE86_FUMO_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.ALKUSURE86_FUMO);
 }

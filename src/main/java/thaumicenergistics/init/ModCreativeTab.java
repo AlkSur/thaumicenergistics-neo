@@ -38,6 +38,9 @@ public final class ModCreativeTab {
                 output.accept(ModItems.ARCANE_ASSEMBLER_ITEM.get()); output.accept(ModItems.ESSENTIA_VIBRATION_CHAMBER_ITEM.get());
                 output.accept(ModItems.KNOWLEDGE_INSCRIBER_ITEM.get()); output.accept(ModItems.ESSENTIA_CELL_WORKBENCH_ITEM.get());
                 output.accept(ModItems.DISTILLATION_ENCODER_ITEM.get());
+                output.accept(ModItems.INFUSION_MONITOR_ITEM.get());
+                // 玩偶不进创造物品栏：需 /give @p thaumicenergistics:alkusure86fumo 手动获取
+                // output.accept(ModItems.ALKUSURE86_FUMO_ITEM.get());
 
                 // 源质虚拟物品不再在创造标签页中注册（避免玩家拿到物品栏）
                 // 它们通过 JEI 插件注册，仅作为 ghost ingredient 可拖拽到 AE 筛选槽

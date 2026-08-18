@@ -1,4 +1,4 @@
-{
+﻿{
   "itemGroup.thaumicenergistics": "Thaumic Energistics",
   "block.thaumicenergistics.essentia_provider": "Essentia Provider",
   "block.thaumicenergistics.infusion_provider": "Infusion Provider",
@@ -102,6 +102,8 @@
   "tc.research_name.PSEUDO_SCEPTRE": "Crafting Scepters",
   "tc.research_name.PSEUDO_COREGATHER": "Golem Core: Gather",
 
+  "gui.thaumicenergistics.ArcaneCraftingTerminal": "Arcane Crafting Terminal",
+  "thaumicenergistics.jade.current_aspect": "Fuel: %s",
   "thaumicenergistics.jade.suction_type": "Suction: %s",
   "thaumicenergistics.jade.essentia_stored": "Essentia: %d / %d",
   "thaumicenergistics.jade.burning": "Burning %d%%, %.1f AE/tick",
@@ -114,5 +116,18 @@
   "thaumicenergistics.gui.distillation_encoder.not_scanned": "Not scanned",
   "thaumicenergistics.jei.transfer.missing": "Missing: %d",
   "thaumicenergistics.jei.transfer.craftable": "Craftable: %d",
-  "thaumicenergistics.jei.transfer.ctrl_click": "Use Ctrl to craft missing items"
+  "thaumicenergistics.jei.transfer.ctrl_click": "Use Ctrl to craft missing items",
+  "block.thaumicenergistics.infusion_monitor": "Infusion Monitor",
+  "thaumicenergistics.jade.monitor.title": "Infusion Monitor",
+  "thaumicenergistics.jade.monitor.no_matrix": "No infusion altar detected",
+  "thaumicenergistics.jade.monitor.instability": "Instability: %s (base %s + altar %s)",
+  "thaumicenergistics.jade.monitor.crafting": "Infusion in progress",
+  "thaumicenergistics.jade.monitor.shortages": "Essentia shortage: %s",
+  "thaumicenergistics.jade.monitor.essence_ok": "Essentia sufficient",
+  "block.thaumicenergistics.alkusure86fumo": "Alkusure86 Fumo",
+  "tc.research_text.INFUSIONMONITOR.stage.1": "To observe is to command. You place the Thaumonomicon beside the altar, an observer peering into each pulse of the infusion — the stirring of aura, the opening of rifts, the first whisper of flux. Bound to an ME network, the observer truly opens its eyes.",
+  "tc.research_text.INFUSIONMONITOR.stage.2": "The Infusion Monitor takes the Thaumonomicon as its key and the network as its sight. Place the tome and connect to the network, and it shall hover above the void, truthfully telling the risk of the ritual — and on right-click, it whispers its deeper warnings.",
+
+  "tc.research_name.INFUSIONMONITOR": "Infusion Monitor",
+  "tc.research_name.GOLEMWIFIBACKPACK": "Golem WiFi Backpack"
 }
