@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,variant=false": { "model": "thaumicenergistics:block/alkusure86fumo", "y": 0 },
+    "facing=south,variant=false": { "model": "thaumicenergistics:block/alkusure86fumo", "y": 180 },
+    "facing=east,variant=false": { "model": "thaumicenergistics:block/alkusure86fumo", "y": 90 },
+    "facing=west,variant=false": { "model": "thaumicenergistics:block/alkusure86fumo", "y": 270 },
+    "facing=north,variant=true": { "model": "thaumicenergistics:block/a999csfumo", "y": 0 },
+    "facing=south,variant=true": { "model": "thaumicenergistics:block/a999csfumo", "y": 180 },
+    "facing=east,variant=true": { "model": "thaumicenergistics:block/a999csfumo", "y": 90 },
+    "facing=west,variant=true": { "model": "thaumicenergistics:block/a999csfumo", "y": 270 }
+  }
+}
