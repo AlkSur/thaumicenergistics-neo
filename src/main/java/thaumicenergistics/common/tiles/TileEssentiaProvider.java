@@ -33,7 +33,64 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
 
     @Override
     protected double getIdlePowerUsage() {
-        return 3.0;
+        // 基础 3 + 每连接 1 个接收器 +5
+        return 3.0 + 5.0 * getLinkedReceiverCount();
+    }
+
+    // ===== 无线接收器连接管理 =====
+    /** 最多连接的接收器数量。 */
+    public static final int MAX_LINKED_RECEIVERS = 8;
+    /** 最大连接距离（格）。 */
+    public static final int MAX_LINK_DISTANCE = 32;
+
+    private List<BlockPos> linkedReceivers = new java.util.ArrayList<>();
+
+    public java.util.List<BlockPos> getLinkedReceivers() {
+        return linkedReceivers;
+    }
+
+    public int getLinkedReceiverCount() {
+        return linkedReceivers.size();
+    }
+
+    /** 注册一个接收器连接（校验数量与距离，失败返回原因文案；成功返回 null）。 */
+    public String addLinkedReceiver(BlockPos receiverPos) {
+        if (linkedReceivers.contains(receiverPos)) return null; // 已连接
+        if (linkedReceivers.size() >= MAX_LINKED_RECEIVERS) {
+            return "§c该源质供应器已连接满 " + MAX_LINKED_RECEIVERS + " 个接收器";
+        }
+        double dist = Math.sqrt(worldPosition.distSqr(receiverPos));
+        if (dist > MAX_LINK_DISTANCE) {
+            return "§c距离过远（" + (int) Math.ceil(dist) + " 格 > " + MAX_LINK_DISTANCE + " 格上限）";
+        }
+        linkedReceivers.add(receiverPos);
+        setChanged();
+        updatePower();
+        return null;
+    }
+
+    public void removeLinkedReceiver(BlockPos receiverPos) {
+        if (linkedReceivers.remove(receiverPos)) {
+            setChanged();
+            updatePower();
+        }
+    }
+
+    /** 周期校验：清除已失效的接收器连接（方块被拆除）。 */
+    public void validateLinkedReceivers() {
+        if (level == null || linkedReceivers.isEmpty()) return;
+        linkedReceivers.removeIf(pos -> {
+            boolean gone = !(level.getBlockEntity(pos) instanceof TileEssentiaProviderConnection);
+            if (gone) setChanged();
+            return gone;
+        });
+        updatePower();
+    }
+
+    private void updatePower() {
+        if (mainNode != null) {
+            mainNode.setIdlePowerUsage(getIdlePowerUsage());
+        }
     }
 
     /** getEssentiaList 短时缓存：TC 管道 suction 每 tick 调 getEssentiaType，避免每 tick 全量遍历。 */
@@ -55,12 +112,20 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
 
         if (essentiaListCacheTimer > 0) essentiaListCacheTimer--;
 
+        // 周期校验无线接收器连接（约每 2 秒）
+        if (++validateCounter >= 40) {
+            validateCounter = 0;
+            validateLinkedReceivers();
+        }
+
         if (++tickCount >= tickRate) {
             tickCount = 0;
             tickRate = TICK_RATE_IDLE;
             takeEssentiaFromTransportNeighbors();
         }
     }
+
+    private int validateCounter = 0;
 
     // ===== IEssentiaTransport =====
 
@@ -151,6 +216,36 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
         return 1;
     }
 
+    // ===== 供源质无线接收器转发的公开方法 =====
+
+    public boolean thE_isActive() {
+        return mainNode.isActive();
+    }
+
+    public long thE_queryAmount(Aspect aspect) {
+        return getAspectAmountInNetwork(aspect);
+    }
+
+    public long thE_extract(Aspect aspect, long amount, boolean simulate) {
+        return extractEssentiaFromNetwork(aspect, amount, simulate);
+    }
+
+    public long thE_inject(Aspect aspect, long amount, boolean simulate) {
+        return injectEssentiaToNetwork(aspect, amount, simulate);
+    }
+
+    /** 网络中第一种有存量的源质（供接收器无特定需求时兜底）。 */
+    public Aspect thE_firstAvailable() {
+        if (essentiaGrid != null) {
+            for (var stack : getCachedEssentiaList()) {
+                if (stack.amount() > 0) {
+                    return Aspect.getAspect(stack.aspectId().getPath());
+                }
+            }
+        }
+        return null;
+    }
+
     @Override
     public boolean renderExtendedTube() {
         return false;
@@ -196,6 +291,29 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
                     injectEssentiaToNetwork(sourceAspect, taken, false);
                     tickRate = TICK_RATE_URGENT;
                 }
+            }
+        }
+    }
+
+    // ===== NBT =====
+
+    @Override
+    protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+        net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+        for (BlockPos pos : linkedReceivers) {
+            list.add(net.minecraft.nbt.LongTag.valueOf(pos.asLong()));
+        }
+        tag.put("LinkedReceivers", list);
+    }
+
+    @Override
+    protected void loadAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+        linkedReceivers.clear();
+        if (tag.contains("LinkedReceivers")) {
+            for (net.minecraft.nbt.Tag t : tag.getList("LinkedReceivers", net.minecraft.nbt.Tag.TAG_LONG)) {
+                linkedReceivers.add(BlockPos.of(((net.minecraft.nbt.LongTag) t).getAsLong()));
             }
         }
     }

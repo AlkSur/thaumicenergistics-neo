@@ -39,6 +39,7 @@ public final class ModCreativeTab {
                 output.accept(ModItems.KNOWLEDGE_INSCRIBER_ITEM.get()); output.accept(ModItems.ESSENTIA_CELL_WORKBENCH_ITEM.get());
                 output.accept(ModItems.DISTILLATION_ENCODER_ITEM.get());
                 output.accept(ModItems.INFUSION_MONITOR_ITEM.get());
+                output.accept(ModItems.ESSENTIA_PROVIDER_CONNECTION_ITEM.get()); output.accept(ModItems.WIRELESS_CONNECTOR.get());
                 // 玩偶不进创造物品栏：需 /give @p thaumicenergistics:alkusure86fumo 手动获取
                 // output.accept(ModItems.ALKUSURE86_FUMO_ITEM.get());
 

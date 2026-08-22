@@ -282,9 +282,15 @@ public final class ThEThaumcraft {
                 -2, -4, 3, new ItemStack(ModItems.ESSENTIA_PROVIDER_ITEM.get()))
                 .setRound().setParents("ESSENTIABUSES")
                 .setPages(
+                        // 源质供应器：介绍+用法 / 配方
                         new ResearchPage("tc.research_text.ESSENTIAPROVIDER.stage.1"),
                         new ResearchPage(RecipeRegistration.ESSENTIA_PROVIDER),
-                        new ResearchPage("tc.research_text.ESSENTIAPROVIDER.stage.2"))
+                        // 源质无线接收器：介绍+用法 / 配方
+                        new ResearchPage("tc.research_text.ESSENTIAPROVIDER.connection.stage.1"),
+                        new ResearchPage(RecipeRegistration.ESSENTIA_PROVIDER_CONNECTION),
+                        // 源质无线绑定工具：介绍+用法 / 配方
+                        new ResearchPage("tc.research_text.ESSENTIAPROVIDER.tool.stage.1"),
+                        new ResearchPage(RecipeRegistration.WIRELESS_CONNECTOR))
                 .registerResearchItem();
     }
 

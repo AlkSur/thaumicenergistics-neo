@@ -129,5 +129,9 @@
   "tc.research_text.INFUSIONMONITOR.stage.2": "The Infusion Monitor takes the Thaumonomicon as its key and the network as its sight. Place the tome and connect to the network, and it shall hover above the void, truthfully telling the risk of the ritual — and on right-click, it whispers its deeper warnings.",
 
   "tc.research_name.INFUSIONMONITOR": "Infusion Monitor",
-  "tc.research_name.GOLEMWIFIBACKPACK": "Golem WiFi Backpack"
+  "tc.research_name.GOLEMWIFIBACKPACK": "Golem WiFi Backpack",
+  "block.thaumicenergistics.essentia_provider_connection": "Wireless Essentia Receiver",
+  "item.thaumicenergistics.wireless_connector": "Wireless Connector",
+  "tc.research_text.ESSENTIAPROVIDER.connection.stage.1": "The Wireless Essentia Receiver can be mounted on any surface. Use the Wireless Essentia Binding Tool to link it to an Essentia Provider, relaying essentia to alchemy towers and stills at a distance. Each provider serves up to eight receivers within thirty-two blocks; each additional receiver costs five extra AE/t. The receiver can also feed essentia back into the network, up to sixteen per transfer.",
+  "tc.research_text.ESSENTIAPROVIDER.tool.stage.1": "The Wireless Essentia Binding Tool creates and breaks wireless links: sneak-right-click an unlinked receiver to select it, then sneak-right-click an Essentia Provider to bind; sneak-right-click a linked receiver to disconnect. A normal right-click shows the connection coordinates of either device."
 }

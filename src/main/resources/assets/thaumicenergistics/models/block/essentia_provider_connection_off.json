@@ -1,0 +1,46 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with _leng",
+	"textures": {
+		"particle": "thaumicenergistics:block/essentia_provider_connection"
+	},
+	"elements": [
+		{
+			"from": [7.5, 7.5, 11],
+			"to": [8.5, 8.5, 12],
+			"faces": {
+				"east": {"uv": [9, 9, 10, 10], "texture": "#particle"},
+				"west": {"uv": [9, 9, 10, 10], "texture": "#particle"},
+				"up": {"uv": [9, 9, 10, 10], "texture": "#particle"},
+				"down": {"uv": [9, 9, 10, 10], "texture": "#particle"}
+			}
+		},
+		{
+			"from": [7.1, 7.1, 9.2],
+			"to": [8.9, 8.9, 11],
+			"rotation": {"angle": 45, "axis": "z", "origin": [8, 8, 10.1]},
+			"faces": {
+				"north": {"uv": [8, 2, 10, 4], "texture": "#particle"},
+				"east": {"uv": [10, 2, 8, 4], "texture": "#particle"},
+				"south": {"uv": [8, 4, 10, 6], "texture": "#particle"},
+				"west": {"uv": [8, 4, 10, 6], "rotation": 90, "texture": "#particle"},
+				"up": {"uv": [8, 4, 10, 2], "rotation": 180, "texture": "#particle"},
+				"down": {"uv": [10, 4, 8, 6], "texture": "#particle"}
+			}
+		},
+		{
+			"name": "cube_outline",
+			"from": [9.1, 9.1, 11.2],
+			"to": [6.9, 6.9, 9],
+			"rotation": {"angle": 45, "axis": "z", "origin": [8, 8, 10.1]},
+			"faces": {
+				"north": {"uv": [6, 9, 8, 11], "texture": "#particle"},
+				"east": {"uv": [6, 9, 8, 11], "texture": "#particle"},
+				"south": {"uv": [6, 9, 8, 11], "texture": "#particle"},
+				"west": {"uv": [8, 9, 6, 11], "texture": "#particle"},
+				"up": {"uv": [8, 11, 6, 9], "texture": "#particle"},
+				"down": {"uv": [6, 9, 8, 11], "texture": "#particle"}
+			}
+		}
+	]
+}

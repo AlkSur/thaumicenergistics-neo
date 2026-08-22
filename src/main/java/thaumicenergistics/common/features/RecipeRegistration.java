@@ -52,6 +52,10 @@ public final class RecipeRegistration {
     public static ShapelessArcaneRecipe ARCANE_CRAFTING_TERMINAL;
     public static ShapelessArcaneRecipe VIS_INTERFACE;
     public static ShapelessArcaneRecipe ESSENTIA_VIBRATION_CHAMBER;
+    /** 源质无线接收器（无序奥术）。 */
+    public static ShapelessArcaneRecipe ESSENTIA_PROVIDER_CONNECTION;
+    /** 源质无线绑定工具（无序奥术）。 */
+    public static ShapelessArcaneRecipe WIRELESS_CONNECTOR;
     /** 赛特斯石英复制（坩埚炼金配方——研究页关联）。 */
     public static CrucibleRecipe CERTUS_DUPE_RECIPE;
 
@@ -264,6 +268,22 @@ public final class RecipeRegistration {
                 ae("vibration_chamber"),
                 tc("jar_of_essentia"),
                 stack(ModItems.COALESCENCE_CORE));
+
+        // 8. 源质无线接收器（无序奥术，研究：源质供应器）
+        ESSENTIA_PROVIDER_CONNECTION = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIAPROVIDER",
+                new ItemStack(ModBlocks.ESSENTIA_PROVIDER_CONNECTION.get(), 2),
+                new AspectList().add(Aspect.ORDER, 8).add(Aspect.AIR, 6).add(Aspect.FIRE, 3),
+                stack(ModItems.COALESCENCE_CORE),
+                stack(ModItems.DIFFUSION_CORE),
+                ae("wireless_receiver"),
+                tc("balanced_shard"));
+
+        // 9. 源质无线绑定工具（无序奥术，研究：源质供应器）
+        WIRELESS_CONNECTOR = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIAPROVIDER",
+                stack(ModItems.WIRELESS_CONNECTOR),
+                new AspectList().add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5),
+                ae("certus_quartz_wrench"),
+                tc("balanced_shard"));
 
     }
 

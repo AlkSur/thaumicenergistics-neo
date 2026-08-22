@@ -232,7 +232,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         if (bubble != null) return;
         bubble = EntityType.TEXT_DISPLAY.create(level);
         if (bubble == null) return;
-        bubble.setPos(worldPosition.getX() + 0.5, worldPosition.getY() + 1.4, worldPosition.getZ() + 0.5);
+        bubble.setPos(worldPosition.getX() + 0.5, worldPosition.getY() + 1.2, worldPosition.getZ() + 0.5);
         // 1.21.1 TextDisplay 配置 API 均为 private/protected：反射调用 readAdditionalSaveData
         // 用 summon 命令同款 NBT 一次配置全部字段（text/background/billboard/shadow/see_through 等）。
         applyBubbleNbt(buildBubbleText(cachedRisk));
@@ -304,7 +304,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         bubble = null;
     }
 
-    /** 风险数据 → 气泡多行文本（2 行：注魔风险/不稳定度；描述改由右键在聊天框显示）。 */
+    /** 风险数据 → 气泡多行文本（2 行：注魔风险/不稳定度；不显示基础+祭坛细分，细分在聊天栏）。 */
     private static Component buildBubbleText(RiskData risk) {
         // 内边距必须用不间断空格（\u00A0）：普通空格在行尾会被字体布局裁剪，
         // 导致背景只包住左侧、右侧贴边。NBSP 有真实字形，两侧都保留。
@@ -313,8 +313,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
         Component line1 = Component.literal(pad + "注魔风险: " + tierWord + pad)
                 .withStyle(style -> style.withColor(tierColor(risk.tier())));
-        Component line2 = Component.literal(pad + "不稳定度: " + risk.instability()
-                + " (基础 " + risk.recipeInstability() + " + 祭坛 " + risk.symmetry() + ")" + pad)
+        Component line2 = Component.literal(pad + "不稳定度: " + risk.instability() + pad)
                 .withStyle(style -> style.withColor(0xFFFFFFFF));
 
         // 上下各留一个空行（垂直内边距）
@@ -383,19 +382,35 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         }
     }
 
-    /** 右键：在玩家聊天框显示当前风险档位 + 描述。 */
+    /** 右键：聊天框提示。需手册 + 联网才显示详细风险；否则提示缺失项。 */
     public void showDescriptionInChat(Player player) {
         if (level == null || level.isClientSide()) return;
+        boolean hasBook = getBlockState().getValue(ModBlocks.BOOK);
+        boolean hasNetwork = getBlockState().getValue(ModBlocks.NETWORK);
+        if (!hasBook && !hasNetwork) {
+            player.sendSystemMessage(Component.literal("§7韵魔观测器: 缺少引导的书籍与网络能量（魔导手册与 AE 网络）"));
+            return;
+        }
+        if (!hasBook) {
+            player.sendSystemMessage(Component.literal("§7韵魔观测器: 需要放置魔导手册作为引导"));
+            return;
+        }
+        if (!hasNetwork) {
+            player.sendSystemMessage(Component.literal("§7韵魔观测器: 需要接入 AE 网络供能"));
+            return;
+        }
         if (!cachedRisk.found()) {
             player.sendSystemMessage(Component.literal("§7韵魔观测器: 未检测到注魔祭坛"));
             return;
         }
         String tierWord = tierWord(cachedRisk.tier());
         String desc = tierDesc(cachedRisk.tier());
-        // 档位行用档位颜色
         Component msg = Component.literal("注魔风险: ")
                 .withStyle(style -> style.withColor(tierColor(cachedRisk.tier())))
-                .append(Component.literal(tierWord + " §f—— " + desc));
+                .append(Component.literal(tierWord + "§7"))
+                .append(Component.literal("\n不稳定度: " + cachedRisk.instability()
+                        + " (基础 " + cachedRisk.recipeInstability() + " + 祭坛 " + cachedRisk.symmetry() + ")§f\n"))
+                .append(Component.literal(desc));
         player.sendSystemMessage(msg);
     }
 

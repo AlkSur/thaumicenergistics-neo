@@ -145,5 +145,9 @@
   "tc.research_text.INFUSIONMONITOR.stage.1": "观测即是驾驭。你将魔导手册置于祭坛之侧，以侦测器窥探注魔的每一次脉动——灵光、裂隙、咒波的先兆，尽收眼底。当它与 ME 网络相连，观测者便真正睁开眼。",
   "tc.research_text.INFUSIONMONITOR.stage.2": "韵魔观测器以魔导手册为钥、以网络为眼。放上手册并接入网络，它便会悬浮于虚空之中，如实告知你注魔之仪的风险——而按住右键，它将低语出更深层的告诫。",
   "tc.research_name.INFUSIONMONITOR": "韵魔观测器",
-  "tc.research_name.GOLEMWIFIBACKPACK": "傀儡WiFi背包"
+  "tc.research_name.GOLEMWIFIBACKPACK": "傀儡WiFi背包",
+  "block.thaumicenergistics.essentia_provider_connection": "源质无线接收器",
+  "item.thaumicenergistics.wireless_connector": "源质无线绑定工具",
+  "tc.research_text.ESSENTIAPROVIDER.connection.stage.1": "源质无线接收器可挂置于任意表面，以源质无线绑定工具与源质供应器建立无线连接，将源质远程输送至炼金塔、蒸馏器等设施。每台供应器最多服务八台接收器，距离不得超过三十二格；每多一台接收器，供应器功耗上升五点。接收器亦可向网络回输源质，每次上限十六点。",
+  "tc.research_text.ESSENTIAPROVIDER.tool.stage.1": "源质无线绑定工具用于建立与解除无线连接：按住 Shift 右键未连接的接收器将其选中，再 Shift 右键源质供应器完成绑定；Shift 右键已连接的接收器可断开连接；普通右键则可查看双方连接坐标。"
 }

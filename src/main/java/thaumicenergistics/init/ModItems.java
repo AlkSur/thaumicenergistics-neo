@@ -80,4 +80,11 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> DISTILLATION_ENCODER_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.DISTILLATION_ENCODER);
     public static final DeferredItem<BlockItem> INFUSION_MONITOR_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.INFUSION_MONITOR);
     public static final DeferredItem<BlockItem> ALKUSURE86_FUMO_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.ALKUSURE86_FUMO);
+    public static final DeferredItem<BlockItem> ESSENTIA_PROVIDER_CONNECTION_ITEM =
+            REGISTRY.registerSimpleBlockItem(ModBlocks.ESSENTIA_PROVIDER_CONNECTION);
+
+    /** 无线连接器：右键接收器选中，再右键源质供应器建立连接。 */
+    public static final DeferredItem<net.minecraft.world.item.Item> WIRELESS_CONNECTOR =
+            REGISTRY.register("wireless_connector",
+                    () -> new thaumicenergistics.common.items.WirelessConnectorItem(new net.minecraft.world.item.Item.Properties()));
 }

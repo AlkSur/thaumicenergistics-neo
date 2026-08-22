@@ -73,10 +73,23 @@ processResources {
 
 jar { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
 
-// 获取git提交总数
-def gitCommitCount = providers.exec {
-    commandLine 'git', 'rev-list', '--count', 'HEAD'
-}.standardOutput.asText.map { it.trim() }
-
-// 最终完整版本 = 主版本+构建号
-version = "${mod_version}.${gitCommitCount.get()}-alpha"
+def gitVersion() {
+    def describe = providers.exec {
+        commandLine 'git', 'describe', '--tags', '--always'
+    }.standardOutput.asText.map { it.trim() }.get()
+    // 支持 "2.2" / "v2.2.0" / "2.2-3-gabc1234" / "abc1234"(无tag时)
+    // 版本 = tag 的 X.Y + 提交数：tag 2.2 + 2 提交 → 2.2.2
+    // find() 只匹配开头，忽略尾部 commit hash（-gabc1234）
+    def m = describe =~ /^v?(\d+\.\d+)(?:\.\d+)?(?:-(\d+))?/
+    if (m.find()) {
+        def xy = m.group(1)                          // 2.2
+        def count = m.group(2) ? m.group(2) : '0'    // tag 后提交数
+        return "${xy}.${count}-alpha"                // 2.2.2-alpha
+    }
+    // 兜底（从未打 tag）：mod_version + 总提交数
+    def count = providers.exec {
+        commandLine 'git', 'rev-list', '--count', 'HEAD'
+    }.standardOutput.asText.map { it.trim() }.get()
+    return "${mod_version}.${count}-alpha"
+}
+version = gitVersion()

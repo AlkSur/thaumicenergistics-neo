@@ -297,4 +297,64 @@ public final class ModBlocks {
             return java.util.List.of(new ItemStack(ModItems.ALKUSURE86_FUMO_ITEM.get()));
         }
     });
+
+    // ==================== 源质无线接收器 ====================
+
+    /** 是否已连接源质供应器（off/on 模型切换）。 */
+    public static final net.minecraft.world.level.block.state.properties.BooleanProperty CONNECTED =
+            net.minecraft.world.level.block.state.properties.BooleanProperty.create("connected");
+
+    /** 接收器六向贴放（贴墙/立地/挂顶）。 */
+    public static final net.minecraft.world.level.block.state.properties.DirectionProperty FACING_ALL =
+            net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING;
+
+    /** 接收器专用：低硬度 → 镐子可快速挖掘。 */
+    private static final BlockBehaviour.Properties PC =
+            BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(1.0f).sound(SoundType.STONE);
+
+    public static final DeferredBlock<Block> ESSENTIA_PROVIDER_CONNECTION = REGISTRY.register("essentia_provider_connection", () -> new ThEBaseEntityBlock(PC) {
+        @Override
+        public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+            return new TileEssentiaProviderConnection(pos, state);
+        }
+
+        @Override
+        public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> type) {
+            if (!level.isClientSide() && type == ModBlockEntities.ESSENTIA_PROVIDER_CONNECTION.get()) {
+                return (lvl, pos, st, be) -> TileEssentiaProviderConnection.serverTick(lvl, pos, st, (TileEssentiaProviderConnection) be);
+            }
+            return null;
+        }
+
+        @Override
+        protected void createBlockStateDefinition(net.minecraft.world.level.block.state.StateDefinition.Builder<Block, BlockState> builder) {
+            builder.add(CONNECTED, FACING_ALL);
+        }
+
+        @Override
+        public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
+            // 正面朝外 = 点击面的方向（贴墙/立地/挂顶）
+            return this.defaultBlockState()
+                    .setValue(FACING_ALL, context.getClickedFace())
+                    .setValue(CONNECTED, false);
+        }
+
+        @Override
+        public net.minecraft.world.phys.shapes.VoxelShape getShape(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
+            // 薄碰撞箱（贴墙/立地/挂顶），不遮挡光线；UP=立地(底部) DOWN=挂顶(顶部)
+            return switch (state.getValue(FACING_ALL)) {
+                case NORTH -> net.minecraft.world.phys.shapes.Shapes.box(0.25, 0.25, 0.75, 0.75, 0.75, 1.0);
+                case SOUTH -> net.minecraft.world.phys.shapes.Shapes.box(0.25, 0.25, 0.0, 0.75, 0.75, 0.25);
+                case EAST -> net.minecraft.world.phys.shapes.Shapes.box(0.0, 0.25, 0.25, 0.25, 0.75, 0.75);
+                case WEST -> net.minecraft.world.phys.shapes.Shapes.box(0.75, 0.25, 0.25, 1.0, 0.75, 0.75);
+                case UP -> net.minecraft.world.phys.shapes.Shapes.box(0.25, 0.0, 0.25, 0.75, 0.25, 0.75);      // 立地：碰撞箱在底部
+                case DOWN -> net.minecraft.world.phys.shapes.Shapes.box(0.25, 0.75, 0.25, 0.75, 1.0, 0.75);   // 挂顶：碰撞箱在顶部
+            };
+        }
+
+        @Override
+        public int getLightBlock(BlockState state, net.minecraft.world.level.BlockGetter level, BlockPos pos) {
+            return 0; // 不遮挡光线
+        }
+    });
 }
