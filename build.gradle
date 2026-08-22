@@ -73,6 +73,7 @@ processResources {
 
 jar { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
 
+
 def gitVersion() {
     def describe = providers.exec {
         commandLine 'git', 'describe', '--tags', '--always'
