@@ -11,6 +11,9 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
+import appeng.api.upgrades.IUpgradeInventory;
+import appeng.api.upgrades.UpgradeInventories;
+import appeng.core.definitions.AEItems;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IEssentiaContainerItem;
@@ -32,6 +35,11 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
     private static final int PLAYER_INV_END = 28;
     private static final int HOTBAR_START = 28;
     private static final int HOTBAR_END = 37;
+    /** cell 升级卡槽（3 格，容器槽位 37..39，位于玩家槽之后）。 */
+    private static final int UPGRADE_X = 98;
+    private static final int UPGRADE_Y = 8;
+    private static final int UPGRADE_COUNT = 3;
+    private static final int UPGRADE_START = HOTBAR_END;
 
     private final TileEssentiaCellWorkbench workbench;
 
@@ -50,6 +58,80 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
         addSlot(new SlotItemHandler(cellHandler, 0, 152, 8));
         for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, 167 + r * 18));
         for (int c = 0; c < 9; c++) addSlot(new Slot(inv, c, 8 + c * 18, 225));
+
+        // ===== cell 升级卡槽（3 格，动态绑定当前 cell 的升级库存，卡片持久化在 cell 物品上） =====
+        IItemHandler cellUpgrades = new CellUpgradeHandler(this::currentCellUpgrades);
+        for (int i = 0; i < UPGRADE_COUNT; i++) {
+            addSlot(new SlotItemHandler(cellUpgrades, i, UPGRADE_X + i * 18, UPGRADE_Y) {
+                @Override
+                public int getMaxStackSize() {
+                    return 1;
+                }
+
+                @Override
+                public boolean mayPlace(ItemStack s) {
+                    return AEItems.CAPACITY_CARD.is(s) || AEItems.FUZZY_CARD.is(s);
+                }
+
+                @Override
+                public void setChanged() {
+                    super.setChanged();
+                    if (workbench != null) {
+                        workbench.setChanged();
+                    }
+                }
+            });
+        }
+    }
+
+    /** 当前 cell 的升级库存；无 cell 时返回空库存。 */
+    private IUpgradeInventory currentCellUpgrades() {
+        if (workbench != null && workbench.hasCell()) {
+            ItemStack cell = workbench.getCell();
+            if (cell.getItem() instanceof ItemEssentiaCell cellItem) {
+                return cellItem.getUpgrades(cell);
+            }
+        }
+        return UpgradeInventories.empty();
+    }
+
+    /** 把 AE2 InternalInventory（IUpgradeInventory）适配成 NeoForge IItemHandler，供 SlotItemHandler 使用。 */
+    private static final class CellUpgradeHandler implements IItemHandler {
+        private final java.util.function.Supplier<IUpgradeInventory> supplier;
+
+        CellUpgradeHandler(java.util.function.Supplier<IUpgradeInventory> supplier) {
+            this.supplier = supplier;
+        }
+
+        @Override
+        public int getSlots() {
+            return supplier.get().size();
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            return supplier.get().getStackInSlot(slot);
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            return supplier.get().insertItem(slot, stack, simulate);
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            return supplier.get().extractItem(slot, amount, simulate);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return supplier.get().getSlotLimit(slot);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return supplier.get().isItemValid(slot, stack);
+        }
     }
 
     /** 客户端打开菜单用（IMenuTypeExtension 注册）；workbench 为 null，分区操作走 C2S 到服务端。 */
@@ -134,6 +216,9 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
             // 玩家背包 → cell 槽（仅当 cell 槽空且物品是源质元件）
             if (stack.getItem() instanceof ItemEssentiaCell && workbench.getCell().isEmpty()) {
                 if (!moveItemStackTo(stack, SLOT_CELL, SLOT_CELL + 1, false)) return ItemStack.EMPTY;
+            } else if (AEItems.CAPACITY_CARD.is(stack) || AEItems.FUZZY_CARD.is(stack)) {
+                // 容量/模糊卡 → cell 升级槽
+                if (!moveItemStackTo(stack, UPGRADE_START, UPGRADE_START + UPGRADE_COUNT, false)) return ItemStack.EMPTY;
             } else {
                 // 含源质物品 → 尝试添加分区（物品不消费，仅添加分区）
                 ResourceLocation aspectId = getAspectFromItem(stack);
@@ -142,6 +227,9 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
                 }
                 return ItemStack.EMPTY;
             }
+        } else {
+            // 升级卡槽 → 玩家背包
+            if (!moveItemStackTo(stack, PLAYER_INV_START, HOTBAR_END, true)) return ItemStack.EMPTY;
         }
 
         if (stack.isEmpty()) {

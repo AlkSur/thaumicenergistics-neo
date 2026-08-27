@@ -9,7 +9,6 @@ import thaumcraft.api.research.ResearchCategories;
 import thaumcraft.api.research.ResearchItem;
 import thaumcraft.api.research.ResearchPage;
 import thaumcraft.common.research.TCResearchIndex;
-import thaumicenergistics.ThaumicEnergistics;
 
 /**
  * 伪前置桩节点。在 ThE 的研究 tab 中创建一个占位节点，
@@ -93,11 +92,6 @@ public class PseudoResearchItem extends ResearchItem {
 
         // 保存真实研究引用：内容（名称/文字/页面）通过方法委托到真实研究（TC port 渲染调 getPages()）
         pseudo.realResearch = realResearch;
-
-        ThaumicEnergistics.LOG.debug("[Pseudo] {} ← {}:{} icon={}",
-                pseudoKey, realCategory, realKey,
-                pseudo.icon_item != null && !pseudo.icon_item.isEmpty()
-                        ? pseudo.icon_item.getDescriptionId() : String.valueOf(pseudo.icon_resource));
 
         return pseudo;
     }

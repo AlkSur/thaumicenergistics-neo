@@ -33,7 +33,6 @@ import thaumicenergistics.common.tiles.TileKnowledgeInscriber;
 import thaumicenergistics.init.ModItems;
 import thaumicenergistics.init.ModMenuTypes;
 import net.neoforged.neoforge.network.PacketDistributor;
-import thaumicenergistics.ThaumicEnergistics;
 
 public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
 
@@ -133,6 +132,8 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
             kCoreHandler.open(slotStack);
             updatePatternSlots();
         }
+        // 服务端构造后立即同步按钮状态到客户端（否则客户端 saveStateSlot 一直为初始 0 → 按钮永远无效）
+        sendSaveState();
     }
 
     private void initPatternSlots() {
@@ -181,6 +182,8 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         }
 
         syncKCoreToTile();
+        // 放/取核心后同步按钮状态（可保存/可删除/无效）到客户端
+        sendSaveState();
     }
 
     private void clearPatternSlots() {
@@ -372,7 +375,6 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         String research = activeRecipe.getResearch();
         if (research != null && !research.isEmpty()
                 && !TCResearchManager.has(playerInv.player, research)) {
-            ThaumicEnergistics.LOG.info("[KnowledgeInscriber] 玩家未解锁研究 {}，拒绝保存奥术样板", research);
             return;
         }
 

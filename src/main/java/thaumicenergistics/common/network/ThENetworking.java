@@ -70,5 +70,19 @@ public final class ThENetworking {
                 ResearchGateErrorPacket.STREAM_CODEC,
                 (pkt, ctx) -> pkt.handleOnClient(ctx)
         );
+
+        // ArcaneTerminalClearC2SPacket — C2S（奥术合成终端清空合成网格——S_STASH 按钮 / 关闭时自动清理）
+        registrar.playToServer(
+                ArcaneTerminalClearC2SPacket.TYPE,
+                ArcaneTerminalClearC2SPacket.STREAM_CODEC,
+                (pkt, ctx) -> pkt.handleOnServer(ctx)
+        );
+
+        // AssemblerPreviewSyncPacket — S2C（奥术装配器配方预览：3×3 材料 + 预产物）
+        registrar.playToClient(
+                AssemblerPreviewSyncPacket.TYPE,
+                AssemblerPreviewSyncPacket.STREAM_CODEC,
+                (pkt, ctx) -> pkt.handleOnClient(ctx)
+        );
     }
 }

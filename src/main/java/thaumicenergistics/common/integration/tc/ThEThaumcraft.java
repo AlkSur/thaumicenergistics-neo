@@ -140,8 +140,7 @@ public final class ThEThaumcraft {
             // 自动 complete 伪前置节点（不通知玩家）
             try {
                 TCResearchManager.complete(rc.player(), pseudoKey, false);
-            } catch (Exception e) {
-                LOG.debug("伪前置自动解锁失败: {} → {}", completedKey, pseudoKey);
+            } catch (Exception ignored) {
             }
         });
     }

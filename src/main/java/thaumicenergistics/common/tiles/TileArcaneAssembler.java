@@ -74,17 +74,26 @@ public class TileArcaneAssembler extends ThETileBase
     private static final double ACTIVE_POWER = 1.5;
     private static final double WARP_POWER_PERCENT = 0.15;
     private static final int MAX_SPEED_UPGRADES = 4;
-    private static final int VIS_REPLENISH_INTERVAL = 20;
+    /** vis 充能间隔（tick）：每 5 tick 充一次，等效 20 cvis/tick，渐进但够快，避免合成长期卡"等待"。 */
+    private static final int VIS_REPLENISH_INTERVAL = 5;
+    /** 每次充能上限（cvis/次，每 VIS_REPLENISH_INTERVAL tick 一次 ≈ 20 cVis/tick）。 */
+    private static final int MAX_CVIS_PER_REPLENISH = 100;
     /** 每次实际 vis 变化累计达到该值才调用一次 setChanged（约 4×5=20 tick），避免合成期间 chunk 持续处于 unsaved 状态。 */
     private static final int SET_CHANGED_INTERVAL = 4;
+    /** 元始珍珠：TC 奥术配方中唯一 retainIngredient 原料（ShapedArcaneRecipe.retainIngredient），合成不消耗。 */
+    private static final ResourceLocation PRIMORDIAL_PEARL_ID =
+            ResourceLocation.fromNamespaceAndPath("thaumcraft", "primordial_pearl");
 
-    public static final int SLOT_COUNT = 27;
+    public static final int SLOT_COUNT = 31;
     public static final int KCORE_SLOT = 0;
     public static final int PATTERN_SLOT_START = 1;
     public static final int PATTERN_SLOT_END = 21;
     public static final int TARGET_SLOT = 22;
     public static final int ARMOR_SLOT_START = 23;
     public static final int ARMOR_SLOT_END = 26;
+    /** 加速卡槽：持久化在 Tile 内（此前放容器局部 handler，关 GUI 即丢失→吞卡）。 */
+    public static final int UPGRADE_SLOT_START = 27;
+    public static final int UPGRADE_SLOT_END = 30;
 
     protected final IManagedGridNode mainNode;
     private final IActionSource actionSource;
@@ -107,6 +116,15 @@ public class TileArcaneAssembler extends ThETileBase
     private boolean isCrafting = false;
     private int craftTickCounter = 0;
     private int speedUpgrades = 0;
+    /** 当前合成配方的 3×3 材料网格（GUI 右下配方预览用，随合成开始填充、结束清空）。 */
+    private ItemStack[] previewGrid = emptyPreviewGrid();
+
+    /** 全 EMPTY 的 9 格预览数组（避免 null 元素导致网络包编码崩溃）。 */
+    private static ItemStack[] emptyPreviewGrid() {
+        ItemStack[] grid = new ItemStack[9];
+        java.util.Arrays.fill(grid, ItemStack.EMPTY);
+        return grid;
+    }
     /**
      * 从内存卡粘贴的 vis_interface P2P 频率；装配器优先从该频率的 vis_interface P2P 端抽 vis。
      * 0 = 未设置，走 essentia 网络。对应 1.7.10 的 visSourceInfo，但用 P2P 频率替代位置（适配 neo P2P 设计）。
@@ -223,12 +241,11 @@ public class TileArcaneAssembler extends ThETileBase
         }
 
         visTickCounter++;
-        if (visTickCounter >= VIS_REPLENISH_INTERVAL) {
+        // 配置了 vis 源（内存卡设了 VisInterface 频率）就持续充能：放置时要素条也显示充能过程，
+        // 合成时直接用缓存，不会卡"等待"。未配置源不充能（要素条空）。
+        if ((isCrafting || visSourceFreq != 0) && visTickCounter >= VIS_REPLENISH_INTERVAL) {
             visTickCounter = 0;
-            // 仅合成中或 vis 未满时才抽（满时每 5 tick 空转会白跑 P2P/网格查询）
-            if (isCrafting || !storedVisFull()) {
-                replenishVis(grid);
-            }
+            replenishVis(grid);
         }
 
         if (isCrafting) {
@@ -249,46 +266,34 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     private void replenishVis(IGrid grid) {
-        // 优先从内存卡配置的 vis_interface P2P 源抽 vis（1.7.10 vis 源机制，适配 neo P2P）
-        if (visSourceFreq != 0) {
-            appeng.me.service.P2PService p2p = appeng.me.service.P2PService.get(grid);
-            if (p2p != null) {
-                appeng.parts.p2p.P2PTunnelPart<?> input = p2p.getInput(visSourceFreq);
-                if (input instanceof thaumicenergistics.common.parts.VisInterfacePart visSource) {
-                    for (Aspect primal : PRIMALS) {
-                        int needed = MAX_STORED_CVIS - storedVis.getAmount(primal);
-                        if (needed <= 0) continue;
-                        ResourceLocation id = TCReflection.getAspectId(primal);
-                        if (id == null) continue;
-                        int got = visSource.consumeVis(id, needed);
-                        if (got > 0) {
-                            storedVis.add(primal, got);
-                            maybeMarkVisDirty();
-                        }
-                    }
-                    return; // 有 vis 源时只用它（1.7.10 行为：源不可用则不抽）
-                }
-            }
+        // 充能前提：必须先用内存卡配置 vis 源（VisInterface P2P 频率）。
+        if (visSourceFreq == 0) {
+            return;
+        }
+
+        appeng.me.service.P2PService p2p = appeng.me.service.P2PService.get(grid);
+        if (p2p == null) {
+            return;
+        }
+        appeng.parts.p2p.P2PTunnelPart<?> input = p2p.getInput(visSourceFreq);
+        if (!(input instanceof thaumicenergistics.common.parts.VisInterfacePart visSource)) {
             return; // 频率设了但找不到 vis_interface P2P 输入 → 不抽
         }
 
-        // 无 vis 源：从 essentia 网络抽（neo 默认行为）
-        IEssentiaGrid essentiaGrid = grid.getService(IEssentiaGrid.class);
-        if (essentiaGrid == null) return;
-
+        // 限速充能。
+        // 关键单位换算：TC 的 consumeVis/consumeEnergizedVis 返回的是 vis（玩家看到的"X 点要素"），
+        // 而装配器 storedVis 用 cvis（×CVIS_MULTIPLIER）。返回的 vis 必须 ×CVIS_MULTIPLIER 才等于 cvis，
+        // 否则合成按 cvis 判定永远不够（之前少了 10 倍导致卡"等待"）。
         for (Aspect primal : PRIMALS) {
-            int currentCvis = storedVis.getAmount(primal);
-            int needed = MAX_STORED_CVIS - currentCvis;
+            int needed = MAX_STORED_CVIS - storedVis.getAmount(primal);
             if (needed <= 0) continue;
-
+            // 请求的 vis 数 = 需要补齐的 cvis 换算成 vis，且受每次上限约束
+            int wantVis = Math.max(1, Math.min(needed / CVIS_MULTIPLIER, MAX_CVIS_PER_REPLENISH / CVIS_MULTIPLIER));
             ResourceLocation id = TCReflection.getAspectId(primal);
             if (id == null) continue;
-
-            int neededEssentia = (needed + CVIS_MULTIPLIER - 1) / CVIS_MULTIPLIER;
-            long extracted = essentiaGrid.extractEssentia(id, neededEssentia, false);
-            if (extracted > 0) {
-                int cvisGained = (int) (extracted * CVIS_MULTIPLIER);
-                storedVis.add(primal, cvisGained);
+            int gotVis = visSource.consumeVis(id, wantVis);
+            if (gotVis > 0) {
+                storedVis.add(primal, gotVis * CVIS_MULTIPLIER);
                 maybeMarkVisDirty();
             }
         }
@@ -308,6 +313,8 @@ public class TileArcaneAssembler extends ThETileBase
     private TickRateModulation craftingTick(IGrid grid, int ticksSinceLast) {
         if (currentResult.isEmpty()) {
             isCrafting = false;
+            previewGrid = emptyPreviewGrid();
+            thaumicenergistics.common.network.AssemblerPreviewSyncPacket.send(this, false);
             return TickRateModulation.IDLE;
         }
 
@@ -326,24 +333,46 @@ public class TileArcaneAssembler extends ThETileBase
             AEItemKey outputKey = AEItemKey.of(output);
             if (outputKey == null) return TickRateModulation.IDLE;
 
+            // 元始珍珠保留：TC 唯一 retainIngredient 原料，合成后珍珠退回网络（与奥术合成终端一致）。
+            // CPU 已按配方从网络扣除珍珠，这里补回 → 净零不消耗。
+            var retainedPearls = retainedPearlStacks();
+
             long inserted = storage.getInventory().insert(
                     outputKey, output.getCount(), Actionable.SIMULATE, actionSource);
             if (inserted < output.getCount()) {
                 return TickRateModulation.SAME;
+            }
+            // 预检：珍珠类型塞满放不回网络则等待，避免合成完成却丢珍珠
+            for (ItemStack pearl : retainedPearls) {
+                AEItemKey pearlKey = AEItemKey.of(pearl);
+                if (pearlKey == null) continue;
+                if (storage.getInventory().insert(
+                        pearlKey, pearl.getCount(), Actionable.SIMULATE, actionSource) < pearl.getCount()) {
+                    return TickRateModulation.SAME;
+                }
             }
 
             consumeVisForCraft();
 
             storage.getInventory().insert(
                     outputKey, output.getCount(), Actionable.MODULATE, actionSource);
+            // 退回珍珠（数量 = 3×3 配方网格中珍珠总数，通常 1 颗）
+            for (ItemStack pearl : retainedPearls) {
+                AEItemKey pearlKey = AEItemKey.of(pearl);
+                if (pearlKey != null) {
+                    storage.getInventory().insert(pearlKey, pearl.getCount(), Actionable.MODULATE, actionSource);
+                }
+            }
 
             isCrafting = false;
             currentRecipe = null;
             currentResult = ItemStack.EMPTY;
             currentRecipeAspects = new AspectList();
+            previewGrid = emptyPreviewGrid();
             internalInventory.setItem(TARGET_SLOT, ItemStack.EMPTY);
             setChanged();
             markForUpdate();
+            thaumicenergistics.common.network.AssemblerPreviewSyncPacket.send(this, false);
 
             return TickRateModulation.URGENT;
         }
@@ -387,6 +416,21 @@ public class TileArcaneAssembler extends ThETileBase
         int baseCost = currentRecipeAspects.getAmount(aspect) * CVIS_MULTIPLIER;
         float discount = visDiscount.getOrDefault(aspect, BASE_VIS_DISCOUNT);
         return Math.max(0, Math.round(baseCost * discount));
+    }
+
+    /**
+     * 配方 3×3 网格中需保留的元始珍珠栈。TC 奥术配方中珍珠是唯一 retainIngredient 原料：
+     * 在奥术工作台/奥术合成终端中作为"催化"留在合成格不消耗，装配器合成完成后也要退回网络。
+     */
+    private List<ItemStack> retainedPearlStacks() {
+        List<ItemStack> pearls = new ArrayList<>();
+        if (previewGrid == null) return pearls;
+        for (ItemStack stack : previewGrid) {
+            if (!stack.isEmpty() && stack.getItem() == net.minecraft.core.registries.BuiltInRegistries.ITEM.get(PRIMORDIAL_PEARL_ID)) {
+                pearls.add(stack.copy());
+            }
+        }
+        return pearls;
     }
 
     private int ticksPerCraft() {
@@ -471,7 +515,7 @@ public class TileArcaneAssembler extends ThETileBase
         }
 
         return new ArcaneAssemblerPattern(AEItemKey.of(result), null, aspects, result, inputs,
-                acp.getResearch());
+                acp.getResearch(), acp.getIngredients());
     }
 
     private boolean beginCrafting(ArcaneAssemblerPattern arcanePattern) {
@@ -485,9 +529,18 @@ public class TileArcaneAssembler extends ThETileBase
         this.currentRecipe = arcanePattern.getRecipe();
         this.currentRecipeAspects = aspects.copy();
         this.currentResult = result.copy();
+        // 配方预览：复制 3×3 材料网格（不足 9 格补空）
+        this.previewGrid = emptyPreviewGrid();
+        ItemStack[] grid = arcanePattern.getGrid();
+        if (grid != null) {
+            for (int i = 0; i < 9 && i < grid.length; i++) {
+                this.previewGrid[i] = grid[i] != null ? grid[i].copy() : ItemStack.EMPTY;
+            }
+        }
         this.internalInventory.setItem(TARGET_SLOT, result.copy());
         setChanged();
         markForUpdate();
+        thaumicenergistics.common.network.AssemblerPreviewSyncPacket.send(this, true);
         return true;
     }
 
@@ -523,6 +576,10 @@ public class TileArcaneAssembler extends ThETileBase
     public int getSpeedUpgrades() { return speedUpgrades; }
     public int getCraftTickCounter() { return craftTickCounter; }
     public int getTicksPerCraft() { return ticksPerCraft(); }
+    /** 当前合成配方的 3×3 材料网格（GUI 右下配方预览；未合成时为空数组）。 */
+    public ItemStack[] getPreviewGrid() { return previewGrid; }
+    /** 当前合成产物（GUI 预产物显示；未合成为空）。 */
+    public ItemStack getCurrentResult() { return currentResult; }
     public float getCraftProgress() {
         if (!isCrafting || ticksPerCraft() <= 0) return 0f;
         return Math.min(1f, (float) craftTickCounter / ticksPerCraft());
@@ -538,6 +595,8 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     public short getVisSourceFreq() { return visSourceFreq; }
+    /** ME 节点是否有能量（Jade 网络状态细分用）。 */
+    public boolean isNodePowered() { return mainNode != null && mainNode.isPowered(); }
 
     /**
      * 内存卡右键装配器：读 P2P 频率，设为 vis 源。
@@ -582,10 +641,22 @@ public class TileArcaneAssembler extends ThETileBase
         if (slot >= ARMOR_SLOT_START && slot <= ARMOR_SLOT_END) {
             calculateVisDiscounts();
         }
+        if (slot >= UPGRADE_SLOT_START && slot <= UPGRADE_SLOT_END) {
+            recountSpeedUpgrades();
+        }
         if (slot >= PATTERN_SLOT_START && slot <= PATTERN_SLOT_END) {
             stalePatterns = true;
         }
         setChanged();
+    }
+
+    /** 按 Tile 内加速卡槽的实际卡片数量刷新 speedUpgrades（持久化计数，不再依赖菜单存活）。 */
+    private void recountSpeedUpgrades() {
+        int count = 0;
+        for (int i = UPGRADE_SLOT_START; i <= UPGRADE_SLOT_END; i++) {
+            if (!internalInventory.getItem(i).isEmpty()) count++;
+        }
+        setSpeedUpgrades(count);
     }
 
     private void updatePatternSlots() {
@@ -628,6 +699,15 @@ public class TileArcaneAssembler extends ThETileBase
                 tag.put("Slot" + i, stack.save(reg));
             }
         }
+        // 配方预览 3×3 材料（GUI 右下角显示）
+        CompoundTag gridTag = new CompoundTag();
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = previewGrid[i];
+            if (stack != null && !stack.isEmpty()) {
+                gridTag.put("g" + i, stack.save(reg));
+            }
+        }
+        tag.put("PreviewGrid", gridTag);
         return tag;
     }
 
@@ -642,6 +722,15 @@ public class TileArcaneAssembler extends ThETileBase
                     internalInventory.setItem(i, stack);
                 } else {
                     internalInventory.setItem(i, ItemStack.EMPTY);
+                }
+            }
+            previewGrid = emptyPreviewGrid();
+            if (tag.contains("PreviewGrid")) {
+                CompoundTag gridTag = tag.getCompound("PreviewGrid");
+                for (int i = 0; i < 9; i++) {
+                    if (gridTag.contains("g" + i)) {
+                        previewGrid[i] = ItemStack.parseOptional(reg, gridTag.getCompound("g" + i));
+                    }
                 }
             }
         } finally {
@@ -684,6 +773,7 @@ public class TileArcaneAssembler extends ThETileBase
         updatePatternSlots();
         stalePatterns = true;
         calculateVisDiscounts();
+        recountSpeedUpgrades();
     }
 
     @Override
@@ -720,21 +810,30 @@ public class TileArcaneAssembler extends ThETileBase
         private final ItemStack resultStack;
         private final IInput[] inputs;
         private final String research;
+        /** 3×3 配方网格（知识核心存储的 9 格材料，GUI 配方预览用）。 */
+        private final ItemStack[] grid;
 
         public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
                                       AspectList aspects, ItemStack resultStack,
                                       List<GenericStack> inputStacks) {
-            this(definition, recipe, aspects, resultStack, inputStacks, null);
+            this(definition, recipe, aspects, resultStack, inputStacks, null, null);
         }
 
         public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
                                       AspectList aspects, ItemStack resultStack,
                                       List<GenericStack> inputStacks, String research) {
+            this(definition, recipe, aspects, resultStack, inputStacks, research, null);
+        }
+
+        public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
+                                      AspectList aspects, ItemStack resultStack,
+                                      List<GenericStack> inputStacks, String research, ItemStack[] grid) {
             this.definition = definition;
             this.recipe = recipe;
             this.aspects = aspects;
             this.resultStack = resultStack;
             this.research = research;
+            this.grid = grid;
             this.inputs = new IInput[inputStacks.size()];
             for (int i = 0; i < inputStacks.size(); i++) {
                 GenericStack stack = inputStacks.get(i);
@@ -759,6 +858,13 @@ public class TileArcaneAssembler extends ThETileBase
                     @Nullable
                     @Override
                     public AEKey getRemainingKey(AEKey what) {
+                        // 元始珍珠作为"催化"原料：声明合成后它会返回网络（AE2 原生容器机制）。
+                        // 规划端据此按"每次 1 单"顺序模拟、执行端把珍珠计入 CPU waitingFor，
+                        // 机器合成完成把珍珠退回网络后 CPU 自动捕获续下一单——1 颗珍珠可连续多单。
+                        if (what instanceof AEItemKey itemKey
+                                && itemKey.getItem() == net.minecraft.core.registries.BuiltInRegistries.ITEM.get(PRIMORDIAL_PEARL_ID)) {
+                            return what;
+                        }
                         return null;
                     }
                 };
@@ -796,6 +902,9 @@ public class TileArcaneAssembler extends ThETileBase
         public IArcaneRecipe getRecipe() { return recipe; }
         public AspectList getAspects() { return aspects; }
         public ItemStack getResultStack() { return resultStack; }
+        /** 3×3 配方网格（可能为 null/短数组，GUI 预览用）。 */
+        @Nullable
+        public ItemStack[] getGrid() { return grid; }
         /** 对应 TC 奥术配方的研究键；无研究要求/老数据时可能为 null。 */
         @Nullable
         public String getResearch() { return research; }

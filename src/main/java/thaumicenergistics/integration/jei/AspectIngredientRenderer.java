@@ -33,7 +33,8 @@ public class AspectIngredientRenderer implements IIngredientRenderer<AspectIngre
             return tooltip;
         }
         Aspect aspect = ingredient.aspect();
-        tooltip.add(Component.literal(aspect.getName()));
+        // 本地化显示名（中文环境显示中文），与 AE 终端内源质名称一致
+        tooltip.add(aspect.displayName());
         tooltip.add(Component.literal(aspect.getTag()).withStyle(style -> style.withColor(0x888888)));
         return tooltip;
     }

@@ -22,6 +22,8 @@ import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
 import org.jetbrains.annotations.Nullable;
 
 import appeng.core.network.serverbound.FillCraftingGridFromRecipePacket;
+import appeng.api.stacks.AEItemKey;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import thaumcraft.integration.jei.JeiArcaneRecipe;
@@ -99,13 +101,19 @@ public class ThEUseArcaneRecipeTransfer
             return null;
         }
 
-        // 构建模板物品列表（9 格，对应 3x3 合成格）
+        // 构建模板物品列表（9 格，对应 3x3 合成格）——按可用变体挑选：
+        // 奥术配方 recipeId=null，服务端只能用客户端模板重建 Ingredient，
+        // 固定取 variants.get(0)（如石头）会导致有深板岩/圆石却拉不到。
         var templateItems = NonNullList.withSize(9, ItemStack.EMPTY);
         var inputs = recipe.inputs();
+        var stored = menu.snapshotStoredAmounts();
+        var craftable = menu.snapshotCraftableKeys();
+        var reserved = new Object2IntOpenHashMap<AEItemKey>();
         for (int i = 0; i < templateItems.size() && i < inputs.size(); i++) {
             var variants = inputs.get(i);
             if (variants != null && !variants.isEmpty()) {
-                templateItems.set(i, variants.get(0).copyWithCount(1));
+                Ingredient ingredient = Ingredient.of(variants.stream());
+                templateItems.set(i, menu.pickAvailableTemplate(ingredient, stored, craftable, reserved));
             }
         }
 

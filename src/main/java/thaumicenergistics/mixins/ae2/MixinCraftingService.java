@@ -19,7 +19,6 @@ import appeng.crafting.execution.CraftingSubmitResult;
 import net.minecraft.world.entity.player.Player;
 
 import thaumcraft.common.research.TCResearchManager;
-import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.tc.PatternResearchHelper;
 
 /**
@@ -55,9 +54,6 @@ public abstract class MixinCraftingService {
                 continue; // 无研究要求
             }
             if (!TCResearchManager.has(player, research)) {
-                ThaumicEnergistics.LOG.info(
-                        "[AE2ResearchGate] 玩家 {} 未解锁研究 {}，拒绝合成请求 (pattern={})",
-                        player.getName().getString(), research, pattern.getDefinition());
                 // 通过自定义网络包发送研究键到客户端（AE2 errorDetail 不跨网络传输）
                 if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
                     net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(

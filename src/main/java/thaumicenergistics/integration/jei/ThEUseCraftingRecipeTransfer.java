@@ -26,7 +26,9 @@ import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
 import org.jetbrains.annotations.Nullable;
 
 import appeng.core.network.serverbound.FillCraftingGridFromRecipePacket;
+import appeng.api.stacks.AEItemKey;
 import appeng.util.CraftingRecipeUtil;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import net.minecraft.world.inventory.MenuType;
 import thaumicenergistics.ThaumicEnergistics;
@@ -123,15 +125,17 @@ public class ThEUseCraftingRecipeTransfer
         }
 
         // 实际转移：发送 ME 网络填充包
+        // 模板按可用变体挑选（网络有货→背包有货→可合成→首个），
+        // 否则固定取 items[0]（如石头），网络里只有深板岩/圆石时槽位会拉不到东西。
         var templateItems = NonNullList.withSize(9, ItemStack.EMPTY);
         var ingredients = CraftingRecipeUtil.ensure3by3CraftingMatrix(recipe);
+        var stored = menu.snapshotStoredAmounts();
+        var craftable = menu.snapshotCraftableKeys();
+        var reserved = new Object2IntOpenHashMap<AEItemKey>();
         for (int i = 0; i < ingredients.size() && i < 9; i++) {
             var ingredient = ingredients.get(i);
             if (!ingredient.isEmpty()) {
-                var items = ingredient.getItems();
-                if (items.length > 0) {
-                    templateItems.set(i, items[0].copyWithCount(1));
-                }
+                templateItems.set(i, menu.pickAvailableTemplate(ingredient, stored, craftable, reserved));
             }
         }
 
@@ -190,8 +194,6 @@ public class ThEUseCraftingRecipeTransfer
                 var slotView = inputSlots.get(i);
                 slotView.drawHighlight(guiGraphics,
                         missing ? RED_SLOT_HIGHLIGHT_COLOR : BLUE_SLOT_HIGHLIGHT_COLOR);
-                ThaumicEnergistics.LOG.info("[JEI-Transfer] showError slot={} missing={} craftable={}",
-                        i, missing, craftable);
             }
 
             poseStack.popPose();

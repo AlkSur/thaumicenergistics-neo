@@ -13,7 +13,12 @@
     },
     "STORAGE": {
       "left": 134,
-      "bottom": 163
+      "bottom": 162
+    },
+    "TOOLBOX": {
+      "left": 175,
+      "bottom": 84,
+      "grid": "BREAK_AFTER_3COLS"
     }
   },
   "text": {
@@ -48,23 +53,43 @@
   "terminalStyle": {
     "header": {
       "texture": "thaumicenergistics:textures/gui/arcane_crafting.png",
-      "srcRect": [0, 0, 195, 17]
+      "srcRect": [0, 0, 194, 17]
     },
     "firstRow": {
       "texture": "thaumicenergistics:textures/gui/arcane_crafting.png",
-      "srcRect": [0, 17, 195, 18]
+      "srcRect": [0, 17, 194, 18]
     },
     "row": {
       "texture": "thaumicenergistics:textures/gui/arcane_crafting.png",
-      "srcRect": [0, 35, 195, 18]
+      "srcRect": [0, 35, 194, 18]
     },
     "lastRow": {
       "texture": "thaumicenergistics:textures/gui/arcane_crafting.png",
-      "srcRect": [0, 53, 195, 18]
+      "srcRect": [0, 53, 194, 18]
     },
     "bottom": {
       "texture": "thaumicenergistics:textures/gui/arcane_crafting.png",
-      "srcRect": [0, 71, 195, 180]
+      "srcRect": [0, 71, 194, 180]
+    }
+  },
+  "widgets": {
+    "clearCraftingGrid": {
+      "left": 103,
+      "bottom": 160
+    },
+    "clearToPlayerInv": {
+      "left": 113,
+      "bottom": 160
+    },
+    "viewCells": {
+      "left": 193,
+      "top": 0
+    },
+    "toolbox": {
+      "left": 174,
+      "bottom": 90,
+      "width": 59,
+      "height": 66
     }
   }
 }

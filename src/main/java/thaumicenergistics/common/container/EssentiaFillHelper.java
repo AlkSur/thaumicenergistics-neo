@@ -19,6 +19,7 @@ import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IEssentiaContainerItem;
 import thaumcraft.common.items.JarBlockItem;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.integration.tc.ThEEssentiaContainers;
 import thaumicenergistics.common.integration.tc.TCReflection;
 
 /**
@@ -83,10 +84,12 @@ public final class EssentiaFillHelper {
             return true;
         }
 
-        // 罐子（IEssentiaContainerItem）：每次只装 1 个空罐（手堆叠 -1，背包得 1 满罐）
-        if (!(carried.getItem() instanceof IEssentiaContainerItem container)) {
+        // 罐子（JarBlockItem）：每次只装 1 个空罐（手堆叠 -1，背包得 1 满罐）。
+        // 其余 IEssentiaContainerItem（天域之华等）不参与装罐。
+        if (!ThEEssentiaContainers.isJar(carried)) {
             return false;
         }
+        IEssentiaContainerItem container = (IEssentiaContainerItem) carried.getItem();
         AspectList existing = container.getAspects(carried);
         if (existing != null && !existing.isEmpty()) {
             return false; // 罐子非空，不能装
@@ -133,8 +136,12 @@ public final class EssentiaFillHelper {
     @Nullable
     public static ItemStack extractContainerContent(MEStorage storage, IEnergySource energySource,
                                                     IActionSource actionSource, ItemStack stack) {
-        if (!(stack.getItem() instanceof IEssentiaContainerItem container)) {
+        // 仅要素安瓿/要素罐子（天域之华、水晶等其他 IEssentiaContainerItem 一律不处理）
+        if (!ThEEssentiaContainers.isEssentiaContainer(stack)) {
             return null;
+        }
+        if (!(stack.getItem() instanceof IEssentiaContainerItem container)) {
+            return stack; // 空玻璃安瓿：无源质可存
         }
         int count = stack.getCount();
         if (count <= 0) {

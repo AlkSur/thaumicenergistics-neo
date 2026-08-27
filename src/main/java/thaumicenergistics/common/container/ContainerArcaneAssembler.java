@@ -1,5 +1,7 @@
 package thaumicenergistics.common.container;
 
+import java.util.List;
+
 import appeng.core.definitions.AEItems;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -33,28 +35,28 @@ import thaumicenergistics.init.ModMenuTypes;
  */
 public class ContainerArcaneAssembler extends AbstractContainerMenu {
 
-    // ===== 坐标常量（1:1 对应1.7.10） =====
+    // ===== 坐标常量（新版贴图 256×256：格子 16×16、步距 18） =====
     private static final int PLAYER_INV_X = 8;
-    private static final int PLAYER_INV_Y = 113;
-    private static final int HOTBAR_Y     = PLAYER_INV_Y + 58; // 173
+    private static final int PLAYER_INV_Y = 147;
+    private static final int HOTBAR_Y     = 205;
 
     private static final int PATTERN_X = 26;
-    private static final int PATTERN_Y = 25;
+    private static final int PATTERN_Y = 15;
     private static final int PATTERN_ROWS = 3;
     private static final int PATTERN_COLS = 7;
 
-    private static final int KCORE_X   = 187;
-    private static final int KCORE_Y   = 8;
+    private static final int KCORE_X   = 175;
+    private static final int KCORE_Y   = 6;
 
-    private static final int UPGRADE_X = 187;
-    private static final int UPGRADE_Y = 26;
+    private static final int UPGRADE_X = 175;
+    private static final int UPGRADE_Y = 24;
     private static final int UPGRADE_COUNT = 4;
 
-    private static final int TARGET_X  = 14;
-    private static final int TARGET_Y  = 87;
+    private static final int TARGET_X  = 114;
+    private static final int TARGET_Y  = 97;
 
-    private static final int ARMOR_X   = 210;
-    private static final int ARMOR_Y   = 26;
+    private static final int ARMOR_X   = 152;
+    private static final int ARMOR_Y   = 73;
     private static final int ARMOR_COUNT = 4;
 
     // ===== 槽位划分（quickMoveStack 用） =====
@@ -69,20 +71,28 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
     private static final int ARMOR_START   = TARGET_IDX + 1;                                 // 63
     private static final int ARMOR_END     = ARMOR_START + ARMOR_COUNT;                      // 67
 
-    /** 升级卡 handler（独立4格，与 Tile 的 speedUpgrades 字段同步） */
-    final ItemStackHandler upgradeHandler = new ItemStackHandler(UPGRADE_COUNT) {
-        @Override protected void onContentsChanged(int slot) {
-            super.onContentsChanged(slot);
-            if (assembler != null) {
-                int count = 0;
-                for (int i = 0; i < UPGRADE_COUNT; i++)
-                    if (!getStackInSlot(i).isEmpty()) count++;
-                assembler.setSpeedUpgrades(count);
+    public final TileArcaneAssembler assembler;
+
+    /** 供 GUI 渲染空槽图标（加速卡/护甲）时定位槽位。 */
+    public Slot getUpgradeSlot(int i) { return slots.get(UPGRADE_START + i); }
+    public Slot getArmorSlot(int i) { return slots.get(ARMOR_START + i); }
+    public Slot getKCoreSlot() { return slots.get(KCORE_IDX); }
+
+    // ===== 配方预览（客户端，由 AssemblerPreviewSyncPacket 更新） =====
+    public boolean clientPreviewActive = false;
+    public ItemStack[] clientPreviewGrid = new ItemStack[9];
+    public ItemStack clientPreviewResult = ItemStack.EMPTY;
+
+    public void applyClientPreview(List<ItemStack> grid, ItemStack result, boolean active) {
+        this.clientPreviewActive = active;
+        this.clientPreviewGrid = new ItemStack[9];
+        if (grid != null) {
+            for (int i = 0; i < 9 && i < grid.size(); i++) {
+                this.clientPreviewGrid[i] = grid.get(i) != null ? grid.get(i).copy() : ItemStack.EMPTY;
             }
         }
-    };
-
-    public final TileArcaneAssembler assembler;
+        this.clientPreviewResult = result != null ? result.copy() : ItemStack.EMPTY;
+    }
 
     /** 可视数据同步：服务端读 tile，客户端存同步值（GUI 进度条/源质条不依赖 BE 网络同步，靠容器每 tick 同步） */
     public final ContainerData visData;
@@ -168,9 +178,10 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
                         PATTERN_X + c * 18, PATTERN_Y + r * 18));
             }
 
-        // ===== 5. 4张AE2速度卡 =====
+        // ===== 5. 4张AE2速度卡（持久化在 Tile 槽 27~30，关 GUI 不丢失） =====
         for (int i = 0; i < UPGRADE_COUNT; i++) {
-            addSlot(new SlotItemHandler(upgradeHandler, i, UPGRADE_X, UPGRADE_Y + i * 18) {
+            int invIdx = TileArcaneAssembler.UPGRADE_SLOT_START + i;
+            addSlot(new SlotItemHandler(machineHandler, invIdx, UPGRADE_X, UPGRADE_Y + i * 18) {
                 @Override
                 public boolean mayPlace(ItemStack s) {
                     return AEItems.SPEED_CARD.is(s);
@@ -178,8 +189,8 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
             });
         }
 
-        // ===== 6. 目标产物输出槽（只读展示，AE2 式防整理） =====
-        addSlot(new ReadOnlySlot(machineHandler, TileArcaneAssembler.TARGET_SLOT, TARGET_X, TARGET_Y));
+        // ===== 6. 目标产物输出槽（只读展示，由 GUI 从网络包数据渲染；槽位移出屏幕避免双渲染） =====
+        addSlot(new ReadOnlySlot(machineHandler, TileArcaneAssembler.TARGET_SLOT, -2000, -2000));
 
         // ===== 7. 4个护甲折扣槽 =====
         for (int i = 0; i < ARMOR_COUNT; i++) {
@@ -191,6 +202,13 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
                 case 2 -> net.minecraft.world.entity.EquipmentSlot.LEGS;
                 default -> net.minecraft.world.entity.EquipmentSlot.FEET;
             };
+            // 空槽图标：原版头盔/胸甲/护腿/靴子（BLOCK_ATLAS 图集，同 WCWT 手动合成区做法）
+            final net.minecraft.resources.ResourceLocation armorIcon = switch (i) {
+                case 0 -> net.minecraft.world.inventory.InventoryMenu.EMPTY_ARMOR_SLOT_HELMET;
+                case 1 -> net.minecraft.world.inventory.InventoryMenu.EMPTY_ARMOR_SLOT_CHESTPLATE;
+                case 2 -> net.minecraft.world.inventory.InventoryMenu.EMPTY_ARMOR_SLOT_LEGGINGS;
+                default -> net.minecraft.world.inventory.InventoryMenu.EMPTY_ARMOR_SLOT_BOOTS;
+            };
             addSlot(new SlotItemHandler(machineHandler, invIdx, ARMOR_X, ARMOR_Y + i * 18) {
                 @Override public boolean mayPlace(ItemStack s) {
                     if (s.getItem() instanceof IVisDiscountGear) return true;
@@ -198,6 +216,11 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
                     if (s.getItem() instanceof net.minecraft.world.item.Equipable eqItem)
                         return eqItem.getEquipmentSlot() == eq;
                     return false;
+                }
+                @Override
+                public com.mojang.datafixers.util.Pair<net.minecraft.resources.ResourceLocation, net.minecraft.resources.ResourceLocation> getNoItemIcon() {
+                    return com.mojang.datafixers.util.Pair.of(
+                            net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS, armorIcon);
                 }
                 @Override public void setChanged() {
                     super.setChanged();

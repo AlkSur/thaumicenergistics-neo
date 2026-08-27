@@ -4,10 +4,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
-import org.jetbrains.annotations.Nullable;
-
-import thaumcraft.api.aspects.AspectList;
-import thaumcraft.api.aspects.IEssentiaContainerItem;
+import thaumicenergistics.common.integration.tc.ThEEssentiaContainers;
 
 import appeng.client.gui.me.common.MEStorageScreen;
 import appeng.client.gui.style.ScreenStyle;
@@ -41,13 +38,14 @@ public class GuiEssentiaTerminal extends MEStorageScreen<EssentiaTerminalMenu> {
             // 源质物品来源：优先菜单 carried；为空时回退玩家主手物品
             ItemStack sourceStack = !carried.isEmpty() ? carried
                     : this.menu.getPlayerInventory().player.getMainHandItem();
-            boolean isContainer = isSourceContainer(sourceStack);
-            boolean containerHasEssentia = isContainer && getContainerEssentia(sourceStack) != null;
+            boolean isContainer = ThEEssentiaContainers.isEssentiaContainer(sourceStack);
+            boolean containerHasEssentia = isContainer && ThEEssentiaContainers.hasEssentia(sourceStack);
 
             // Shift+右键玩家物品栏/背包格：格内是源质容器 → 存入源质（空容器留原格）
             if (shiftDown && this.hoveredSlot != null && this.menu.isPlayerSideSlot(this.hoveredSlot)) {
                 var slotStack = this.hoveredSlot.getItem();
-                if (slotStack.getItem() instanceof IEssentiaContainerItem) {
+                // 仅要素安瓿/要素罐子；天域之华等其余 IEssentiaContainerItem 一律放行
+                if (ThEEssentiaContainers.isEssentiaContainer(slotStack)) {
                     PacketDistributor.sendToServer(EssentiaTerminalDepositC2SPacket.fromSlot(
                             this.menu.containerId, this.hoveredSlot.getSlotIndex(), slotStack));
                     return true;
@@ -93,26 +91,5 @@ public class GuiEssentiaTerminal extends MEStorageScreen<EssentiaTerminalMenu> {
             }
         }
         return super.mouseClicked(xCoord, yCoord, btn);
-    }
-
-    /** 源质容器：实现 IEssentiaContainerItem 的物品，或空玻璃安瓿（glass_phial 不实现该接口但可装罐）。 */
-    private static boolean isSourceContainer(ItemStack stack) {
-        if (stack.getItem() instanceof IEssentiaContainerItem) {
-            return true;
-        }
-        return stack.is(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("thaumcraft", "glass_phial")));
-    }
-
-    /** 若手持物品是源质容器且非空，返回其 AspectList；否则返回 null。 */
-    @Nullable
-    private static AspectList getContainerEssentia(ItemStack stack) {
-        if (stack.getItem() instanceof IEssentiaContainerItem container) {
-            AspectList aspects = container.getAspects(stack);
-            if (aspects != null && !aspects.isEmpty()) {
-                return aspects;
-            }
-        }
-        return null;
     }
 }

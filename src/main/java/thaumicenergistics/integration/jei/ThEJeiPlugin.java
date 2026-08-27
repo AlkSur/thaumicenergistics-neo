@@ -97,6 +97,12 @@ public class ThEJeiPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        // 源质终端（含无线版）：悬停仓库源质 → 提供 AspectIngredient 可点击项，
+        // 使 JEI 的 A 键收藏/配方查看正确显示源质图标与名称（不依赖 AE2-JEI-Integration）。
+        registration.addGuiContainerHandler(
+                thaumicenergistics.common.container.GuiEssentiaTerminal.class,
+                new ThEEssentiaGuiHandler());
+
         // 源质元件工作台：从 JEI 拖拽要素到分区格添加分区（纯 JEI API，可选功能）
         registration.addGhostIngredientHandler(GuiEssentiaCellWorkbench.class, new CellWorkbenchGhostIngredientHandler());
         // 知识记录仪：从 JEI 拉取物品到 3×3 合成网格（复用 GhostSlot + KnowledgeInscriberGhostSlotPacket）

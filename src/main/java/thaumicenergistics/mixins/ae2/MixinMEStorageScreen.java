@@ -50,7 +50,8 @@ public abstract class MixinMEStorageScreen {
         // Shift+右键玩家物品栏/背包格：格内是源质容器 → 存入源质（空容器留原格）
         if (shiftDown && hovered != null && self.getMenu().isPlayerSideSlot(hovered)) {
             var slotStack = hovered.getItem();
-            if (slotStack.getItem() instanceof thaumcraft.api.aspects.IEssentiaContainerItem) {
+            // 仅要素安瓿/要素罐子；天域之华等其余 IEssentiaContainerItem 一律放行
+            if (thaumicenergistics.common.integration.tc.ThEEssentiaContainers.isEssentiaContainer(slotStack)) {
                 PacketDistributor.sendToServer(EssentiaTerminalDepositC2SPacket.fromSlot(
                         self.getMenu().containerId, hovered.getSlotIndex(), slotStack));
                 cir.setReturnValue(true);
@@ -116,23 +117,13 @@ public abstract class MixinMEStorageScreen {
         }
     }
 
-    /** 源质容器：实现 IEssentiaContainerItem 的物品，或空玻璃安瓿（glass_phial 不实现该接口但可装罐）。 */
+    /** 源质容器：仅要素安瓿与要素罐子（天域之华/水晶等按 Kind 排除）。 */
     private static boolean isSourceContainer(ItemStack stack) {
-        if (stack.getItem() instanceof thaumcraft.api.aspects.IEssentiaContainerItem) {
-            return true;
-        }
-        return stack.is(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("thaumcraft", "glass_phial")));
+        return thaumicenergistics.common.integration.tc.ThEEssentiaContainers.isEssentiaContainer(stack);
     }
 
     /** 若手持物品是源质容器且非空，返回 true。 */
     private static boolean hasContainerEssentia(ItemStack stack) {
-        if (stack.getItem() instanceof thaumcraft.api.aspects.IEssentiaContainerItem container) {
-            var aspects = container.getAspects(stack);
-            if (aspects != null && !aspects.isEmpty()) {
-                return true;
-            }
-        }
-        return false;
+        return thaumicenergistics.common.integration.tc.ThEEssentiaContainers.hasEssentia(stack);
     }
 }

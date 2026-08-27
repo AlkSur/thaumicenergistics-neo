@@ -22,7 +22,8 @@ public class AspectIngredientHelper implements IIngredientHelper<AspectIngredien
     @Override
     public String getDisplayName(AspectIngredient ingredient) {
         if (ingredient == null || ingredient.aspect() == null) return "Unknown";
-        return ingredient.aspect().getName();
+        // 用本地化显示名（displayName，中文环境显示中文），与 AE 终端内源质名称一致
+        return ingredient.aspect().displayName().getString();
     }
 
     @Override

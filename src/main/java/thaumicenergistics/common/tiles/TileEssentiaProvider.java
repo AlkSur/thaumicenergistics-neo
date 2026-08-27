@@ -8,7 +8,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.IEssentiaTransport;
 import thaumcraft.common.essentia.EssentiaTransport;
-import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.api.storage.IAspectStack;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModItems;
@@ -160,11 +159,8 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
 
     @Override
     public int takeEssentia(Aspect aspect, int amount, Direction side) {
-        ThaumicEnergistics.LOG.debug("[MyHano-E] takeEssentia: aspect={}, amount={}, side={}, active={}",
-                aspect != null ? aspect.getTag() : "null", amount, side, mainNode.isActive());
         if (!mainNode.isActive()) return 0;
         long extracted = extractEssentiaFromNetwork(aspect, amount, false);
-        ThaumicEnergistics.LOG.debug("[MyHano-E] takeEssentia result={}", extracted);
         if (extracted > 0) {
             tickRate = TICK_RATE_URGENT;
         }
@@ -173,13 +169,10 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
 
     @Override
     public int addEssentia(Aspect aspect, int amount, Direction side) {
-        ThaumicEnergistics.LOG.debug("[MyHano-E] addEssentia: aspect={}, amount={}, side={}, active={}",
-                aspect != null ? aspect.getTag() : "null", amount, side, mainNode.isActive());
         if (!mainNode.isActive()) return 0;
         long rejected = injectEssentiaToNetwork(aspect, amount, false);
         long accepted = amount - rejected;
         if (accepted > 0) {
-            ThaumicEnergistics.LOG.debug("[MyHano-E] addEssentia accepted={}", accepted);
             tickRate = TICK_RATE_URGENT;
         }
         return (int) accepted;

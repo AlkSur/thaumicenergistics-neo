@@ -1,6 +1,7 @@
 package thaumicenergistics.common.container;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.energy.IEnergySource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.ITerminalHost;
+import appeng.api.storage.StorageHelper;
 import appeng.helpers.ICraftingGridMenu;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
@@ -30,7 +32,10 @@ import appeng.menu.me.crafting.CraftConfirmMenu;
 import appeng.menu.slot.AppEngSlot;
 import appeng.menu.slot.CraftingMatrixSlot;
 import appeng.me.storage.LinkStatusRespectingInventory;
+import appeng.util.inv.PlayerInternalInventory;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.neoforged.neoforge.network.PacketDistributor;
+import thaumicenergistics.common.network.ArcaneTerminalClearC2SPacket;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.wands.WandCap;
@@ -38,7 +43,6 @@ import net.minecraft.world.item.crafting.Ingredient;
 import thaumcraft.common.items.TCFunctionalItems;
 import thaumcraft.common.lib.crafting.ThaumcraftCraftingManager;
 import thaumcraft.common.vis.TCVisHelper;
-import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.slot.ArcaneCraftingResultSlot;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
 import thaumicenergistics.init.ModMenuTypes;
@@ -133,15 +137,15 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         }, SlotSemantics.STORAGE);
 
         updateCurrentRecipeAndOutput(true);
+
+        registerClientAction(ACTION_CLEAR_TO_PLAYER, this::clearToPlayerInventory);
     }
 
     // ========== ICraftingGridMenu 实现 ==========
 
     @Override
     public InternalInventory getCraftingMatrix() {
-        var inv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING);
-        ThaumicEnergistics.LOG.debug("[ICraftingGrid] getCraftingMatrix called, size={}", inv.size());
-        return inv;
+        return this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING);
     }
 
     @Override
@@ -154,21 +158,117 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         return this.energySource;
     }
 
+    /**
+     * 清空合成网格，材料一键存入 ME 网络（对应终端 S_STASH 按钮与"关闭时自动清理合成槽"设置）。
+     * 仅客户端调用：发送专用 C2S 包，服务端直接执行 {@link #clearGridToNetworkOnServer()}
+     * （不走 AE2 quickMove/MOVE_REGION 语义链，任何环境下都可靠）。
+     */
+    public void clearCraftingGrid() {
+        if (!isClientSide()) {
+            return;
+        }
+        PacketDistributor.sendToServer(
+                new ArcaneTerminalClearC2SPacket(this.containerId, ArcaneTerminalClearC2SPacket.ACTION_STASH, false));
+    }
+
+    /** 服务端：把合成网格所有物品存入 ME 网络，放不下的回玩家背包。结果槽由 slotsChanged 联动刷新。 */
+    public void clearGridToNetworkOnServer() {
+        var grid = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING);
+        var playerInv = new PlayerInternalInventory(getPlayerInventory());
+        boolean changed = false;
+        for (int i = 0; i < grid.size(); i++) {
+            ItemStack stack = grid.getStackInSlot(i);
+            if (stack.isEmpty()) continue;
+            changed = true;
+
+            long inserted = 0;
+            AEItemKey key = AEItemKey.of(stack);
+            if (key != null && canInteractWithGrid()) {
+                inserted = StorageHelper.poweredInsert(energySource, storage, key, stack.getCount(),
+                        this.getActionSource());
+            }
+
+            if (inserted >= stack.getCount()) {
+                grid.setItemDirect(i, ItemStack.EMPTY);
+            } else {
+                ItemStack remaining = stack.copy();
+                remaining.shrink((int) inserted);
+                ItemStack left = playerInv.addItems(remaining);
+                grid.setItemDirect(i, left.isEmpty() ? ItemStack.EMPTY : left);
+            }
+        }
+        if (changed) {
+            slotsChanged(grid.toContainer());
+        }
+    }
+
+    /** 服务端：客户端上报的"关闭时自动清理合成槽"开关值（在菜单构造后由 C2S 包设置）。 */
+    private boolean clearOnClose = false;
+
+    public void setClearOnClose(boolean clearOnClose) {
+        this.clearOnClose = clearOnClose;
+    }
+
+    /**
+     * 菜单关闭时（无论 ESC、走开、方块被拆、服务端强制关闭），按客户端上报的开关清理网格。
+     * 不依赖 GUI onClose 是否触发——这是最可靠的兜底。
+     */
+    @Override
+    public void removed(net.minecraft.world.entity.player.Player player) {
+        if (!isClientSide() && clearOnClose) {
+            clearGridToNetworkOnServer();
+        }
+        super.removed(player);
+    }
+
+    private static final String ACTION_CLEAR_TO_PLAYER = "clearToPlayer";
+
+    /**
+     * 清空合成网格，材料一键存入玩家背包（对应终端 S_STASH_TO_PLAYER_INV 按钮）。
+     * 复刻 {@code appeng.menu.me.items.CraftingTermMenu.clearToPlayerInventory}。
+     */
+    public void clearToPlayerInventory() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_CLEAR_TO_PLAYER);
+            return;
+        }
+
+        var craftingGridInv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING);
+        var playerInv = new PlayerInternalInventory(getPlayerInventory());
+
+        for (int i = 0; i < craftingGridInv.size(); ++i) {
+            for (int emptyLoop = 0; emptyLoop < 2; ++emptyLoop) {
+                boolean allowEmpty = emptyLoop == 1;
+
+                // 快捷栏优先
+                final int HOTBAR_SIZE = 9;
+                for (int j = HOTBAR_SIZE; j-- > 0;) {
+                    if (playerInv.getStackInSlot(j).isEmpty() == allowEmpty) {
+                        craftingGridInv.setItemDirect(i,
+                                playerInv.getSlotInv(j).addItems(craftingGridInv.getStackInSlot(i)));
+                    }
+                }
+                // 其余背包
+                for (int j = HOTBAR_SIZE; j < Inventory.INVENTORY_SIZE; ++j) {
+                    if (playerInv.getStackInSlot(j).isEmpty() == allowEmpty) {
+                        craftingGridInv.setItemDirect(i,
+                                playerInv.getSlotInv(j).addItems(craftingGridInv.getStackInSlot(i)));
+                    }
+                }
+            }
+        }
+    }
+
     // ========== 配方检测 ==========
 
     @Override
     public void slotsChanged(Container inventory) {
-        ThaumicEnergistics.LOG.debug("[A] slotsChanged fired, beingTaken={}, inventoryClass={}",
-                isCraftingResultBeingTaken, inventory.getClass().getSimpleName());
         if (!isCraftingResultBeingTaken) {
             updateCurrentRecipeAndOutput(false);
-        } else {
-            ThaumicEnergistics.LOG.debug("[A] slotsChanged SKIPPED (beingTaken=true)");
         }
     }
 
     public void setCraftingResultBeingTaken(boolean beingTaken) {
-        ThaumicEnergistics.LOG.debug("[A] setCraftingResultBeingTaken={}", beingTaken);
         this.isCraftingResultBeingTaken = beingTaken;
     }
 
@@ -195,29 +295,22 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
     }
 
     private boolean hasEnoughVis(AspectList cost) {
-        ThaumicEnergistics.LOG.debug("[V] hasEnoughVis: cost={}", cost);
         if (cost == null || cost.isEmpty()) {
-            ThaumicEnergistics.LOG.debug("[V] no cost, no wand needed");
             return true;
         }
         var wandInv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
         var wandStack = wandInv.getStackInSlot(0);
-        ThaumicEnergistics.LOG.debug("[V] wandStack={}", wandStack);
         if (wandStack.isEmpty()) {
-            ThaumicEnergistics.LOG.debug("[V] wandStack EMPTY");
             return false;
         }
         if (!(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) {
-            ThaumicEnergistics.LOG.debug("[V] not a WandCastingItem");
             return false;
         }
         var centivisCost = new AspectList();
         for (var aspect : cost.aspects()) {
             centivisCost.add(aspect, cost.amount(aspect) * CENTIVIS);
         }
-        boolean result = wand.consumeVisCost(wandStack, getPlayerInventory().player, centivisCost, false, true);
-        ThaumicEnergistics.LOG.debug("[V] consumeVisCost result={}", result);
-        return result;
+        return wand.consumeVisCost(wandStack, getPlayerInventory().player, centivisCost, false, true);
     }
 
     private void updateCurrentRecipeAndOutput(boolean forceUpdate) {
@@ -362,6 +455,98 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         }
 
         return new MissingIngredientSlots(missingSlots, craftableSlots);
+    }
+
+    /**
+     * 为 JEI "+" 填充挑选一个可用的材料模板：优先取 ME 网络中实际有货的变体，
+     * 其次玩家背包有货的变体，再次可自动合成的变体，最后回退到第一个变体。
+     * <p>
+     * 背景：奥术配方 recipeId=null，服务端只能用客户端模板重建单物品 Ingredient，
+     * 若客户端固定发第一个变体（如石头），网络里只有深板岩/圆石时槽位就拉不到东西。
+     * 这里带预留计数（reservedAmounts），多个槽位需要同一材料时不会重复占用同一份库存。
+     *
+     * @param stored    网络库存快照（AEItemKey → 数量），由调用方一次构建，避免每槽全量扫描
+     * @param craftable 网络中可自动合成的物品集合快照
+     */
+    public ItemStack pickAvailableTemplate(Ingredient ingredient, Map<AEItemKey, Long> stored,
+                                           Set<AEItemKey> craftable, Object2IntOpenHashMap<AEItemKey> reservedAmounts) {
+        ItemStack[] items = ingredient.getItems();
+        if (items.length == 0) {
+            return ItemStack.EMPTY;
+        }
+
+        // 1) ME 网络中有库存的变体
+        for (ItemStack variant : items) {
+            AEItemKey key = AEItemKey.of(variant);
+            if (key == null) continue;
+            long avail = stored.getOrDefault(key, 0L) - reservedAmounts.getOrDefault(key, 0);
+            if (avail >= 1) {
+                reservedAmounts.merge(key, 1, Integer::sum);
+                return variant.copyWithCount(1);
+            }
+        }
+
+        // 2) 玩家背包中的变体
+        var playerItems = getPlayerInventory().items;
+        for (int i = 0; i < playerItems.size(); i++) {
+            if (isPlayerInventorySlotLocked(i)) continue;
+            var stack = playerItems.get(i);
+            if (stack.isEmpty() || !ingredient.test(stack)) continue;
+            AEItemKey key = AEItemKey.of(stack);
+            int used = key != null ? reservedAmounts.getOrDefault(key, 0) : 0;
+            if (stack.getCount() - used >= 1) {
+                if (key != null) {
+                    reservedAmounts.merge(key, 1, Integer::sum);
+                }
+                return stack.copyWithCount(1);
+            }
+        }
+
+        // 3) 可自动合成的变体（仅当玩家按住 Ctrl 时服务端才会真正排产；不按则槽位保持空，与旧行为一致）
+        for (ItemStack variant : items) {
+            AEItemKey key = AEItemKey.of(variant);
+            if (key != null && craftable.contains(key) && reservedAmounts.getOrDefault(key, 0) == 0) {
+                reservedAmounts.merge(key, 1, Integer::sum);
+                return variant.copyWithCount(1);
+            }
+        }
+
+        // 4) 回退：第一个变体
+        return items[0].copyWithCount(1);
+    }
+
+    /**
+     * 构建 ME 网络库存快照（AEItemKey → 存储量）。供 JEI "+" 模板挑选一次性调用。
+     */
+    public Map<AEItemKey, Long> snapshotStoredAmounts() {
+        Map<AEItemKey, Long> map = new HashMap<>();
+        var clientRepo = getClientRepo();
+        if (clientRepo != null) {
+            for (var entry : clientRepo.getAllEntries()) {
+                if (!(entry.getWhat() instanceof AEItemKey itemKey)) continue;
+                if (entry.getStoredAmount() > 0) {
+                    map.put(itemKey, entry.getStoredAmount());
+                }
+            }
+        }
+        return map;
+    }
+
+    /**
+     * 构建网络中可自动合成物品的集合快照。供 JEI "+" 模板挑选一次性调用。
+     */
+    public Set<AEItemKey> snapshotCraftableKeys() {
+        Set<AEItemKey> set = new HashSet<>();
+        var clientRepo = getClientRepo();
+        if (clientRepo != null) {
+            for (var entry : clientRepo.getAllEntries()) {
+                if (!(entry.getWhat() instanceof AEItemKey itemKey)) continue;
+                if (entry.isCraftable()) {
+                    set.add(itemKey);
+                }
+            }
+        }
+        return set;
     }
 
     /**

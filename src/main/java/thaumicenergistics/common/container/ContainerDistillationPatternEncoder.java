@@ -23,7 +23,6 @@ import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.common.research.TCResearchManager;
 import thaumcraft.common.research.ThaumometerScanManager;
-import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.slot.ReadOnlySlot;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.TCReflection;
@@ -234,8 +233,11 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
     /**
      * Encode 按钮可用的条件：源物品已配置 + 已选要素 + 空白样板槽有样板 + 成品槽为空。
      * 服务端从 Tile 读（权威）；客户端 encoder 为 null，从同步的槽内容判断。
+     * 先执行 getSourceAspects()：重开 GUI 后源物品仍在 Tile 中，但本容器缓存为空，
+     * 不先解析会误判"未选要素"导致按钮置灰/编码无效。
      */
     public boolean canEncode() {
+        getSourceAspects();
         if (getSelectedAspect() == null) return false;
         if (getSourceItem().isEmpty()) return false;
         if (encoder != null) {
@@ -251,10 +253,12 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
         // 研究限制：必须解锁"要素蒸馏"才能配置物品→源质蒸馏样板
         if (!TCResearchManager.has(playerInv.player, RESEARCH_DISTILESSENTIA)) {
-            ThaumicEnergistics.LOG.info("[DistillationEncoder] 玩家未解锁研究 {}，拒绝编码蒸馏样板", RESEARCH_DISTILESSENTIA);
             return;
         }
 
+        // 重开 GUI 后服务端缓存为空：先从 Tile 的源物品重新解析要素，
+        // 否则 getSelectedAspect() 恒为 null（客户端已选、服务端无缓存 → 点击 Encode 无效）。
+        getSourceAspects();
         Aspect selected = getSelectedAspect();
         ItemStack source = getSourceItem();
         ItemStack blankSlot = encoder.inventory.getStackInSlot(TileDistillationPatternEncoder.SLOT_BLANK_PATTERNS);

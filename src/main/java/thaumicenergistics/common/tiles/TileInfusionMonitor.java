@@ -259,6 +259,9 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
             nbt.putInt("line_width", BUBBLE_LINE_WIDTH);
             nbt.putBoolean("shadow", true);
             nbt.putBoolean("see_through", false);
+            // 必须写 alignment：TextDisplay.readAdditionalSaveData 无条件 decode "alignment"，
+            // 缺失时 tag.get 返回 null → Align.CODEC(字符串) decode 失败 → 服务端疯狂刷 "Display entityNot a string"。
+            nbt.putString("alignment", "center");
             // 文字调小：transformation.scale 整体缩到 0.5（text_display 无字号参数，靠实体缩放）
             CompoundTag transform = new CompoundTag();
             transform.put("scale", floatList(0.5F, 0.5F, 0.5F));
@@ -432,6 +435,16 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
     public RiskData getCachedRisk() {
         return cachedRisk;
+    }
+
+    /** ME 网络是否在线（节点 active：有能量 + 有频道）。Jade 显示网络状态用。 */
+    public boolean isNetworkOnline() {
+        return mainNode.isActive();
+    }
+
+    /** 网格节点是否有能量。Jade 状态细分（在线/无频道/离线）用。 */
+    public boolean isNodePowered() {
+        return mainNode.isPowered();
     }
 
     // ===== IInWorldGridNodeHost =====

@@ -3,11 +3,16 @@ package thaumicenergistics.common.container;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import appeng.api.config.ActionItems;
+import appeng.client.gui.widgets.ActionButton;
+import appeng.core.AEConfig;
 import appeng.menu.slot.AppEngCraftingSlot;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.gui.AspectGuiRenderer;
 import appeng.client.gui.me.common.MEStorageScreen;
 import appeng.client.gui.style.ScreenStyle;
+import net.neoforged.neoforge.network.PacketDistributor;
+import thaumicenergistics.common.network.ArcaneTerminalClearC2SPacket;
 
 import java.util.Map;
 
@@ -24,6 +29,60 @@ public class GuiArcaneCraftingTerminal extends MEStorageScreen<ContainerArcaneCr
     public GuiArcaneCraftingTerminal(ContainerArcaneCraftingTerminal menu, Inventory playerInventory,
                                      Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
+
+        // 一键存入 ME 网络（合成格清空）
+        ActionButton clearBtn = new ActionButton(ActionItems.S_STASH, btn -> menu.clearCraftingGrid());
+        clearBtn.setHalfSize(true);
+        clearBtn.setDisableBackground(true);
+        widgets.add("clearCraftingGrid", clearBtn);
+
+        // 一键存入玩家背包（合成格清空）
+        ActionButton clearToPlayerInvBtn = new ActionButton(ActionItems.S_STASH_TO_PLAYER_INV,
+                btn -> menu.clearToPlayerInventory());
+        clearToPlayerInvBtn.setHalfSize(true);
+        clearToPlayerInvBtn.setDisableBackground(true);
+        widgets.add("clearToPlayerInv", clearToPlayerInvBtn);
+
+        // 打开终端时上报 AE2 设置"关闭时自动清理合成槽"——服务端在菜单 removed 时兜底清理
+        sendClearOnCloseSetting();
+    }
+
+    /**
+     * 主区（0~175）按中轴线 87.5 居中：AE2 终端 imageWidth=194（srcRect），默认 leftPos 按 194 居中会让主区偏左约 10px。
+     * 覆写 leftPos 用 175 居中，右侧 176~194（view cells 区）作为附加延伸到右侧。
+     * <p>
+     * 关键时序：AEBaseScreen.init 先调 AbstractContainerScreen.init（按 imageWidth 算 leftPos），随后用该 leftPos
+     * 一次性解析并冻结按钮/文本层坐标（populateScreen）；而渲染时贴图与槽位按当前 leftPos 画。若把 175 居中放在
+     * super.init() 之后，按钮层基准是 194 居中、贴图层是 175 居中，差 (194-175)/2≈10px，按钮层就像整体左移。
+     * 因此先把 imageWidth 临时改为 175，让 super.init() 全程内部就用 87.5 居中解析所有层，再恢复。
+     */
+    @Override
+    public void init() {
+        int originalImageWidth = this.imageWidth;
+        this.imageWidth = 175;
+        super.init();
+        this.imageWidth = originalImageWidth;
+        this.leftPos = (this.width - 175) / 2;
+    }
+
+    /** 向服务端上报当前 AE2 全局设置"关闭时自动清理合成槽"。 */
+    private void sendClearOnCloseSetting() {
+        boolean enabled = AEConfig.instance().isClearGridOnClose();
+        PacketDistributor.sendToServer(new ArcaneTerminalClearC2SPacket(
+                this.menu.containerId, ArcaneTerminalClearC2SPacket.ACTION_SET_CLEAR_ON_CLOSE, enabled));
+    }
+
+    /**
+     * 关闭终端时按 AE2 全局设置"自动清理合成槽"清空合成网格。
+     * 双保险：先上报最新开关值，若开启再立即清一次（removed 兜底仍会执行，网格已空则无副作用）。
+     */
+    @Override
+    public void onClose() {
+        sendClearOnCloseSetting();
+        if (AEConfig.instance().isClearGridOnClose()) {
+            this.getMenu().clearCraftingGrid();
+        }
+        super.onClose();
     }
 
     @Override

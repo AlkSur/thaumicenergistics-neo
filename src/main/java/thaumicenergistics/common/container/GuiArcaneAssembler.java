@@ -6,20 +6,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import appeng.client.gui.Icon;
 import thaumicenergistics.ThaumicEnergistics;
 import org.anti_ad.mc.ipn.api.IPNIgnore;
 
 /**
  * 奥术装配器 GUI。标 @IPNIgnore：IPN 一键整理完全跳过此界面（不渲染排序按钮、不执行整理）。
  *
- * 贴图 arcane_assembler.png = 256×256 画布，包含4块不连续区域：
- *   第1块 主矩形：(0,0) → 176×197
- *   第2块 右上不规则：(179,0) → 上部32w(0~15y)，下部55w(16~103y)
- *   第3块 右下护甲区：(180,129) → 68×68
- *   第4块 底部7个Vis条：每个 4×16 像素，起始(42,202)，步长18（42-45, 60-63, 78-81...）
- *
- * 仿1.7.10纹理裁剪方式：GUI分块blit，bar区域不随纹理整体绘制，
- * 而是先画暗色背景，再从纹理Y=202处裁剪满bar按百分比叠加。
+ * 新版贴图 arcane_assembler.png = 256×256 整张背景。
+ * 进度条填充材质在纹理 y=240（7 条 4×16，x 步长 5：0,5,10,15,20,25,30）。
  */
 @IPNIgnore
 public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneAssembler> {
@@ -27,66 +24,87 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
     static final ResourceLocation TEX = ResourceLocation.fromNamespaceAndPath(
             ThaumicEnergistics.MODID, "textures/gui/arcane_assembler.png");
 
-    // ===== 第4块 Vis条 =====
-    /** 纹理中空槽（暗色背景）的 Y 坐标 = 进度条在 GUI 中的显示位置 */
-    private static final int VIS_EMPTY_Y    = 87;
-    /** 纹理中满亮条的 Y 坐标（裁剪源，不直接显示） */
-    private static final int VIS_FULL_Y     = 202;
-    private static final int VIS_BAR_W     = 4;
-    private static final int VIS_BAR_H     = 16;
-    private static final int VIS_BAR_STEP  = 18;
-    /** 贴图规范起始 X = 41（步长18：41,59,77,95,113,131,149） */
-    private static final int VIS_BAR_X     = 41;
+    private static final int BAR_W = 4;
+    private static final int BAR_H = 16;
+    /** 进度条填充材质纹理 y。 */
+    private static final int BAR_FILL_Y = 240;
+
+    /** 7 条进度条：{填充材质 x, 目标 x, 目标 y}，顺序 风/水/火/秩序/混沌/地/合成。 */
+    private static final int[][] BARS = {
+            { 0, 8, 81 },   // 风 AIR
+            { 5, 8, 99 },   // 水 WATER
+            { 10, 8, 117 }, // 火 FIRE
+            { 15, 15, 81 }, // 秩序 ORDER
+            { 20, 15, 99 }, // 混沌 ENTROPY
+            { 25, 15, 117 },// 地 EARTH
+            { 30, 141, 99 } // 合成条
+    };
+
+    /** 配方预览 3×3 起点（16×16 格，步距 18）。 */
+    private static final int PREVIEW_X = 26;
+    private static final int PREVIEW_Y = 81;
 
     public GuiArcaneAssembler(ContainerArcaneAssembler menu, Inventory inv, Component title) {
         super(menu, inv, title);
-        this.imageWidth  = 254;
-        this.imageHeight = 226;
-        this.inventoryLabelY = 115 - 12;
-        this.titleLabelY     = 5;
+        // 主区按 0~175 取中轴线 87.5 居中（imageWidth=175，MC 自动按 175 居中）；
+        // 右侧 176~196 作为附加（右上角块），blit 整图时自然延伸，不占主区宽度。
+        this.imageWidth = 175;
+        this.imageHeight = 231;
+        // 物品栏标题下移（136→137）
+        this.inventoryLabelY = 137;
+        // 奥术装配器标题上移（4→3）
+        this.titleLabelY = 3;
     }
 
     @Override
     protected void renderBg(GuiGraphics g, float partialTicks, int mx, int my) {
-        int left = (this.width  - this.imageWidth)  / 2;
-        int top  = (this.height - this.imageHeight) / 2;
+        int left = (this.width - this.imageWidth) / 2;
+        int top = (this.height - this.imageHeight) / 2;
 
-        // ===== 分块绘制纹理（仿1.7.10，bar区域不参与blit） =====
+        // 整图渲染（0~196，含右侧右上角附加），主区 0~175 已居中
+        g.blit(TEX, left, top, 0, 0, 196, imageHeight);
 
-        // 第1块：主矩形 176×197
-        g.blit(TEX, left, top, 0, 0, 176, 197);
+        // ===== 空槽图标：加速卡（4 格） =====
+        for (int i = 0; i < 4; i++) {
+            Slot slot = this.menu.getUpgradeSlot(i);
+            if (!slot.hasItem()) {
+                Icon.BACKGROUND_UPGRADE.getBlitter().dest(left + slot.x, top + slot.y).blit(g);
+            }
+        }
 
-        // 第2块：右上不规则区域（上部 32×16 + 下部 55×88）
-        g.blit(TEX, left + 179, top, 179, 0, 32, 16);
-        g.blit(TEX, left + 179, top + 16, 179, 16, 55, 88);
+        // ===== 配方预览：3×3 材料 + 预产物（数据由 AssemblerPreviewSyncPacket 同步到菜单） =====
+        if (this.menu.clientPreviewActive) {
+            for (int i = 0; i < 9; i++) {
+                ItemStack stack = this.menu.clientPreviewGrid[i];
+                if (stack == null || stack.isEmpty()) continue;
+                int col = i % 3, row = i / 3;
+                g.renderItem(stack, left + PREVIEW_X + col * 18, top + PREVIEW_Y + row * 18);
+            }
+            // 预产物：16×16 居中于 21×21 大格子（113,96 ~ 134,117）
+            ItemStack result = this.menu.clientPreviewResult;
+            if (!result.isEmpty()) {
+                g.renderItem(result, left + 115, top + 98);
+            }
+        }
 
-        // 第3块：右下正方形 68×68
-        g.blit(TEX, left + 180, top + 129, 180, 129, 68, 68);
-
-        // ===== 第4块：Vis条（1.7.10 裁剪方式：Y=87 空槽背景 + Y=202 亮条裁剪） =====
-        // 数据源：容器同步（menu.visData，服务端每 tick 同步 storedVis/isCrafting/进度——不依赖 BE 网络同步）
+        // ===== 进度条：6 要素 + 1 合成条（填充材质 y=240，按比例从底部向上裁剪） =====
         ContainerData data = this.menu.visData;
         final int maxCvis = 187 * 10;
-        for (int i = 0; i < 7; i++) {
-            int bx = left + VIS_BAR_X + i * VIS_BAR_STEP;
-            int by = top  + VIS_EMPTY_Y;
+        for (int i = 0; i < BARS.length; i++) {
+            int srcX = BARS[i][0];
+            int bx = left + BARS[i][1];
+            int by = top + BARS[i][2];
 
-            // 从纹理 Y=87 裁剪空槽背景
-            g.blit(TEX, bx, by, VIS_BAR_X + i * VIS_BAR_STEP, VIS_EMPTY_Y, VIS_BAR_W, VIS_BAR_H);
-
-            float ratio = 0f;
+            float ratio;
             if (i < 6) {
-                // 1-6格：源质充能比例
                 int cvis = data.get(ContainerArcaneAssembler.DATA_AIR + i);
                 ratio = Math.min(1f, (float) cvis / maxCvis);
             } else {
-                // 第7格：非合成时要素接入常亮，合成时显示渐变进度
                 if (data.get(ContainerArcaneAssembler.DATA_CRAFTING) == 1) {
                     int tick = data.get(ContainerArcaneAssembler.DATA_CRAFT_TICK);
                     int total = Math.max(1, data.get(ContainerArcaneAssembler.DATA_TICKS_PER_CRAFT));
                     ratio = Math.min(1f, (float) tick / total);
                 } else {
-                    // 要素接入达成：任一原质充入（源质已从网络流入）→ 常亮
                     boolean anyVis = false;
                     for (int a = 0; a < 6; a++) {
                         if (data.get(ContainerArcaneAssembler.DATA_AIR + a) > 0) { anyVis = true; break; }
@@ -95,20 +113,12 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
                 }
             }
 
-            // 从纹理 Y=202 裁剪满亮条，按高度百分比叠加
-            int fillHeight = Math.round(VIS_BAR_H * ratio);
+            int fillHeight = Math.round(BAR_H * ratio);
             if (fillHeight > 0) {
-                int srcX = VIS_BAR_X + i * VIS_BAR_STEP;
-                int srcY = VIS_FULL_Y + (VIS_BAR_H - fillHeight);
-                int dstY = by + (VIS_BAR_H - fillHeight);
-                g.blit(TEX, bx, dstY, srcX, srcY, VIS_BAR_W, fillHeight);
+                int srcY = BAR_FILL_Y + (BAR_H - fillHeight);
+                int dstY = by + (BAR_H - fillHeight);
+                g.blit(TEX, bx, dstY, srcX, srcY, BAR_W, fillHeight);
             }
-
-            // bar 边框
-            g.fill(bx - 1, by - 1, bx, by + VIS_BAR_H + 1, 0xAA000000);
-            g.fill(bx + VIS_BAR_W, by - 1, bx + VIS_BAR_W + 1, by + VIS_BAR_H + 1, 0xAA000000);
-            g.fill(bx - 1, by - 1, bx + VIS_BAR_W + 1, by, 0xAA000000);
-            g.fill(bx - 1, by + VIS_BAR_H, bx + VIS_BAR_W + 1, by + VIS_BAR_H + 1, 0xAA000000);
         }
     }
 

@@ -6,6 +6,9 @@ import java.util.Set;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -21,10 +24,12 @@ import appeng.api.upgrades.UpgradeInventories;
 import appeng.items.contents.CellConfig;
 import appeng.me.cells.BasicCellInventory;
 import appeng.util.ConfigInventory;
+import net.minecraft.world.level.Level;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 import thaumicenergistics.config.ThEConfig;
 import org.jetbrains.annotations.Nullable;
+import thaumicenergistics.init.ModItems;
 
 import java.util.List;
 
@@ -206,6 +211,38 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
             }
         }
     }
+
+    //shift+右键 返回 对应等级存储组件+源质存储外壳
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+
+        if (!level.isClientSide) {
+            if (player.isShiftKeyDown()) {
+                if (held.getItem() instanceof ItemEssentiaCell cellItem) {
+                    String tier = cellItem.getTier();
+                    Item componentItem = switch (tier) {
+                        case "1k" -> ModItems.STORAGE_COMPONENT_1K.get();
+                        case "4k" -> ModItems.STORAGE_COMPONENT_4K.get();
+                        case "16k" -> ModItems.STORAGE_COMPONENT_16K.get();
+                        case "64k" -> ModItems.STORAGE_COMPONENT_64K.get();
+                        default -> null;
+                    };
+                    if(componentItem != null){
+                        player.addItem(new ItemStack(componentItem,1));
+                        player.addItem(new ItemStack(ModItems.STORAGE_CASING.get(),1));
+                    }
+                }
+            }
+        }
+
+        if(player.isShiftKeyDown()){
+            return InteractionResultHolder.success(ItemStack.EMPTY);
+        }else{
+            return InteractionResultHolder.pass(held);
+        }
+    }
+
 
     // ===== 工厂方法 =====
     public static ItemEssentiaCell create1k(Item.Properties props) {
