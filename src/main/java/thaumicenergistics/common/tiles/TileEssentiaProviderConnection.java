@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import thaumcraft.api.aspects.Aspect;
+import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IEssentiaTransport;
 import thaumcraft.common.essentia.EssentiaTransport;
 import thaumicenergistics.init.ModBlockEntities;
@@ -24,6 +25,17 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
     /** 接收器每次输入/输出源质上限。 */
     public static final int TRANSFER_LIMIT = 16;
 
+    /**
+     * 待注入 AE 网络的源质缓冲。
+     * <p>
+     * 网络装不下的源质一律留在这里（随 NBT 持久化），等网络有空间再注入——
+     * 旧实现直接 {@code provider.thE_inject(...)} 且忽略返回值，
+     * 而供应器侧一旦把源质写进内存 monitor 就"全部接受"，网络无存储时源质凭空消失。
+     */
+    private final AspectList buffer = new AspectList();
+
+    private static final String NBT_BUFFER = "ThEBuffer";
+
     private int linkCheckCounter = 0;
     private int pullCounter = 0;
     private static final int PULL_INTERVAL = 10;
@@ -39,8 +51,39 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
         }
         if (++be.pullCounter >= PULL_INTERVAL) {
             be.pullCounter = 0;
-            be.takeEssentiaFromNeighbors();
+            be.flushBuffer();               // 先把上次暂存的源质注入网络
+            be.takeEssentiaFromNeighbors(); // 缓冲清空（网络有余量）时才继续拉取
         }
+    }
+
+    /**
+     * 把缓冲里的源质注入连接的网络。网络满时保留剩余部分，下次再试。
+     * @return 本次是否有源质被网络接收
+     */
+    private boolean flushBuffer() {
+        if (buffer.isEmpty()) return false;
+        TileEssentiaProvider provider = getLinkedProvider();
+        if (provider == null || !provider.thE_isActive()) return false;
+        boolean moved = false;
+        for (Aspect aspect : buffer.getAspects()) {
+            if (aspect == null) continue;
+            int amt = buffer.getAmount(aspect);
+            if (amt <= 0) continue;
+            long rejected = provider.thE_inject(aspect, amt, false);
+            int accepted = amt - (int) rejected;
+            if (accepted > 0) {
+                int left = amt - accepted;
+                if (left > 0) {
+                    buffer.set(aspect, left);
+                } else {
+                    buffer.aspects.remove(aspect);
+                }
+                moved = true;
+            }
+            if (rejected > 0) break; // 网络已满：剩余留在缓冲里
+        }
+        if (moved) setChanged();
+        return moved;
     }
 
     /** 模拟管道：沿 6 个方向扫描，最近的有效源质源（蒸馏器/罐/管道）隔空拉取，经连接供应器注入 AE 网络。 */
@@ -48,6 +91,8 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
         if (level == null || level.isClientSide()) return;
         TileEssentiaProvider provider = getLinkedProvider();
         if (provider == null || !provider.thE_isActive()) return;
+        // 缓冲还没清空 = 网络装不下，先别再吸（否则"吸走却存不下"）
+        if (!buffer.isEmpty()) return;
         for (Direction side : Direction.values()) {
             if (!canInputFrom(side)) continue;
             // 沿方向行走：非传输方块 = 管道断；空管道 = 继续；有源质 = 拉取
@@ -68,11 +113,15 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
                 }
                 Aspect sourceAspect = source.getEssentiaType(sourceSide);
                 if (sourceAspect == null) break;
-                // 直接拉取并注入（injectEssentia 返回 0 = 全部接受，无需模拟预检）
+                // 预检：网络能收多少（rejected = 收不下的量）；一点都收不下就完全不抽取
                 int want = Math.min(Math.max(srcAmount, 1), TRANSFER_LIMIT);
-                int taken = source.takeEssentia(sourceAspect, want, sourceSide);
+                long rejected = provider.thE_inject(sourceAspect, want, true);
+                int room = want - (int) rejected;
+                if (room <= 0) break;
+                int taken = source.takeEssentia(sourceAspect, room, sourceSide);
                 if (taken > 0) {
-                    provider.thE_inject(sourceAspect, taken, false);
+                    buffer.add(sourceAspect, taken); // 先进缓冲，注入失败也不丢
+                    flushBuffer();
                 }
                 break; // 拉到即停
             }
@@ -194,10 +243,18 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
 
     @Override
     public int addEssentia(Aspect aspect, int amount, Direction side) {
-        // 无线输入：转发到连接供应器注入 AE 网络，每次上限 16
+        // 无线输入：先问网络能收多少，只接收装得下的部分（其余留在管道/容器里，绝不吞掉）。
+        // 接收后先进缓冲，注入失败下次重试——保证源质不丢。
         TileEssentiaProvider provider = getLinkedProvider();
         if (provider == null || !provider.thE_isActive() || aspect == null || amount <= 0) return 0;
-        return (int) provider.thE_inject(aspect, Math.min(amount, TRANSFER_LIMIT), false);
+        int want = Math.min(amount, TRANSFER_LIMIT);
+        long rejected = provider.thE_inject(aspect, want, true);
+        int room = want - (int) rejected;
+        if (room <= 0) return 0; // 网络无源质存储或已满 → 拒收
+        buffer.add(aspect, room);
+        flushBuffer();
+        setChanged();
+        return room;
     }
 
     @Override
@@ -248,6 +305,9 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
         if (linkedProviderPos != null) {
             tag.putLong("LinkedProvider", linkedProviderPos.asLong());
         }
+        if (!buffer.isEmpty()) {
+            buffer.writeToNBT(tag, NBT_BUFFER);
+        }
     }
 
     @Override
@@ -257,6 +317,10 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
             linkedProviderPos = BlockPos.of(tag.getLong("LinkedProvider"));
         } else {
             linkedProviderPos = null;
+        }
+        buffer.aspects.clear();
+        if (tag.contains(NBT_BUFFER)) {
+            buffer.readFromNBT(tag, NBT_BUFFER);
         }
     }
 }

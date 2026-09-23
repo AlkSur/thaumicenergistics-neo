@@ -21,8 +21,11 @@ import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 
 /**
  * 源质网格服务的实现。查询和提取源质时同时检查两个存储后端：
- * Path A: EssentiaMonitor（注魔供应器/傀儡背包直接写入），
- * Path B: AE2 原生存储（源质存储元件、输入总线等）。
+ * Path A: EssentiaMonitor（历史遗留的内存镜像，现仅参与读取），
+ * Path B: AE2 原生存储（源质存储元件、存储总线等）。
+ * <p>
+ * 写入只走 Path B：网络装不下的部分如实返回"未接受"，不再回退进内存 monitor
+ * （否则网络没有源质存储时也会照吸，源质既不在 ME 存储里也不持久化，等于消失）。
  */
 public class EssentiaGridService implements IEssentiaGrid, IGridServiceProvider {
 
@@ -101,18 +104,13 @@ public class EssentiaGridService implements IEssentiaGrid, IGridServiceProvider 
     @Override
     public long injectEssentia(ResourceLocation aspectId, long amount, boolean simulate) {
         if (amount <= 0) return 0;
-        // 写入 AE2 原生存储（源质存储元件/存储总线可见、持久化）
+        // 只承认 AE2 原生存储（源质存储元件 / 存储总线）真正接收的量。
+        // 网络没有源质存储或已满时如实返回"未接受"，调用方（输入总线 / 无线接收器 /
+        // 源质供应器 / 傀儡背包）据此把源质留在原容器里，不抽走。
+        // 旧实现把装不下的部分塞进内存 monitor 兜底 —— 等于"网络无存储也照吸"，
+        // 而这些源质不在任何 ME 存储里、不随存档持久化，表现为源质凭空消失。
         var nativeInjected = injectNative(aspectId, amount, simulate);
-        if (nativeInjected < amount) {
-            // 原生存储空间不足时剩余部分退回内存 monitor（供注魔供应器等内部读取）
-            long remaining = amount - nativeInjected;
-            if (!simulate) {
-                long current = monitor.get(aspectId);
-                monitor.set(aspectId, current + remaining);
-            }
-            return amount - nativeInjected - remaining; // 全部接受（monitor 兜底）
-        }
-        return 0; // 全部写入原生存储
+        return amount - nativeInjected;
     }
 
     private long injectNative(ResourceLocation aspectId, long amount, boolean simulate) {

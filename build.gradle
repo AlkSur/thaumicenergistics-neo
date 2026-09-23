@@ -21,7 +21,6 @@ repositories {
     }
 }
 
-version = mod_version
 group = mod_group
 
 var modName = mod_name
@@ -45,9 +44,11 @@ neoForge {
 dependencies {
     compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17:api"
     compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17"   // 加这行保留！！让AE2内部类可编译
-    compileOnly files('library/thaumcraft-0.2.2.34-port.1.jar')
+    compileOnly files('library/thaumcraft-0.2.2.95-port.229.jar')   // 必须与整合包运行版本一致（0.2.2.95）；.34 缺少 getRemainingItems/findMatchingArcaneRecipeEntry 等 API
     compileOnly files('library/jei-1.21.1-neoforge-19.39.0.368.jar')
     compileOnly files('library/ae2jeiintegration-1.2.1.jar')
+    compileOnly files('library/InventoryProfilesNext-neoforge-1.21.1-2.2.5.jar')
+    compileOnly files('library/extendedae_plus-1.6.1.jar')   // eap mixin target（InputEvents.toGenericStack）
     compileOnly "maven.modrinth:jade:${jade_version}"
 }
 
@@ -57,7 +58,8 @@ tasks.withType(JavaCompile).configureEach {
     it.options.release = 21
 }
 
-var modVersion = mod_version
+// mods.toml 的 version 也用 git 实时版本（与 jar 版本一致，不依赖写死的 mod_version）
+var modVersion = gitVersion()
 def loaderRange = project.findProperty('loader_version_range') ?: '[4,)'
 def neoforgeRange = project.findProperty('neoforge_version_range') ?: '[21,)'
 def mcRange = project.findProperty('minecraft_version_range') ?: '[1.21.1,1.22)'
@@ -71,9 +73,23 @@ processResources {
     }
 }
 
-jar { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+jar { 
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // PCL/启动器显示的 jar 图标（mod 列表图标走 neoforge.mods.toml 的 logoFile）
+    from('src/main/resources') {
+        include 'pack.png'
+    }
+}
 
 
+//// 获取git提交总数
+//def gitCommitCount = providers.exec {
+//    commandLine 'git', 'rev-list', '--count', 'HEAD'
+//}.standardOutput.asText.map { it.trim() }
+//
+//// 最终完整版本 = 主版本+构建号
+//version = "${mod_version}.${gitCommitCount.get()}-alpha"
+// build.gradle 替换现有 version 逻辑
 def gitVersion() {
     def describe = providers.exec {
         commandLine 'git', 'describe', '--tags', '--always'
@@ -87,10 +103,10 @@ def gitVersion() {
         def count = m.group(2) ? m.group(2) : '0'    // tag 后提交数
         return "${xy}.${count}-alpha"                // 2.2.2-alpha
     }
-    // 兜底（从未打 tag）：mod_version + 总提交数
+    // 兜底（从未打 tag）：0.0.<提交总数>-alpha，不依赖写死的 mod_version
     def count = providers.exec {
         commandLine 'git', 'rev-list', '--count', 'HEAD'
     }.standardOutput.asText.map { it.trim() }.get()
-    return "${mod_version}.${count}-alpha"
+    return "0.0.${count}-alpha"
 }
-version = gitVersion()
+version = modVersion

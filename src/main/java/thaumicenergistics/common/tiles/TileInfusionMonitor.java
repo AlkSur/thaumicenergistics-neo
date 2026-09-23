@@ -54,7 +54,11 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
     /** 手册槽位。 */
     public static final int BOOK_SLOT = 0;
-    private static final int SCAN_INTERVAL = 10; // 每 10 tick 扫描一次祭坛
+    private static final int SCAN_INTERVAL = 10; // 每 10 tick 验证一次祭坛（缓存命中时仅 1 次查询）
+    /** 未找到祭坛时的扫描退避间隔（tick）：全量扫描约 9800 次 getBlockEntity，附近无祭坛时降低频率控 mspt。 */
+    private static final int SCAN_MISS_INTERVAL = 200;
+    /** 风险重算限频（tick）：computeRisk 内部也要扫上千次 getBlockEntity（配方估算/源质汇总），控制 mspt。 */
+    private static final int RISK_INTERVAL = 40;
 
     protected final IManagedGridNode mainNode;
     private final SimpleContainer inventory = new SimpleContainer(1) {
@@ -67,7 +71,16 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     };
 
     private int scanCounter = 0;
+    private int riskCounter = 0;
     private BlockPos matrixPos = null;
+    /** 上次扫描到的祭坛注魔中状态（翻转时强制立即重算风险，抓住注魔启动瞬间的高不稳定度）。 */
+    private boolean cachedCrafting = false;
+
+    /** 区块卸载/方块移除中：禁止 setBlock / markForUpdate（卸载时改方块状态会触发区块重载，停服保存死循环）。 */
+    private boolean unloading = false;
+
+    /** 上一次写入气泡的文本（内容未变则跳过反射/NBT 重建，避免每 tick 开销）。 */
+    private net.minecraft.network.chat.Component lastBubbleText = null;
 
     /** 缓存的注魔风险数据（弹窗显示）。 */
     private RiskData cachedRisk = RiskData.NONE;
@@ -112,6 +125,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     @Override
     public void onLoad() {
         super.onLoad();
+        unloading = false;
         if (level != null && !level.isClientSide()) {
             mainNode.create(level, getBlockPos());
         }
@@ -121,6 +135,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
     @Override
     public void setRemoved() {
+        unloading = true; // 先置标志再销毁网格节点：节点销毁回调会触发 updateNetworkState
         super.setRemoved();
         if (level != null && !level.isClientSide()) {
             discardBubble();
@@ -132,6 +147,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
     @Override
     public void onChunkUnloaded() {
+        unloading = true; // 同上：卸载期间禁止改方块状态，否则 chunk 被重新标记脏 → 保存循环
         super.onChunkUnloaded();
         if (mainNode != null) {
             mainNode.destroy();
@@ -151,7 +167,10 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
     public static void tick(Level level, BlockPos pos, BlockState state, TileInfusionMonitor be) {
         if (level.isClientSide()) return;
-        if (++be.scanCounter >= SCAN_INTERVAL) {
+        // 无祭坛缓存时全量扫描退避到 SCAN_MISS_INTERVAL（否则每 10 tick 扫 9800 次 getBlockEntity，
+        // 附近没建祭坛时也持续 ~70us/t）
+        int interval = be.matrixPos == null ? SCAN_MISS_INTERVAL : SCAN_INTERVAL;
+        if (++be.scanCounter >= interval) {
             be.scanCounter = 0;
             be.scanMatrix();
         }
@@ -159,16 +178,50 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         be.updateBubble();
     }
 
-    /** 扫描附近注魔矩阵并缓存风险数据。 */
+    /** 扫描附近注魔矩阵并缓存风险数据。
+     *  快速路径：已缓存矩阵仍在 → 只做 1 次 getBlockEntity 验证；
+     *  全量扫描（33×9×33≈9800 次 getBlockEntity）仅缓存失效时执行，是 mspt 大户。
+     *  风险重算限频（配方估算/源质汇总还要上千次查询），但注魔开始/结束瞬间（crafting 翻转）强制立即重算。 */
     private void scanMatrix() {
-        BlockPos found = null;
-        InfusionRiskCalculator.InfusionMatrixInfo info = InfusionRiskCalculator.scanNearbyMatrix(level, worldPosition);
-        RiskData newRisk = info != null ? InfusionRiskCalculator.computeRisk(level, info) : RiskData.NONE;
+        BlockPos found = matrixPos;
+        boolean craftingChanged = false;
+        // 快速路径：缓存矩阵仍在 → 跳过全量扫描
+        if (found != null) {
+            if (level.getBlockEntity(found) instanceof thaumcraft.common.blockentities.InfusionMatrixBlockEntity matrix) {
+                boolean crafting = matrix.crafting();
+                craftingChanged = crafting != cachedCrafting;
+                cachedCrafting = crafting;
+            } else {
+                found = null; // 缓存失效 → 走全量扫描
+            }
+        }
+        if (found == null) {
+            InfusionRiskCalculator.InfusionMatrixInfo info = InfusionRiskCalculator.scanNearbyMatrix(level, worldPosition);
+            found = info != null ? info.matrixPos() : null;
+        }
+
+        RiskData newRisk = cachedRisk;
+        if (found != null) {
+            // 按 tick 累计（每轮扫描间隔 SCAN_INTERVAL）；首次发现即时重算（覆盖层/气泡 0.5 秒内出现），
+            // 之后每 RISK_INTERVAL tick 重算一次（按"扫描轮数"计数会变成 40 轮×10 tick=20 秒才出数据）；
+            // 注魔开始/结束瞬间（crafting 翻转）也立即重算，抓住启动时的高不稳定度。
+            riskCounter += SCAN_INTERVAL;
+            if (riskCounter >= RISK_INTERVAL || !cachedRisk.found() || craftingChanged) {
+                riskCounter = 0;
+                if (level.getBlockEntity(found) instanceof thaumcraft.common.blockentities.InfusionMatrixBlockEntity matrix) {
+                    newRisk = InfusionRiskCalculator.computeRisk(level,
+                            new InfusionRiskCalculator.InfusionMatrixInfo(found, matrix));
+                } else {
+                    newRisk = RiskData.NONE;
+                }
+            }
+        } else {
+            newRisk = RiskData.NONE;
+            cachedCrafting = false;
+        }
+
         boolean riskChanged = !newRisk.equals(this.cachedRisk);
         this.cachedRisk = newRisk;
-        if (info != null) {
-            found = info.matrixPos();
-        }
         if (riskChanged || !java.util.Objects.equals(found, this.matrixPos)) {
             this.matrixPos = found;
             markForUpdate();
@@ -178,7 +231,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     // ===== 网格节点 / 状态同步 =====
 
     private void updateNetworkState() {
-        if (level == null || level.isClientSide()) return;
+        if (level == null || level.isClientSide() || unloading || isRemoved()) return;
         boolean net = mainNode.isActive();
         BlockState st = getBlockState();
         if (st.getValue(ModBlocks.NETWORK) != net) {
@@ -192,7 +245,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     }
 
     private void updateBookState() {
-        if (level == null || level.isClientSide()) return;
+        if (level == null || level.isClientSide() || unloading || isRemoved()) return;
         boolean hasBook = !inventory.getItem(BOOK_SLOT).isEmpty();
         BlockState st = getBlockState();
         if (st.getValue(ModBlocks.BOOK) != hasBook) {
@@ -211,17 +264,23 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
      * 满足 → 生成/更新气泡；不满足 → 销毁气泡。
      */
     private void updateBubble() {
-        if (level == null || level.isClientSide()) return;
+        if (level == null || level.isClientSide() || unloading) return;
         boolean shouldShow = getBlockState().getValue(ModBlocks.BOOK)
                 && getBlockState().getValue(ModBlocks.NETWORK)
                 && cachedRisk.found();
         if (shouldShow) {
             ensureBubble();
             if (bubble != null) {
-                applyBubbleNbt(buildBubbleText(cachedRisk));
+                // 文本未变则跳过反射/NBT 重建（原实现每 tick 都重建，是 mspt 开销之一）
+                net.minecraft.network.chat.Component text = buildBubbleText(cachedRisk);
+                if (!text.equals(lastBubbleText)) {
+                    lastBubbleText = text;
+                    applyBubbleNbt(text);
+                }
             }
         } else {
             discardBubble();
+            lastBubbleText = null;
         }
     }
 
@@ -459,12 +518,12 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     }
 
     public void markForUpdate() {
-        if (level != null) {
-            setChanged();
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-            // blockEntityChanged → 触发 getUpdateTag 同步到客户端（悬浮弹窗数据依赖）
-            level.blockEntityChanged(worldPosition);
-        }
+        // 卸载/移除中跳过：sendBlockUpdated / blockEntityChanged 会把区块重新标记脏，停服保存时形成死循环
+        if (level == null || unloading || isRemoved()) return;
+        setChanged();
+        level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        // blockEntityChanged → 触发 getUpdateTag 同步到客户端（悬浮弹窗数据依赖）
+        level.blockEntityChanged(worldPosition);
     }
 
     // ===== NBT =====

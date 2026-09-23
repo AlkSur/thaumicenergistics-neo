@@ -60,7 +60,18 @@ public class EssentiaImportBusPart extends IOBusPart
     private static final double IDLE_POWER = 0.5;
     private static final double TRANSFER_POWER = EssentiaConversionHelper.AE_PER_ESSENTIA;
 
+    private static final String NBT_BUFFER_ASPECT = "ThEBufferAspect";
+    private static final String NBT_BUFFER_AMOUNT = "ThEBufferAmount";
+
     private boolean isWorkingFlag = false;
+
+    /**
+     * 待注入 AE 网络的源质缓冲（随总线 NBT 持久化）。
+     * <p>
+     * 网络装不下（无源质存储 / 已满 / 模拟与实插不一致）时源质留在这里重试，
+     * 绝不丢弃；缓冲非空期间也不再从容器抽取，避免"吸走却存不下"。
+     */
+    private AspectStack buffer = AspectStack.EMPTY;
 
     /**
      * 单次传输量 = 基础速率 × 每 tick 操作次数（受加速卡影响）。
@@ -103,37 +114,72 @@ public class EssentiaImportBusPart extends IOBusPart
     protected boolean doBusWork(IGrid grid) {
         this.isWorkingFlag = false;
 
+        // 1) 先冲缓冲：网络有空间时把上次暂存的源质注入
+        boolean worked = flushBuffer(grid);
+
         Direction side = this.getSide();
-        if (side == null) return false;
+        if (side == null) return worked;
         BlockPos adjacentPos = this.getBlockEntity().getBlockPos().relative(side);
         Level levelRaw = this.getLevel();
-        if (!(levelRaw instanceof ServerLevel level)) return false;
-        if (!level.isLoaded(adjacentPos)) return false;
+        if (!(levelRaw instanceof ServerLevel level)) return worked;
+        if (!level.isLoaded(adjacentPos)) return worked;
         BlockEntity adjacentBE = level.getBlockEntity(adjacentPos);
-        if (adjacentBE == null) return false;
+        if (adjacentBE == null) return worked;
 
-        AspectStack extracted = TCReflection.extractEssentia(adjacentBE, getTransferRate());
-        if (extracted == null || extracted.isEmpty()) return false;
+        // 2) 缓冲仍有剩余 = 网络装不下 → 不再从容器抽取（源质留在原容器里）
+        if (!this.buffer.isEmpty()) return worked;
+
+        // 3) 预检 1：先窥视容器能给什么（非破坏性）。无源质直接退出。
+        int rate = getTransferRate();
+        AspectStack available = TCReflection.peekEssentia(adjacentBE, rate);
+        if (available == null || available.isEmpty()) return worked;
+        AEssentiaKey key = AEssentiaKey.of(available.aspectId());
+        if (key == null) return worked;
+
+        // 4) 预检 2：网络能接收多少。为 0（无源质存储/已满）则完全不抽取。
+        long acceptable = grid.getStorageService().getInventory().insert(
+                key, available.amount(), Actionable.SIMULATE, IActionSource.ofMachine(this));
+        if (acceptable <= 0) return worked;
+
+        int toExtract = (int) Math.min(available.amount(), acceptable);
+        AspectStack extracted = TCReflection.extractEssentia(adjacentBE, available.aspectId(), toExtract);
+        if (extracted == null || extracted.isEmpty()) return worked;
 
         long injected = this.injectToNetwork(grid, extracted);
-        if (injected <= 0) {
-            TCReflection.returnEssentia(adjacentBE, extracted);
-            return false;
+        if (injected < extracted.amount()) {
+            // 模拟与实插不一致（例如挂载的容器存储无法模拟）→ 剩余留在缓冲里重试，绝不归还/丢弃
+            this.buffer = new AspectStack(extracted.aspectId(), extracted.amount() - injected);
+            markForSave();
         }
 
         double powerCost = injected * TRANSFER_POWER;
         grid.getEnergyService().extractAEPower(powerCost, Actionable.MODULATE, PowerMultiplier.CONFIG);
 
-        if (injected < extracted.amount()) {
-            long leftover = extracted.amount() - injected;
-            TCReflection.returnEssentia(adjacentBE, new AspectStack(extracted.aspectId(), leftover));
-        }
+        this.isWorkingFlag = injected > 0 || worked;
+        return injected > 0 || worked;
+    }
+
+    /** 把缓冲里的源质注入网络。@return 本次是否注入了任意数量 */
+    private boolean flushBuffer(IGrid grid) {
+        if (this.buffer.isEmpty()) return false;
+        long injected = this.injectToNetwork(grid, this.buffer);
+        if (injected <= 0) return false;
+        long left = this.buffer.amount() - injected;
+        this.buffer = left > 0 ? new AspectStack(this.buffer.aspectId(), left) : AspectStack.EMPTY;
+        markForSave();
         this.isWorkingFlag = true;
         return true;
     }
 
+    private void markForSave() {
+        if (getHost() != null) {
+            getHost().markForSave();
+        }
+    }
+
     private long injectToNetwork(IGrid grid, AspectStack stack) {
         AEssentiaKey key = AEssentiaKey.of(stack.aspectId());
+        if (key == null) return 0;
         return grid.getStorageService().getInventory().insert(
                 key, stack.amount(), Actionable.MODULATE,
                 IActionSource.ofMachine(this));
@@ -143,12 +189,23 @@ public class EssentiaImportBusPart extends IOBusPart
     public void readFromNBT(CompoundTag extra, HolderLookup.Provider registries) {
         super.readFromNBT(extra, registries);
         this.keyTypeSelection.readFromNBT(extra, registries);
+        this.buffer = AspectStack.EMPTY;
+        if (extra.contains(NBT_BUFFER_ASPECT) && extra.getLong(NBT_BUFFER_AMOUNT) > 0) {
+            ResourceLocation id = ResourceLocation.tryParse(extra.getString(NBT_BUFFER_ASPECT));
+            if (id != null) {
+                this.buffer = new AspectStack(id, extra.getLong(NBT_BUFFER_AMOUNT));
+            }
+        }
     }
 
     @Override
     public void writeToNBT(CompoundTag extra, HolderLookup.Provider registries) {
         super.writeToNBT(extra, registries);
         this.keyTypeSelection.writeToNBT(extra);
+        if (!this.buffer.isEmpty()) {
+            extra.putString(NBT_BUFFER_ASPECT, this.buffer.aspectId().toString());
+            extra.putLong(NBT_BUFFER_AMOUNT, this.buffer.amount());
+        }
     }
 
     @Override
@@ -164,3 +221,4 @@ public class EssentiaImportBusPart extends IOBusPart
         return this.keyTypeSelection;
     }
 }
+

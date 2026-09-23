@@ -87,6 +87,7 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.CRYSTAL, 5).add(Aspect.EXCHANGE, 5));
     }
 
+    // ==================== 奥术有序配方 ====================
     private static void registerShapedArcane() {
         STORAGE_COMPONENT_1K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_1K),
                 new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 1),
@@ -214,6 +215,8 @@ public final class RecipeRegistration {
     }
 
 
+
+    // ==================== 奥术无序配方 ====================
     private static void registerShapelessArcane() {
         // 1. 扩散核心
         DIFFUSION_CORE = ThaumcraftApi.addShapelessArcaneCraftingRecipe("DIGISENTIA", stack(ModItems.DIFFUSION_CORE),
