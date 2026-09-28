@@ -1,0 +1,29 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "tc_energy:ESSENTIATERMINAL",
+  "ingredients": [
+    {
+      "tag": "tc_energy:monitors"
+    },
+    {
+      "item": "tc_energy:diffusion_core"
+    },
+    {
+      "item": "tc_energy:coalescence_core"
+    },
+    {
+      "item": "ae2:logic_processor"
+    },
+    {
+      "item": "thaumcraft:essentia_filter"
+    }
+  ],
+  "result": {
+    "id": "tc_energy:essentia_terminal"
+  },
+  "vis": {
+    "aqua": 5,
+    "ordo": 2,
+    "ignis": 1
+  }
+}

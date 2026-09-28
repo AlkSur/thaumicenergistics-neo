@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "W": {
+      "tag": "tc_energy:essentia_cell_glass"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "C": {
+      "item": "tc_energy:storage_component_16k"
+    },
+    "T": {
+      "item": "thaumcraft:thaumium_ingot"
+    }
+  },
+  "pattern": [
+    "WRW",
+    "RCR",
+    "TTT"
+  ],
+  "result": {
+    "id": "tc_energy:essentia_cell_16k"
+  }
+}

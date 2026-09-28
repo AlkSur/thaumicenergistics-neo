@@ -1,0 +1,24 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "tc_energy:ESSENTIAVIBRATIONCHAMBER",
+  "ingredients": [
+    {
+      "item": "ae2:vibration_chamber"
+    },
+    {
+      "item": "thaumcraft:warded_jar"
+    },
+    {
+      "item": "tc_energy:coalescence_core"
+    }
+  ],
+  "result": {
+    "id": "tc_energy:essentia_vibration_chamber"
+  },
+  "vis": {
+    "ignis": 10,
+    "aqua": 6,
+    "ordo": 4,
+    "perditio": 4
+  }
+}

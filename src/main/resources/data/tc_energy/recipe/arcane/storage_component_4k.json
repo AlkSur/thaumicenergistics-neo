@@ -1,0 +1,30 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:ESSENTIASTORAGE",
+  "pattern": [
+    "EPE",
+    "1G1",
+    "E1E"
+  ],
+  "key": {
+    "E": {
+      "tag": "tc_energy:wisp_essences"
+    },
+    "P": {
+      "item": "ae2:calculation_processor"
+    },
+    "1": {
+      "item": "tc_energy:storage_component_1k"
+    },
+    "G": {
+      "item": "ae2:quartz_glass"
+    }
+  },
+  "result": {
+    "id": "tc_energy:storage_component_4k"
+  },
+  "vis": {
+    "ignis": 3,
+    "ordo": 2
+  }
+}

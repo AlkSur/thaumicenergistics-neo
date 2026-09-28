@@ -1,0 +1,27 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:ESSENTIASTORAGE",
+  "pattern": [
+    "EQ ",
+    "QPQ",
+    " QE"
+  ],
+  "key": {
+    "E": {
+      "tag": "tc_energy:wisp_essences"
+    },
+    "Q": {
+      "item": "ae2:certus_quartz_crystal"
+    },
+    "P": {
+      "item": "ae2:logic_processor"
+    }
+  },
+  "result": {
+    "id": "tc_energy:storage_component_1k"
+  },
+  "vis": {
+    "ignis": 3,
+    "ordo": 1
+  }
+}

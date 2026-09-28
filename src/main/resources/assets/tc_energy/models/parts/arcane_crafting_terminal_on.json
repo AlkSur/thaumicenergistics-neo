@@ -1,0 +1,8 @@
+{
+"parent": "ae2:part/display_off",
+"textures": {
+"lightsBright": "tc_energy:part/arcane_crafting_terminal/arcane_crafting_overlay3",
+"lightsMedium": "tc_energy:part/arcane_crafting_terminal/arcane_crafting_overlay2",
+"lightsDark": "tc_energy:part/arcane_crafting_terminal/arcane_crafting_overlay1"
+}
+}

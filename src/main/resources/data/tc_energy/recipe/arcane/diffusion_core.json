@@ -1,0 +1,28 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "tc_energy:DIGISENTIA",
+  "ingredients": [
+    {
+      "item": "thaumcraft:quicksilver_drop"
+    },
+    {
+      "item": "thaumcraft:quicksilver_drop"
+    },
+    {
+      "item": "thaumcraft:quicksilver_drop"
+    },
+    {
+      "item": "thaumcraft:entropy_shard"
+    },
+    {
+      "item": "ae2:annihilation_core"
+    }
+  ],
+  "result": {
+    "id": "tc_energy:diffusion_core"
+  },
+  "vis": {
+    "aqua": 2,
+    "perditio": 2
+  }
+}

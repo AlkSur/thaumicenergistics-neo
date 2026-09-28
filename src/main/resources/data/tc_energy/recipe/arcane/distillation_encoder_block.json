@@ -1,0 +1,31 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:DISTILLATIONENCODER",
+  "pattern": [
+    "ILI",
+    " G ",
+    "IPI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "L": {
+      "tag": "tc_energy:monitors"
+    },
+    "G": {
+      "item": "thaumcraft:thaumometer"
+    },
+    "P": {
+      "item": "ae2:engineering_processor"
+    }
+  },
+  "result": {
+    "id": "tc_energy:distillation_encoder"
+  },
+  "vis": {
+    "ordo": 5,
+    "perditio": 5,
+    "ignis": 3
+  }
+}

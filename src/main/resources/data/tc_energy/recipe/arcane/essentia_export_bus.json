@@ -1,0 +1,31 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:ESSENTIABUSES",
+  "pattern": [
+    "JC ",
+    "IFI",
+    "   "
+  ],
+  "key": {
+    "J": {
+      "item": "thaumcraft:warded_jar"
+    },
+    "C": {
+      "item": "tc_energy:coalescence_core"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "F": {
+      "item": "thaumcraft:filtered_essentia_tube"
+    }
+  },
+  "result": {
+    "id": "tc_energy:essentia_export_bus"
+  },
+  "vis": {
+    "ignis": 2,
+    "terra": 2,
+    "aqua": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "tc_energy:ESSENTIAPROVIDER",
+  "ingredients": [
+    {
+      "item": "ae2:certus_quartz_wrench"
+    },
+    {
+      "item": "thaumcraft:balanced_shard"
+    }
+  ],
+  "result": {
+    "id": "tc_energy:wireless_connector"
+  },
+  "vis": {
+    "ordo": 5,
+    "perditio": 5
+  }
+}

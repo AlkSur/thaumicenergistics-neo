@@ -1,0 +1,12 @@
+{
+  "parent": "ae2:item/display_base",
+  "textures": {
+    "front_base": "tc_energy:part/essentia_terminal/bright",
+    "front_bright": "tc_energy:part/essentia_terminal/bright",
+    "front_medium": "tc_energy:part/essentia_terminal/medium",
+    "front_dark": "tc_energy:part/essentia_terminal/dark",
+    "front_medium_bright": "tc_energy:part/essentia_terminal/medium",
+    "back": "ae2:part/monitor_back_no_status",
+    "sides": "ae2:part/monitor_sides"
+  }
+}

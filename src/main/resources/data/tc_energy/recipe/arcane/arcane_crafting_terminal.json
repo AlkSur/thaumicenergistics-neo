@@ -1,0 +1,26 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "tc_energy:ARCANECRAFTINGTERMINAL",
+  "ingredients": [
+    {
+      "item": "ae2:terminal"
+    },
+    {
+      "item": "thaumcraft:arcane_worktable"
+    },
+    {
+      "item": "ae2:calculation_processor"
+    }
+  ],
+  "result": {
+    "id": "tc_energy:arcane_crafting_terminal"
+  },
+  "vis": {
+    "aer": 10,
+    "terra": 10,
+    "ignis": 10,
+    "aqua": 10,
+    "ordo": 10,
+    "perditio": 10
+  }
+}

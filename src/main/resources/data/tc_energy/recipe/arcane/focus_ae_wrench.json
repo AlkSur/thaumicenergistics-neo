@@ -1,0 +1,30 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:FOCUS_AEWRENCH",
+  "pattern": [
+    "AqF",
+    "qWq",
+    "FqA"
+  ],
+  "key": {
+    "A": {
+      "item": "thaumcraft:air_shard"
+    },
+    "q": {
+      "item": "minecraft:quartz"
+    },
+    "F": {
+      "item": "thaumcraft:fire_shard"
+    },
+    "W": {
+      "item": "ae2:certus_quartz_wrench"
+    }
+  },
+  "result": {
+    "id": "tc_energy:focus_aewrench"
+  },
+  "vis": {
+    "aer": 10,
+    "ignis": 10
+  }
+}

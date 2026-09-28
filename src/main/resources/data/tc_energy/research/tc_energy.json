@@ -1,0 +1,1030 @@
+{
+  "categories": [
+    {
+      "key": "TC_ENERGY",
+      "icon": "tc_energy:textures/research/tab_icon.png",
+      "background": "thaumcraft:textures/gui/gui_researchback.png",
+      "sort_order": 6
+    }
+  ],
+  "entries": [
+    {
+      "key": "tc_energy:BASEENERGISTICS",
+      "category": "TC_ENERGY",
+      "aspects": {},
+      "display_column": 0,
+      "display_row": 0,
+      "complexity": 1,
+      "icon": {
+        "type": "TEXTURE",
+        "texture": "tc_energy:textures/research/tab_icon.png"
+      },
+      "flags": [
+        "ROUND",
+        "AUTO_UNLOCK"
+      ],
+      "parents": [],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.BASEENERGISTICS",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:ARCANEASSEMBLER",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "fabrico": 10,
+        "praecantatio": 10,
+        "machina": 5,
+        "ordo": 5
+      },
+      "display_column": 6,
+      "display_row": -1,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:arcane_assembler"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:VISINTERFACE",
+        "SCEPTRE"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ARCANEASSEMBLER.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "INFUSION_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:infusion/arcane_assembler"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ARCANEASSEMBLER.stage.2",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:KNOWLEDGEINSCRIBER",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "cognitio": 10,
+        "machina": 5,
+        "praecantatio": 5
+      },
+      "display_column": 6,
+      "display_row": 0,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:knowledge_inscriber"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:ARCANEASSEMBLER"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.KNOWLEDGEINSCRIBER",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/knowledge_core_item"
+          ]
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/knowledge_inscriber_block"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:ESSENTIASTORAGE",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "ordo": 1,
+        "praecantatio": 1
+      },
+      "display_column": 0,
+      "display_row": 2,
+      "complexity": 2,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:essentia_cell_1k"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:BASEENERGISTICS",
+        "DISTILESSENTIA",
+        "WARDEDARCANA"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIASTORAGE",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/storage_component_1k"
+          ]
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": [
+            "tc_energy:arcane/storage_component_4k",
+            "tc_energy:arcane/storage_component_16k",
+            "tc_energy:arcane/storage_component_64k"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:ARCANECRAFTINGTERMINAL",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "fabrico": 10,
+        "praecantatio": 10,
+        "machina": 5
+      },
+      "display_column": 2,
+      "display_row": -1,
+      "complexity": 2,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:arcane_crafting_terminal"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:BASEENERGISTICS"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ARCANECRAFTINGTERMINAL.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/arcane_crafting_terminal"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ARCANECRAFTINGTERMINAL.stage.2",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:VISINTERFACE",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "auram": 10,
+        "praecantatio": 5,
+        "machina": 5
+      },
+      "display_column": 4,
+      "display_row": -1,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:vis_interface"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:ARCANECRAFTINGTERMINAL",
+        "VISPOWER"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.VISINTERFACE",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/vis_interface"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:ESSENTIABUSES",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "machina": 5,
+        "permutatio": 5,
+        "praecantatio": 3
+      },
+      "display_column": -2,
+      "display_row": -2,
+      "complexity": 2,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:essentia_import_bus"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:DIGISENTIA",
+        "TUBEFILTER"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIABUSES.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/essentia_import_bus"
+          ]
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/essentia_export_bus"
+          ]
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/essentia_storage_bus"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIABUSES.stage.2",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:INFUSIONPROVIDER",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "machina": 10,
+        "praecantatio": 10,
+        "ordo": 8,
+        "permutatio": 5
+      },
+      "display_column": -5,
+      "display_row": -2,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:infusion_provider"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:ESSENTIABUSES",
+        "INFUSION",
+        "MIRROR"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.INFUSIONPROVIDER.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "INFUSION_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:infusion/infusion_provider"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.INFUSIONPROVIDER.stage.2",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:INFUSIONMONITOR",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "praecantatio": 4,
+        "auram": 4,
+        "sensus": 6
+      },
+      "display_column": -7,
+      "display_row": -2,
+      "complexity": 1,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:infusion_monitor"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:INFUSIONPROVIDER"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.INFUSIONMONITOR.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "INFUSION_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:infusion/infusion_monitor"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.INFUSIONMONITOR.stage.2",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:ESSENTIAPROVIDER",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "machina": 8,
+        "praecantatio": 8,
+        "permutatio": 5
+      },
+      "display_column": -2,
+      "display_row": -4,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:essentia_provider"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:ESSENTIABUSES"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIAPROVIDER.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "INFUSION_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:infusion/essentia_provider"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIAPROVIDER.connection.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/essentia_provider_connection"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIAPROVIDER.tool.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/wireless_connector"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:ESSENTIATERMINAL",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "praecantatio": 5,
+        "ordo": 3,
+        "cognitio": 3
+      },
+      "display_column": -1,
+      "display_row": -4,
+      "complexity": 2,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:essentia_terminal"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:DIGISENTIA"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIATERMINAL.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/essentia_terminal"
+          ]
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/essentia_level_emitter"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIATERMINAL.stage.2",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:DIGISENTIA",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "ordo": 5,
+        "perditio": 5,
+        "praecantatio": 3
+      },
+      "display_column": 0,
+      "display_row": -2,
+      "complexity": 1,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:diffusion_core"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:BASEENERGISTICS",
+        "DISTILESSENTIA"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.DIGISENTIA.stage.1",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/diffusion_core"
+          ]
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/coalescence_core"
+          ]
+        },
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.DIGISENTIA.stage.2",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:FOCUS_AEWRENCH",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "instrumentum": 5,
+        "potentia": 5,
+        "machina": 3
+      },
+      "display_column": -3,
+      "display_row": -7,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:focus_aewrench"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "FOCUSFIRE"
+      ],
+      "hidden_parents": [
+        "tc_energy:BASEENERGISTICS"
+      ],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.FOCUS_AEWRENCH",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/focus_ae_wrench"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:CERTUS_DUPE",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "vitreus": 5,
+        "praecantatio": 5,
+        "permutatio": 5
+      },
+      "display_column": -5,
+      "display_row": -5,
+      "complexity": 2,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "ae2:certus_quartz_crystal"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "ALCHEMICALDUPLICATION"
+      ],
+      "hidden_parents": [
+        "tc_energy:BASEENERGISTICS"
+      ],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.CERTUS_DUPE",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "CRUCIBLE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:crucible/certus_dupe"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:ESSENTIAVIBRATIONCHAMBER",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "potentia": 8,
+        "machina": 5,
+        "ignis": 3
+      },
+      "display_column": 1,
+      "display_row": -4,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:essentia_vibration_chamber"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:DIGISENTIA"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.ESSENTIAVIBRATIONCHAMBER",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/essentia_vibration_chamber_shapeless"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:DISTILLATIONENCODER",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "machina": 5,
+        "ordo": 5,
+        "perditio": 5
+      },
+      "display_column": -4,
+      "display_row": -4,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:distillation_encoder"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "tc_energy:ESSENTIABUSES"
+      ],
+      "hidden_parents": [],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.DISTILLATIONENCODER",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/distillation_encoder_block"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tc_energy:GOLEMWIFIBACKPACK",
+      "category": "TC_ENERGY",
+      "aspects": {
+        "praecantatio": 5,
+        "machina": 5,
+        "cognitio": 3
+      },
+      "display_column": 0,
+      "display_row": -6,
+      "complexity": 3,
+      "icon": {
+        "type": "STACK",
+        "stack": {
+          "id": "tc_energy:golem_wifi_backpack"
+        }
+      },
+      "flags": [
+        "ROUND",
+        "CONCEALED"
+      ],
+      "parents": [
+        "COREGATHER"
+      ],
+      "hidden_parents": [
+        "tc_energy:DIGISENTIA"
+      ],
+      "siblings": [],
+      "object_triggers": [],
+      "entity_triggers": [],
+      "aspect_triggers": [],
+      "warp": 0,
+      "pages": [
+        {
+          "type": "TEXT",
+          "value": "tc.research_text.GOLEMWIFI",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "DISABLED",
+          "recipe_ids": []
+        },
+        {
+          "type": "ARCANE_CRAFTING",
+          "value": "",
+          "aspects": {},
+          "compound_blueprint": "",
+          "recipe_link_policy": "COMPLETED_SINGLE",
+          "recipe_ids": [
+            "tc_energy:arcane/golem_wifi_backpack"
+          ]
+        }
+      ]
+    }
+  ]
+}

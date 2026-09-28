@@ -1,0 +1,34 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:ESSENTIABUSES",
+  "pattern": [
+    "DCF",
+    "IGI",
+    "   "
+  ],
+  "key": {
+    "D": {
+      "item": "tc_energy:diffusion_core"
+    },
+    "C": {
+      "item": "tc_energy:coalescence_core"
+    },
+    "F": {
+      "item": "thaumcraft:filtered_essentia_tube"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "G": {
+      "item": "ae2:quartz_glass"
+    }
+  },
+  "result": {
+    "id": "tc_energy:essentia_storage_bus"
+  },
+  "vis": {
+    "terra": 3,
+    "ignis": 3,
+    "aqua": 3
+  }
+}

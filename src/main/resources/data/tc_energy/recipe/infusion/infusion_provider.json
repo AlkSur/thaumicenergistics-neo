@@ -1,0 +1,43 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "tc_energy:INFUSIONPROVIDER",
+  "central": {
+    "item": "ae2:interface"
+  },
+  "components": [
+    {
+      "item": "thaumcraft:essentia_mirror"
+    },
+    {
+      "item": "thaumcraft:essentia_mirror"
+    },
+    {
+      "item": "thaumcraft:air_shard"
+    },
+    {
+      "item": "thaumcraft:air_shard"
+    },
+    {
+      "item": "tc_energy:diffusion_core"
+    },
+    {
+      "item": "tc_energy:coalescence_core"
+    },
+    {
+      "item": "thaumcraft:salis_mundus"
+    },
+    {
+      "item": "thaumcraft:salis_mundus"
+    }
+  ],
+  "instability": 3,
+  "aspects": {
+    "machina": 64,
+    "praecantatio": 32,
+    "ordo": 32,
+    "permutatio": 16
+  },
+  "result": {
+    "id": "tc_energy:infusion_provider"
+  }
+}

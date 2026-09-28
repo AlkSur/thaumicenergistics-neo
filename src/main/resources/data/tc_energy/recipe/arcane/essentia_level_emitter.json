@@ -1,0 +1,21 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "tc_energy:ESSENTIATERMINAL",
+  "ingredients": [
+    {
+      "item": "ae2:calculation_processor"
+    },
+    {
+      "item": "minecraft:redstone_torch"
+    },
+    {
+      "item": "thaumcraft:salis_mundus"
+    }
+  ],
+  "result": {
+    "id": "tc_energy:essentia_level_emitter"
+  },
+  "vis": {
+    "ignis": 4
+  }
+}

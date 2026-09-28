@@ -1,0 +1,95 @@
+{
+  "$schema": "../schema.json",
+  "includes": ["terminals/terminal.json"],
+  "slots": {
+    "CRAFTING_GRID": {
+      "left": 26,
+      "bottom": 158,
+      "grid": "BREAK_AFTER_3COLS"
+    },
+    "CRAFTING_RESULT": {
+      "left": 134,
+      "bottom": 140
+    },
+    "STORAGE": {
+      "left": 134,
+      "bottom": 162
+    },
+    "TOOLBOX": {
+      "left": 175,
+      "bottom": 84,
+      "grid": "BREAK_AFTER_3COLS"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.tc_energy.arcane_crafting_terminal"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "crafting_grid_title": {
+      "text": {
+        "translate": "gui.tc_energy.ArcaneCraftingTerminal"
+      },
+      "position": {
+        "left": 8,
+        "bottom": 179
+      }
+    },
+	"player_inventory_title": {
+      "text": {
+        "translate": "container.inventory"
+      },
+      "position": {
+        "left": 8,
+        "bottom": 94
+      }
+    }
+  },
+  "terminalStyle": {
+    "header": {
+      "texture": "tc_energy:textures/gui/arcane_crafting.png",
+      "srcRect": [0, 0, 194, 17]
+    },
+    "firstRow": {
+      "texture": "tc_energy:textures/gui/arcane_crafting.png",
+      "srcRect": [0, 17, 194, 18]
+    },
+    "row": {
+      "texture": "tc_energy:textures/gui/arcane_crafting.png",
+      "srcRect": [0, 35, 194, 18]
+    },
+    "lastRow": {
+      "texture": "tc_energy:textures/gui/arcane_crafting.png",
+      "srcRect": [0, 53, 194, 18]
+    },
+    "bottom": {
+      "texture": "tc_energy:textures/gui/arcane_crafting.png",
+      "srcRect": [0, 71, 194, 180]
+    }
+  },
+  "widgets": {
+    "clearCraftingGrid": {
+      "left": 103,
+      "bottom": 160
+    },
+    "clearToPlayerInv": {
+      "left": 113,
+      "bottom": 160
+    },
+    "viewCells": {
+      "left": 193,
+      "top": 0
+    },
+    "toolbox": {
+      "left": 174,
+      "bottom": 90,
+      "width": 59,
+      "height": 66
+    }
+  }
+}

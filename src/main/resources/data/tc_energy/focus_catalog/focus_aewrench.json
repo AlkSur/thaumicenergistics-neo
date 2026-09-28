@@ -1,0 +1,30 @@
+{
+  "focus_profiles": [
+    {
+      "focus": "tc_energy:focus_aewrench",
+      "color": 12767960,
+      "per_tick": false,
+      "base_cost": {
+        "ignis": 10,
+        "aer": 10
+      },
+      "ranks": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "parameters": {
+        "vis_discount": {
+          "base": 0,
+          "per_level": {
+            "thaumcraft:frugal": 0.1
+          },
+          "min": 0,
+          "max": 1
+        }
+      }
+    }
+  ]
+}

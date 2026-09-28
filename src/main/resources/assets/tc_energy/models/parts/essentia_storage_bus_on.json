@@ -1,0 +1,19 @@
+{
+	"format_version": "1.21.6",
+	"credit": "Made with _leng",
+	"textures": {
+		"indicator": "ae2:part/monitor_sides_status_on"
+	},
+	"elements": [
+		{
+			"from": [4.99, 4.99, 1.99],
+			"to": [11.01, 11.01, 3.01],
+			"faces": {
+				"east": {"uv": [13, 5, 14, 11], "texture": "#indicator"},
+				"west": {"uv": [2, 5, 3, 11], "texture": "#indicator"},
+				"up": {"uv": [5, 2, 11, 3], "texture": "#indicator"},
+				"down": {"uv": [5, 13, 11, 14], "texture": "#indicator"}
+			}
+		}
+	]
+}

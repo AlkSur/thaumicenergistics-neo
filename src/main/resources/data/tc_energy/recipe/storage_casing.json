@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "W": {
+      "tag": "tc_energy:essentia_cell_glass"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "T": {
+      "item": "thaumcraft:thaumium_ingot"
+    }
+  },
+  "pattern": [
+    "WRW",
+    "R R",
+    "TTT"
+  ],
+  "result": {
+    "id": "tc_energy:storage_casing"
+  }
+}

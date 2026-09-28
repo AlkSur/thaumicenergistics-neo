@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "tc_energy:essentia_provider",
+    "tc_energy:infusion_provider",
+    "tc_energy:arcane_assembler",
+    "tc_energy:essentia_vibration_chamber",
+    "tc_energy:knowledge_inscriber",
+    "tc_energy:essentia_cell_workbench",
+    "tc_energy:distillation_encoder"
+  ]
+}

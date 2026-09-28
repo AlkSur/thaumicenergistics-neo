@@ -1,0 +1,62 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "tc_energy:ARCANEASSEMBLER",
+  "central": {
+    "item": "ae2:molecular_assembler"
+  },
+  "components": [
+    {
+      "item": "thaumcraft:fire_shard"
+    },
+    {
+      "item": "thaumcraft:entropy_shard"
+    },
+    {
+      "item": "thaumcraft:order_shard"
+    },
+    {
+      "item": "thaumcraft:balanced_shard"
+    },
+    {
+      "item": "thaumcraft:water_shard"
+    },
+    {
+      "item": "thaumcraft:earth_shard"
+    },
+    {
+      "item": "thaumcraft:air_shard"
+    },
+    {
+      "type": "neoforge:components",
+      "items": "thaumcraft:wand",
+      "components": {
+        "thaumcraft:wand": {
+          "rod": "silverwood",
+          "cap": "thaumium",
+          "sceptre": true,
+          "vis": {
+            "aer": 15000,
+            "terra": 15000,
+            "ignis": 15000,
+            "aqua": 15000,
+            "ordo": 15000,
+            "perditio": 15000
+          },
+          "focus_stack": {}
+        }
+      }
+    }
+  ],
+  "instability": 5,
+  "aspects": {
+    "fabrico": 64,
+    "permutatio": 32,
+    "auram": 16,
+    "praecantatio": 16,
+    "metallum": 8,
+    "vitreus": 8
+  },
+  "result": {
+    "id": "tc_energy:arcane_assembler"
+  }
+}

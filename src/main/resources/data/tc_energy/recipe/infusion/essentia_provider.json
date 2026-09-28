@@ -1,0 +1,43 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "tc_energy:ESSENTIAPROVIDER",
+  "central": {
+    "item": "ae2:interface"
+  },
+  "components": [
+    {
+      "item": "thaumcraft:water_shard"
+    },
+    {
+      "item": "thaumcraft:water_shard"
+    },
+    {
+      "item": "thaumcraft:salis_mundus"
+    },
+    {
+      "item": "thaumcraft:salis_mundus"
+    },
+    {
+      "item": "tc_energy:diffusion_core"
+    },
+    {
+      "item": "tc_energy:coalescence_core"
+    },
+    {
+      "item": "thaumcraft:filtered_essentia_tube"
+    },
+    {
+      "item": "thaumcraft:filtered_essentia_tube"
+    }
+  ],
+  "instability": 1,
+  "aspects": {
+    "machina": 64,
+    "praecantatio": 32,
+    "ordo": 32,
+    "permutatio": 16
+  },
+  "result": {
+    "id": "tc_energy:essentia_provider"
+  }
+}

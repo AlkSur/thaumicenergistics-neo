@@ -1,0 +1,31 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:KNOWLEDGEINSCRIBER",
+  "pattern": [
+    "QlQ",
+    "lBl",
+    "QPQ"
+  ],
+  "key": {
+    "Q": {
+      "item": "ae2:quartz_glass"
+    },
+    "l": {
+      "item": "minecraft:lapis_lazuli"
+    },
+    "B": {
+      "item": "thaumcraft:zombie_brain"
+    },
+    "P": {
+      "item": "ae2:calculation_processor"
+    }
+  },
+  "result": {
+    "id": "tc_energy:knowledge_core"
+  },
+  "vis": {
+    "aqua": 3,
+    "ordo": 3,
+    "terra": 1
+  }
+}

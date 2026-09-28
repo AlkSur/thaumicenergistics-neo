@@ -1,0 +1,27 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "tc_energy:ESSENTIAPROVIDER",
+  "ingredients": [
+    {
+      "item": "tc_energy:coalescence_core"
+    },
+    {
+      "item": "tc_energy:diffusion_core"
+    },
+    {
+      "item": "ae2:wireless_receiver"
+    },
+    {
+      "item": "thaumcraft:balanced_shard"
+    }
+  ],
+  "result": {
+    "id": "tc_energy:essentia_provider_connection",
+    "count": 2
+  },
+  "vis": {
+    "ordo": 8,
+    "aer": 6,
+    "ignis": 3
+  }
+}

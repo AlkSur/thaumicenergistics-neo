@@ -1,0 +1,33 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:ESSENTIASTORAGE",
+  "pattern": [
+    "SPE",
+    "4G4",
+    "E4S"
+  ],
+  "key": {
+    "S": {
+      "item": "thaumcraft:salis_mundus"
+    },
+    "P": {
+      "item": "ae2:engineering_processor"
+    },
+    "4": {
+      "item": "tc_energy:storage_component_4k"
+    },
+    "G": {
+      "item": "ae2:quartz_glass"
+    },
+    "E": {
+      "tag": "tc_energy:wisp_essences"
+    }
+  },
+  "result": {
+    "id": "tc_energy:storage_component_16k"
+  },
+  "vis": {
+    "ignis": 3,
+    "ordo": 4
+  }
+}

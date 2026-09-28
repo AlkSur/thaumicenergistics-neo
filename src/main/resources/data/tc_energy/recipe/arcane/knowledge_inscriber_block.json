@@ -1,0 +1,34 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "tc_energy:KNOWLEDGEINSCRIBER",
+  "pattern": [
+    "ILI",
+    " T ",
+    "IPI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "L": {
+      "tag": "tc_energy:monitors"
+    },
+    "T": {
+      "item": "thaumcraft:thaumonomicon"
+    },
+    "P": {
+      "item": "ae2:logic_processor"
+    }
+  },
+  "result": {
+    "id": "tc_energy:knowledge_inscriber"
+  },
+  "vis": {
+    "aqua": 5,
+    "terra": 5,
+    "ignis": 5,
+    "aer": 5,
+    "ordo": 5,
+    "perditio": 5
+  }
+}

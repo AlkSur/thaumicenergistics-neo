@@ -1,0 +1,11 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="tc_energy"
+version="2.0.1"
+displayName="ThaumicEnergistics"
+description="Bridges Thaumcraft Essentia with Applied Energistics 2 ME networks."
+authors="Nividica, Community"
+logoFile="assets/tc_energy/meta/logo.png"

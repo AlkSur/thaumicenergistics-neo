@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "tc_energy:block/essentia_cell_workbench_top",
+    "bottom": "tc_energy:block/essentia_cell_workbench_bottom",
+    "side": "tc_energy:block/essentia_cell_workbench_side"
+  }
+}

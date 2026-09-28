@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,variant=false": { "model": "tc_energy:block/alkusure86fumo", "y": 0 },
+    "facing=south,variant=false": { "model": "tc_energy:block/alkusure86fumo", "y": 180 },
+    "facing=east,variant=false": { "model": "tc_energy:block/alkusure86fumo", "y": 90 },
+    "facing=west,variant=false": { "model": "tc_energy:block/alkusure86fumo", "y": 270 },
+    "facing=north,variant=true": { "model": "tc_energy:block/a999csfumo", "y": 0 },
+    "facing=south,variant=true": { "model": "tc_energy:block/a999csfumo", "y": 180 },
+    "facing=east,variant=true": { "model": "tc_energy:block/a999csfumo", "y": 90 },
+    "facing=west,variant=true": { "model": "tc_energy:block/a999csfumo", "y": 270 }
+  }
+}
