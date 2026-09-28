@@ -4995,3 +4995,6 @@ __pycache__/
 /modules/thaumicenergistics-neoRen/.openclaw/tmp/fix_deprecated.py
 /modules/thaumicenergistics-neoRen/.openclaw/tmp/fix_deprecated2.py
 /docs/PROJECT_STRUCTURE.md
+/.openclaw/
+/必须遵循.md
+/迁移报告-2026-09-16.md
