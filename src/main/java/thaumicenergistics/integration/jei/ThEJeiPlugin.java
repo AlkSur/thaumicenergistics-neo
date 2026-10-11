@@ -20,6 +20,8 @@ import thaumcraft.integration.jei.ThaumcraftJeiPlugin;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.GuiEssentiaCellWorkbench;
 import thaumicenergistics.common.integration.tc.TCReflection;
+import thaumicenergistics.common.container.GuiDistillationPatternEncoder;
+import thaumicenergistics.common.container.GuiKnowledgeInscriber;
 
 /**
  * JEI 插件：将源质注册为自定义 IIngredient 类型显示在 JEI 成分列表中。
@@ -85,6 +87,9 @@ public class ThEJeiPlugin implements IModPlugin {
         // 注册 IRecipeTransferInfo 让 JEI 显示 "+" 按钮
         registration.addRecipeTransferHandler(new ArcaneCraftingTransferInfo());
         registration.addRecipeTransferHandler(new ArcaneRecipeTransferInfo());
+        // 无线奥术合成终端：MenuType 不同，需单独注册槽位映射（转移 handler 按容器类共用）
+        registration.addRecipeTransferHandler(new WirelessArcaneCraftingTransferInfo());
+        registration.addRecipeTransferHandler(new ThEWirelessArcaneCraftingTransferInfo());
         // 注册 IRecipeTransferHandler 让点击 "+" 时走 ME 网络
         registration.addRecipeTransferHandler(new ThEUseCraftingRecipeTransfer(registration.getTransferHelper()), CRAFTING);
         registration.addRecipeTransferHandler(new ThEUseArcaneRecipeTransfer(registration.getTransferHelper()), ThaumcraftJeiPlugin.ARCANE);
@@ -97,21 +102,15 @@ public class ThEJeiPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        // 源质终端（含无线版）：悬停仓库源质 → 提供 AspectIngredient 可点击项，
-        // 使 JEI 的 A 键收藏/配方查看正确显示源质图标与名称（不依赖 AE2-JEI-Integration）。
-        registration.addGuiContainerHandler(
-                thaumicenergistics.common.container.GuiEssentiaTerminal.class,
-                new ThEEssentiaGuiHandler());
-
         // 源质元件工作台：从 JEI 拖拽要素到分区格添加分区（纯 JEI API，可选功能）
         registration.addGhostIngredientHandler(GuiEssentiaCellWorkbench.class, new CellWorkbenchGhostIngredientHandler());
         // 知识记录仪：从 JEI 拉取物品到 3×3 合成网格（复用 GhostSlot + KnowledgeInscriberGhostSlotPacket）
         registration.addGhostIngredientHandler(
-                thaumicenergistics.common.container.GuiKnowledgeInscriber.class,
+                GuiKnowledgeInscriber.class,
                 new KnowledgeInscriberGhostIngredientHandler());
         // 蒸馏编码台：从 JEI 拉取物品到源物品槽（C2S 设置源物品）
         registration.addGhostIngredientHandler(
-                thaumicenergistics.common.container.GuiDistillationPatternEncoder.class,
+                GuiDistillationPatternEncoder.class,
                 new DistillationEncoderGhostIngredientHandler());
     }
 }

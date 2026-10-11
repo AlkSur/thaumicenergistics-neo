@@ -1,14 +1,11 @@
 package thaumicenergistics.common.features;
 
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
 import thaumcraft.api.ThaumcraftApi;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
@@ -20,6 +17,7 @@ import thaumcraft.common.vis.TCVisHelper;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.init.ModBlocks;
 import thaumicenergistics.init.ModItems;
+import net.minecraft.world.level.ItemLike;
 
 public final class RecipeRegistration {
     private RecipeRegistration() {}
@@ -39,16 +37,14 @@ public final class RecipeRegistration {
     public static ShapedArcaneRecipe KNOWLEDGE_CORE_ITEM;
     public static ShapedArcaneRecipe FOCUS_AEWRENCH_RECIPE;
     public static ShapedArcaneRecipe GOLEM_WIFI_BACKPACK_RECIPE;
-    public static ShapedArcaneRecipe ESSENTIA_IMPORT_BUS;
-    public static ShapedArcaneRecipe ESSENTIA_EXPORT_BUS;
-    public static ShapedArcaneRecipe ESSENTIA_STORAGE_BUS;
     public static ShapedArcaneRecipe KNOWLEDGE_INSCRIBER_BLOCK;
     public static ShapedArcaneRecipe DISTILLATION_ENCODER_BLOCK;
     // 奥术无序配方
     public static ShapelessArcaneRecipe DIFFUSION_CORE;
     public static ShapelessArcaneRecipe COALESCENCE_CORE;
     public static ShapelessArcaneRecipe ESSENTIA_LEVEL_EMITTER;
-    public static ShapelessArcaneRecipe ESSENTIA_TERMINAL;
+    /** 无线奥术合成终端（T-RESEARCH-B4：原 vanilla 无序改奥术无序，研究键挂自身节点）。 */
+    public static ShapelessArcaneRecipe WIRELESS_ARCANE_CRAFTING_TERMINAL;
     public static ShapelessArcaneRecipe ARCANE_CRAFTING_TERMINAL;
     public static ShapelessArcaneRecipe VIS_INTERFACE;
     public static ShapelessArcaneRecipe ESSENTIA_VIBRATION_CHAMBER;
@@ -56,6 +52,12 @@ public final class RecipeRegistration {
     public static ShapelessArcaneRecipe ESSENTIA_PROVIDER_CONNECTION;
     /** 源质无线绑定工具（无序奥术）。 */
     public static ShapelessArcaneRecipe WIRELESS_CONNECTOR;
+    /** vis 连接卡（无序奥术，T-M3-RECIPE：无线奥术合成终端绑定用卡）。 */
+    public static ShapelessArcaneRecipe VIS_CONNECTOR_CARD;
+    /** 源质访问卡注魔（T-RESEARCH-B2：落字段供研究页引用）。 */
+    public static InfusionRecipe ESSENTIA_UPGRADE_CARD;
+    /** 概率之脑注魔（T-M6-RECIPE-2：照 CE gacha_box 移植到 port.261 物品体系，落字段供研究页引用）。 */
+    public static InfusionRecipe GACHA_BOX;
     /** 赛特斯石英复制（坩埚炼金配方——研究页关联）。 */
     public static CrucibleRecipe CERTUS_DUPE_RECIPE;
 
@@ -161,38 +163,6 @@ public final class RecipeRegistration {
                 'f', ae("fluix_crystal"),
                 'C', ae("charger"));
 
-        ESSENTIA_IMPORT_BUS = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIABUSES", stack(ModItems.ESSENTIA_IMPORT_BUS),
-                new AspectList().add(Aspect.FIRE, 2).add(Aspect.EARTH, 2).add(Aspect.WATER, 1),
-                // 注意：TC ShapedArcaneRecipe 要求模式为矩形（各行等长），删 J 后必须补空格占位
-                "JD ",
-                "IFI",
-                "   ",
-                'J', tc("jar_of_essentia"),
-                'D', stack(ModItems.DIFFUSION_CORE),
-                'I', new ItemStack(Items.IRON_INGOT, 1),
-                'F', tc("essentia_filter"));
-
-        ESSENTIA_EXPORT_BUS = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIABUSES", stack(ModItems.ESSENTIA_EXPORT_BUS),
-                new AspectList().add(Aspect.FIRE, 2).add(Aspect.EARTH, 2).add(Aspect.WATER, 1),
-                "JC ",
-                "IFI",
-                "   ",
-                'J', tc("jar_of_essentia"),
-                'C', stack(ModItems.COALESCENCE_CORE),
-                'I', new ItemStack(Items.IRON_INGOT, 1),
-                'F', tc("essentia_filter"));
-
-        ESSENTIA_STORAGE_BUS = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIABUSES", stack(ModItems.ESSENTIA_STORAGE_BUS),
-                new AspectList().add(Aspect.EARTH, 3).add(Aspect.FIRE, 3).add(Aspect.WATER, 3),
-                "DCF",
-                "IGI",
-                "   ",
-                'D', stack(ModItems.DIFFUSION_CORE),
-                'C', stack(ModItems.COALESCENCE_CORE),
-                'F', tc("essentia_filter"),
-                'I', new ItemStack(Items.IRON_INGOT, 1),
-                'G', ae("quartz_glass"));
-
         KNOWLEDGE_INSCRIBER_BLOCK = ThaumcraftApi.addArcaneCraftingRecipe("KNOWLEDGEINSCRIBER", stack(ModBlocks.KNOWLEDGE_INSCRIBER),
                 new AspectList().add(Aspect.WATER, 5).add(Aspect.EARTH, 5).add(Aspect.FIRE, 5).add(Aspect.AIR, 5).add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5),
                 "ILI",
@@ -236,23 +206,14 @@ public final class RecipeRegistration {
                 tc("order_shard"),
                 ae("formation_core"));
 
-        // 3. 原质等级发射器
-        ESSENTIA_LEVEL_EMITTER = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIATERMINAL", new ItemStack(ModItems.ESSENTIA_LEVEL_EMITTER.get(), 1),
+        // 3. 原质等级发射器（T-M2-REMOVE：注册键随源质终端节点删除迁 ESSENTIAACCESSCARD，配方页同步迁入访问卡节点）
+        ESSENTIA_LEVEL_EMITTER = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIAACCESSCARD", new ItemStack(ModItems.ESSENTIA_LEVEL_EMITTER.get(), 1),
                 new AspectList().add(Aspect.FIRE, 4),
                 ae("calculation_processor"),
                 new ItemStack(Items.REDSTONE_TORCH),
                 tc("salis_mundus"));
 
-        // 4. 原质终端
-        ESSENTIA_TERMINAL = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIATERMINAL", stack(ModItems.ESSENTIA_TERMINAL_ITEM),
-                new AspectList().add(Aspect.WATER, 5).add(Aspect.ORDER, 2).add(Aspect.FIRE, 1),
-                MONITORS,
-                stack(ModItems.DIFFUSION_CORE),
-                stack(ModItems.COALESCENCE_CORE),
-                ae("logic_processor"),
-                tc("vis_filter"));
-
-        // 5. 奥术合成终端
+        // 4. 奥术合成终端
         ARCANE_CRAFTING_TERMINAL = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ARCANECRAFTINGTERMINAL", stack(ModItems.ARCANE_CRAFTING_TERMINAL_ITEM),
                 new AspectList().add(Aspect.AIR, 10).add(Aspect.EARTH, 10).add(Aspect.FIRE, 10).add(Aspect.WATER, 10).add(Aspect.ORDER, 10).add(Aspect.ENTROPY, 10),
                 ae("terminal"),
@@ -287,6 +248,24 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5),
                 ae("certus_quartz_wrench"),
                 tc("balanced_shard"));
+
+        // 10. vis 连接卡（T-RESEARCH-B4：VISCONNECTORCARD 节点已删，研究键融入无线奥术合成终端节点）
+        VIS_CONNECTOR_CARD = ThaumcraftApi.addShapelessArcaneCraftingRecipe("WIRELESSARCANECRAFTINGTERMINAL",
+                stack(ModItems.VIS_CONNECTOR_CARD),
+                new AspectList().add(Aspect.AIR, 10).add(Aspect.ORDER, 20),
+                ae("wireless_receiver"),
+                ae("advanced_card"),
+                stack(ModItems.COALESCENCE_CORE));
+
+        // 11. 无线奥术合成终端（T-RESEARCH-B4：vanilla 无序改奥术无序，物品组件不变）
+        // 要素 20 aer + 10 ignis + 10 perditio（Aspect 常量映射：AIR/FIRE/ENTROPY）；
+        // 研究门槛 = WIRELESSARCANECRAFTINGTERMINAL，未解锁不可合成。
+        WIRELESS_ARCANE_CRAFTING_TERMINAL = ThaumcraftApi.addShapelessArcaneCraftingRecipe("WIRELESSARCANECRAFTINGTERMINAL",
+                stack(ModItems.WIRELESS_ARCANE_CRAFTING_TERMINAL),
+                new AspectList().add(Aspect.AIR, 20).add(Aspect.FIRE, 10).add(Aspect.ENTROPY, 10),
+                ae("wireless_receiver"),
+                ae("dense_energy_cell"),
+                stack(ModItems.ARCANE_CRAFTING_TERMINAL_ITEM));
 
     }
 
@@ -348,6 +327,49 @@ public final class RecipeRegistration {
                 tc("goggles_revealing"),
                 tc("salis_mundus"),
                 tc("salis_mundus"));
+
+        // 5. 源质访问卡（T-M1-012：弃旧 shapeless，改注魔配方）
+        // 落点为本方法（port.261 无注魔 datapack 序列化器，注魔唯一入口为代码 API）。
+        // research="" 无研究门槛——注魔矩阵不消费 research；TCResearchManager.has 对空/空白键直接返回 true。
+        // 中心 ae2:basic_card；组件 铁锭×2 + 神秘锭×2 + 世界盐×1 + 运算处理器×1 + 扩散核心×1（共 7 个，TC 上限 8）。
+        // 要素 cognitio×16 / fabrico×16 / permutatio×8 / metallum×8 / praecantatio×8；不稳定度 2。
+        //产物数量x4（T-M3-RECIPE：材料贵、用量大，产物 1 → 4）
+        //研究键挂自身节点（T-RESEARCH-B2：原为空键无门槛）
+        ESSENTIA_UPGRADE_CARD = ThaumcraftApi.addInfusionCraftingRecipe("ESSENTIAACCESSCARD", stack(ModItems.ESSENTIA_UPGRADE_CARD).copyWithCount(4),
+                2, new AspectList().add(Aspect.MIND, 16).add(Aspect.CRAFT, 16).add(Aspect.EXCHANGE, 8).add(Aspect.METAL, 8).add(Aspect.MAGIC, 8),
+                ae("basic_card"),
+                new ItemStack(Items.IRON_INGOT, 1),
+                new ItemStack(Items.IRON_INGOT, 1),
+                tc("thaumium_ingot"),
+                tc("thaumium_ingot"),
+                tc("salis_mundus"),
+                ae("calculation_processor"),
+                stack(ModItems.DIFFUSION_CORE));
+
+        // 11. 概率之脑（T-M6-RECIPE-2：CE gacha_box 注魔配方移植）
+        // 研究键 GACHABOX；不稳定度 8（CE 原值，全模最高——盒子本身就是一场赌博）。
+        // 要素运行期取（port.261 无这些静态常量，M6 范式 Aspect.get）：
+        //   认知 32 / 置换 16 / 前行 16 / 运动 8 / 机械 8 / 秽 8。
+        // catalyst=本仓知识核心；组件 8 件（TC 上限 8）：认知灵光精粹（fixedAspect 物品，等价 CE 认知 vis 晶体）
+        //   + 扩散核心 + 秽灵光精粹（等价 CE crystal_vitium）+ AE2 形成核心 + AE2 运算处理器
+        //   + 神秘锭×2 + 世界盐。罐装脑不入组件——装脑走方块交互（CE 同款注释语义）。
+        GACHA_BOX = ThaumcraftApi.addInfusionCraftingRecipe("GACHABOX", stack(ModBlocks.BRAIN_OF_PROBABILITY),
+                8, new AspectList()
+                        .add(Aspect.get("cognitio"), 32)
+                        .add(Aspect.get("permutatio"), 16)
+                        .add(Aspect.get("praecantatio"), 16)
+                        .add(Aspect.get("motus"), 8)
+                        .add(Aspect.get("machina"), 8)
+                        .add(Aspect.get("vitium"), 8),
+                stack(ModItems.KNOWLEDGE_CORE),
+                tc("wisp_essence_cognitio"),
+                stack(ModItems.DIFFUSION_CORE),
+                tc("wisp_essence_vitium"),
+                ae("formation_core"),
+                ae("calculation_processor"),
+                tc("thaumium_ingot"),
+                tc("thaumium_ingot"),
+                tc("salis_mundus"));
     }
 
     /**
@@ -371,7 +393,7 @@ public final class RecipeRegistration {
         return scepter;
     }
 
-    private static ItemStack stack(java.util.function.Supplier<? extends net.minecraft.world.level.ItemLike> s) {
+    private static ItemStack stack(java.util.function.Supplier<? extends ItemLike> s) {
         return new ItemStack(s.get());
     }
     private static ItemStack tc(String name) {

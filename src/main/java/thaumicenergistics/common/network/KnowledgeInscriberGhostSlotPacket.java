@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.ContainerKnowledgeInscriber;
+import net.minecraft.network.codec.ByteBufCodecs;
 
 /**
  * 客户端→服务端 网络包：同步知识记录仪合成网格中某个幽灵槽的内容。
@@ -27,8 +28,8 @@ public record KnowledgeInscriberGhostSlotPacket(
 
     public static final StreamCodec<RegistryFriendlyByteBuf, KnowledgeInscriberGhostSlotPacket> STREAM_CODEC =
             StreamCodec.composite(
-                    net.minecraft.network.codec.ByteBufCodecs.VAR_INT, KnowledgeInscriberGhostSlotPacket::containerId,
-                    net.minecraft.network.codec.ByteBufCodecs.VAR_INT, KnowledgeInscriberGhostSlotPacket::slotIndex,
+                    ByteBufCodecs.VAR_INT, KnowledgeInscriberGhostSlotPacket::containerId,
+                    ByteBufCodecs.VAR_INT, KnowledgeInscriberGhostSlotPacket::slotIndex,
                     ItemStack.OPTIONAL_STREAM_CODEC, KnowledgeInscriberGhostSlotPacket::stack,
                     KnowledgeInscriberGhostSlotPacket::new
             );

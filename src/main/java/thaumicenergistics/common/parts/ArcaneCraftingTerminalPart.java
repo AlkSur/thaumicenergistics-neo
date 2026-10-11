@@ -14,7 +14,6 @@ import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
 import appeng.api.ids.AEComponents;
 import appeng.api.inventories.InternalInventory;
-import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
@@ -23,17 +22,12 @@ import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.core.AppEng;
 import appeng.items.parts.PartModels;
-import appeng.me.service.P2PService;
-import appeng.menu.locator.MenuLocators;
 import appeng.menu.MenuOpener;
+import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
-import appeng.parts.p2p.P2PTunnelPart;
 import appeng.parts.reporting.AbstractTerminalPart;
 import appeng.util.inv.AppEngInternalInventory;
-import thaumcraft.api.aspects.Aspect;
-import thaumcraft.common.items.TCFunctionalItems;
 import thaumicenergistics.ThaumicEnergistics;
-import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModMenuTypes;
 
 public class ArcaneCraftingTerminalPart extends AbstractTerminalPart implements IGridTickable {
@@ -58,8 +52,6 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart implements 
 
     /** 充能间隔：每 tick 抽取一次。与 TC 能量节点池子每 tick 重置的频率、原版充能中继一致；无需放大。 */
     private static final int VIS_REPLENISH_INTERVAL = 1;
-    /** 每 tick 每要素最大充能 cV，与原版奥术工作台充能中继（MagicWorkbenchCharger）一致（5 cV/tick = 1 vis/s）。 */
-    private static final int MAX_CVIS_PER_TICK = 5;
     private static final String NBT_KEY_VIS_SOURCE_FREQ = "visSourceFreq";
 
     /** 内存卡设定的 vis 源 P2P 频率；0 = 未设置（不自动充能）。 */
@@ -124,45 +116,8 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart implements 
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        if (visSourceFreq == 0) {
-            return TickRateModulation.SAME;
-        }
-        ItemStack wandStack = wandInv.getStackInSlot(0);
-        if (wandStack.isEmpty() || !(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) {
-            return TickRateModulation.SAME;
-        }
-        IGrid grid = node.getGrid();
-        if (grid == null) {
-            return TickRateModulation.SAME;
-        }
-        P2PService p2p = P2PService.get(grid);
-        if (p2p == null) {
-            return TickRateModulation.SAME;
-        }
-        P2PTunnelPart<?> input = p2p.getInput(visSourceFreq);
-        if (!(input instanceof VisInterfacePart visSource)) {
-            return TickRateModulation.SAME;
-        }
-
-        boolean changed = false;
-        int maxVis = wand.getMaxVis(wandStack);
-        for (Aspect primal : Aspect.getPrimalAspects()) {
-            int needed = maxVis - wand.getVis(wandStack, primal);
-            if (needed <= 0) {
-                continue;
-            }
-            ResourceLocation id = TCReflection.getAspectId(primal);
-            if (id == null) {
-                continue;
-            }
-            // 每 tick 申请真实量（与池子每 tick 重置对齐），充入真实量，vis 守恒
-            int got = visSource.consumeVis(id, Math.min(MAX_CVIS_PER_TICK, needed));
-            if (got > 0) {
-                wand.addRealVis(wandStack, primal, got, true);
-                changed = true;
-            }
-        }
-        if (changed) {
+        // 充能体抽至 ArcaneVisReplenish 单套实现（无线终端菜单打开期间共用，T-M3-IMPL D1），行为零变化
+        if (ArcaneVisReplenish.replenish(node.getGrid(), visSourceFreq, wandInv.getStackInSlot(0))) {
             // 法杖 vis 存储在 ItemStack NBT，手动标记保存
             getHost().markForSave();
         }

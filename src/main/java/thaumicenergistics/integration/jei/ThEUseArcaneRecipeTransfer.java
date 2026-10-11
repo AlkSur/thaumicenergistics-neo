@@ -7,19 +7,16 @@ import java.util.Optional;
 
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 
-import mezz.jei.api.gui.builder.ITooltipBuilder;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
 
-import org.jetbrains.annotations.Nullable;
 
 import appeng.core.network.serverbound.FillCraftingGridFromRecipePacket;
 import appeng.api.stacks.AEItemKey;
@@ -35,6 +32,8 @@ import static appeng.integration.modules.itemlists.TransferHelper.BLUE_PLUS_BUTT
 import static appeng.integration.modules.itemlists.TransferHelper.BLUE_SLOT_HIGHLIGHT_COLOR;
 import static appeng.integration.modules.itemlists.TransferHelper.ORANGE_PLUS_BUTTON_COLOR;
 import static appeng.integration.modules.itemlists.TransferHelper.RED_SLOT_HIGHLIGHT_COLOR;
+import appeng.core.localization.ItemModText;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * 奥术合成终端专用的 JEI 奥术配方转移处理器。
@@ -69,7 +68,7 @@ public class ThEUseArcaneRecipeTransfer
             ContainerArcaneCraftingTerminal menu,
             JeiArcaneRecipe recipe,
             IRecipeSlotsView display,
-            net.minecraft.world.entity.player.Player player,
+            Player player,
             boolean maxTransfer,
             boolean doTransfer) {
 
@@ -87,7 +86,7 @@ public class ThEUseArcaneRecipeTransfer
                     .filter(Objects::nonNull)
                     .toList();
             return helper.createUserErrorForMissingSlots(
-                    appeng.core.localization.ItemModText.NO_ITEMS.text(), missingSlotViews);
+                    ItemModText.NO_ITEMS.text(), missingSlotViews);
         }
 
         // 预览：检查缺失情况，返回对应的错误渲染

@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import thaumcraft.api.ThaumcraftApi;
+import thaumcraft.api.crafting.InfusionRecipe;
 
 /**
  * 注魔风险计算：扫描附近的注魔矩阵，按 5 档风险显示。
@@ -164,8 +166,8 @@ public final class InfusionRiskCalculator {
                 }
             }
             // 找匹配配方（忽略研究：直接比对中央 + 组件，不调 matches 以免研究门禁）
-            for (Object o : thaumcraft.api.ThaumcraftApi.getCraftingRecipes()) {
-                if (!(o instanceof thaumcraft.api.crafting.InfusionRecipe recipe)) continue;
+            for (Object o : ThaumcraftApi.getCraftingRecipes()) {
+                if (!(o instanceof InfusionRecipe recipe)) continue;
                 if (!recipe.getRecipeInput().is(central.getItem())) continue;
                 // 简化：中央物品匹配即采用其基础不稳定（组件精确匹配留给 craftingStart 处理）
                 return recipe.instability(central);

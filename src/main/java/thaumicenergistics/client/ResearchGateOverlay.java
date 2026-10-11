@@ -9,7 +9,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
-import appeng.api.networking.crafting.ICraftingSubmitResult;
 import appeng.client.gui.me.crafting.CraftConfirmScreen;
 import appeng.client.gui.me.crafting.CraftErrorScreen;
 import appeng.menu.me.crafting.CraftConfirmMenu;

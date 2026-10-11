@@ -21,6 +21,7 @@ import thaumcraft.common.items.JarBlockItem;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.ThEEssentiaContainers;
 import thaumicenergistics.common.integration.tc.TCReflection;
+import net.minecraft.world.item.Item;
 
 /**
  * 源质容器 ↔ ME 网络通用存取逻辑（服务端）。
@@ -215,7 +216,7 @@ public final class EssentiaFillHelper {
     private static ItemStack filledPhialStack(String aspectTag) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(
                 "thaumcraft", "phial_of_essentia_" + aspectTag);
-        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.getOptional(id)
+        Item item = BuiltInRegistries.ITEM.getOptional(id)
                 .orElse(BuiltInRegistries.ITEM.get(
                         ResourceLocation.fromNamespaceAndPath("thaumcraft", "glass_phial")));
         return new ItemStack(item);

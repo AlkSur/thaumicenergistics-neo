@@ -19,11 +19,15 @@ import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.items.ItemGolemWirelessBackpack;
 import thaumicenergistics.init.ModItems;
+import appeng.api.ids.AEComponents;
+import net.minecraft.nbt.CompoundTag;
+import thaumcraft.common.items.GolemBellItem;
+import thaumicenergistics.common.network.GolemBackpackSyncPacket;
 
 /**
  * 傀儡无线背包处理器：装备/拆卸/Facade 皮肤更换。
  * 对应 1.7.10 的 {@code WirelessGolemHandler} 中装备/Facade 交互部分。
- * 网络同步由 {@link thaumicenergistics.common.network.GolemBackpackSyncPacket} 处理。
+ * 网络同步由 {@link GolemBackpackSyncPacket} 处理。
  */
 @EventBusSubscriber(modid = ThaumicEnergistics.MODID)
 public final class GolemBackpackHandler {
@@ -68,7 +72,7 @@ public final class GolemBackpackHandler {
         }
 
         // 2) 手持 Golem 铃铛 + 蹲下 → 拆卸背包
-        if (held.getItem() instanceof thaumcraft.common.items.GolemBellItem) {
+        if (held.getItem() instanceof GolemBellItem) {
             if (event.getLevel().isClientSide()) {
                 return;
             }
@@ -135,7 +139,7 @@ public final class GolemBackpackHandler {
         }
 
         ItemStack backpackStack = new ItemStack(ModItems.GOLEM_WIFI_BACKPACK.get());
-        backpackStack.set(appeng.api.ids.AEComponents.WIRELESS_LINK_TARGET, linkedPos);
+        backpackStack.set(AEComponents.WIRELESS_LINK_TARGET, linkedPos);
         golem.spawnAtLocation(backpackStack);
 
         // 丢弃旧 Facade（如果有）
@@ -252,7 +256,7 @@ public final class GolemBackpackHandler {
      * 保存 Facade 物品到 NBT。
      */
     public static void setFacadeItem(ThaumcraftGolemEntity golem, ItemStack facade) {
-        var encoded = (net.minecraft.nbt.CompoundTag) facade.save(golem.level().registryAccess());
+        var encoded = (CompoundTag) facade.save(golem.level().registryAccess());
         golem.getPersistentData().put(NBT_KEY_FACADE, encoded);
     }
 

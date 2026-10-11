@@ -5,6 +5,7 @@ import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
+import thaumicenergistics.common.tiles.BrainOfProbabilityBlockEntity;
 import thaumicenergistics.common.tiles.TileArcaneAssembler;
 import thaumicenergistics.common.tiles.TileEssentiaProvider;
 import thaumicenergistics.common.tiles.TileEssentiaVibrationChamber;
@@ -24,6 +25,8 @@ public class ThEJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(InfusionProviderProvider.INSTANCE, TileEssentiaProvider.class);
         // 奥术装配器：网络状态 + 要素源状态
         registration.registerBlockDataProvider(AssemblerProvider.INSTANCE, TileArcaneAssembler.class);
+        // 概率之脑：本轮奖励 + 下次抽奖倒计时
+        registration.registerBlockDataProvider(BrainOfProbabilityProvider.INSTANCE, BrainOfProbabilityBlockEntity.class);
     }
 
     @Override
@@ -42,5 +45,9 @@ public class ThEJadePlugin implements IWailaPlugin {
 
         Block assemblerBlock = ModBlocks.ARCANE_ASSEMBLER.get();
         registration.registerBlockComponent(AssemblerProvider.INSTANCE, assemblerBlock.getClass());
+
+        // 概率之脑：本轮奖励 + 下次抽奖倒计时
+        Block brainBlock = ModBlocks.BRAIN_OF_PROBABILITY.get();
+        registration.registerBlockComponent(BrainOfProbabilityProvider.INSTANCE, brainBlock.getClass());
     }
 }

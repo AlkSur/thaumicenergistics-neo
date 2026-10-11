@@ -1,9 +1,0 @@
-{
-  "credit": "对齐 AE2 terminal_off.json：parent继承display_off的3层覆层，只改textures路径",
-  "parent": "ae2:part/display_off",
-  "textures": {
-    "lightsBright": "thaumicenergistics:part/essentia_terminal/bright",
-    "lightsMedium": "thaumicenergistics:part/essentia_terminal/medium",
-    "lightsDark": "thaumicenergistics:part/essentia_terminal/dark"
-  }
-}

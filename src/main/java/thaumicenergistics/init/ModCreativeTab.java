@@ -5,11 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.ThaumicEnergistics;
-import thaumicenergistics.common.integration.appeng.AEssentiaKey;
-import thaumicenergistics.common.integration.tc.TCReflection;
-import appeng.api.stacks.GenericStack;
 
 import java.util.function.Supplier;
 
@@ -29,9 +25,8 @@ public final class ModCreativeTab {
                 output.accept(ModItems.COALESCENCE_CORE.get()); output.accept(ModItems.DIFFUSION_CORE.get());
                 output.accept(ModItems.KNOWLEDGE_CORE.get());
                 output.accept(ModItems.FOCUS_AEWRENCH.get()); output.accept(ModItems.GOLEM_WIFI_BACKPACK.get());
-                output.accept(ModItems.WIRELESS_ESSENTIA_TERMINAL.get());
-                output.accept(ModItems.ESSENTIA_IMPORT_BUS.get()); output.accept(ModItems.ESSENTIA_EXPORT_BUS.get());
-                output.accept(ModItems.ESSENTIA_STORAGE_BUS.get()); output.accept(ModItems.ESSENTIA_TERMINAL_ITEM.get());
+                output.accept(ModItems.WIRELESS_ARCANE_CRAFTING_TERMINAL.get());
+                output.accept(ModItems.VIS_CONNECTOR_CARD.get());
                 output.accept(ModItems.ARCANE_CRAFTING_TERMINAL_ITEM.get()); output.accept(ModItems.ESSENTIA_LEVEL_EMITTER.get());
                 output.accept(ModItems.VIS_INTERFACE.get());
                 output.accept(ModItems.ESSENTIA_PROVIDER_ITEM.get()); output.accept(ModItems.INFUSION_PROVIDER_ITEM.get());
@@ -40,6 +35,9 @@ public final class ModCreativeTab {
                 output.accept(ModItems.DISTILLATION_ENCODER_ITEM.get());
                 output.accept(ModItems.INFUSION_MONITOR_ITEM.get());
                 output.accept(ModItems.ESSENTIA_PROVIDER_CONNECTION_ITEM.get()); output.accept(ModItems.WIRELESS_CONNECTOR.get());
+                output.accept(ModItems.ESSENTIA_UPGRADE_CARD.get());
+                output.accept(ModItems.PROBABILITY_ACCELERATOR_CARD.get());
+                output.accept(ModItems.BRAIN_OF_PROBABILITY_ITEM.get());
                 // 玩偶不进创造物品栏：需 /give @p thaumicenergistics:alkusure86fumo 手动获取
                 // output.accept(ModItems.ALKUSURE86_FUMO_ITEM.get());
 

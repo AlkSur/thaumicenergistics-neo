@@ -10,11 +10,18 @@ import appeng.api.storage.MEStorage;
 import appeng.helpers.ICraftingGridMenu;
 import appeng.helpers.InventoryAction;
 import appeng.menu.slot.CraftingTermSlot;
-import appeng.util.inv.PlayerInternalInventory;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.common.items.TCFunctionalItems;
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
+import appeng.api.stacks.AEItemKey;
+import appeng.api.storage.StorageHelper;
+import appeng.util.Platform;
+import appeng.util.inv.CarriedItemInventory;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.entity.player.Inventory;
+import thaumcraft.api.crafting.IArcaneRecipe;
+import thaumcraft.common.lib.crafting.ThaumcraftCraftingManager;
 
 /**
  * 奥术合成结果槽：继承 AE2 CraftingTermSlot 使客户端识别（shift/右键/space 合成自动生效），
@@ -110,7 +117,7 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
 
         // 用 Thaumcraft 奥术配方匹配（取配方对象以支持 retainIngredient 保留原料）
         var craftContainer = grid.toContainer();
-        thaumcraft.api.crafting.IArcaneRecipe arcaneRecipe = thaumcraft.common.lib.crafting.ThaumcraftCraftingManager
+        IArcaneRecipe arcaneRecipe = ThaumcraftCraftingManager
                 .findMatchingArcaneRecipeEntry(craftContainer, who);
         if (arcaneRecipe == null) {
             return;
@@ -121,7 +128,7 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
         }
         // 保留原料（retainIngredient，如元始珍珠）：getRemainingItems 返回非空栈的槽位不消耗。
         // 对应 TC 奥术工作台行为——珍珠作为"催化"留在合成格，仅消耗构材与虚空金属锭。
-        net.minecraft.core.NonNullList<net.minecraft.world.item.ItemStack> remainders =
+        NonNullList<net.minecraft.world.item.ItemStack> remainders =
                 arcaneRecipe.getRemainingItems(craftContainer);
         
 
@@ -132,10 +139,10 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
             target = new appeng.util.inv.PlayerInternalInventory(who.getInventory());
             maxTimesToCraft = (int) Math.floor((double) arcaneResult.getMaxStackSize() / (double) arcaneResult.getCount());
             if (action == InventoryAction.CRAFT_ALL) {
-                maxTimesToCraft *= net.minecraft.world.entity.player.Inventory.INVENTORY_SIZE;
+                maxTimesToCraft *= Inventory.INVENTORY_SIZE;
             }
         } else {
-            target = new appeng.util.inv.CarriedItemInventory(getMenu());
+            target = new CarriedItemInventory(getMenu());
             maxTimesToCraft = 1;
         }
 
@@ -159,7 +166,7 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
                 break;
             }
             // 合成前检查奥术配方仍匹配
-            ItemStack currentResult = thaumcraft.common.lib.crafting.ThaumcraftCraftingManager
+            ItemStack currentResult = ThaumcraftCraftingManager
                     .findMatchingArcaneRecipe(grid.toContainer(), who);
             if (currentResult.isEmpty()) {
                 break;
@@ -185,9 +192,9 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
                     var currentItem = grid.getStackInSlot(slot);
                     if (currentItem.getCount() < beforeItem.getCount()) {
                         long needed = beforeItem.getCount() - currentItem.getCount();
-                        var key = appeng.api.stacks.AEItemKey.of(beforeItem);
+                        var key = AEItemKey.of(beforeItem);
                         if (key != null) {
-                            long extracted = appeng.api.storage.StorageHelper.poweredExtraction(
+                            long extracted = StorageHelper.poweredExtraction(
                                     energySrc, storage, key, needed, mySrc);
                             if (extracted > 0) {
                                 grid.setItemDirect(slot, beforeItem.copyWithCount(
@@ -201,7 +208,7 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
             // 产物入目标
             var extra = target.addItems(arcaneResult.copy());
             if (!extra.isEmpty()) {
-                appeng.util.Platform.spawnDrops(who.level(), who.blockPosition(), java.util.List.of(extra));
+                Platform.spawnDrops(who.level(), who.blockPosition(), java.util.List.of(extra));
                 break;
             }
             crafted++;
@@ -246,9 +253,9 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
                         var currentItem = grid.getStackInSlot(slot);
                         if (currentItem.getCount() < beforeItem.getCount()) {
                             long needed = beforeItem.getCount() - currentItem.getCount();
-                            var key = appeng.api.stacks.AEItemKey.of(beforeItem);
+                            var key = AEItemKey.of(beforeItem);
                             if (key != null) {
-                                long extracted = appeng.api.storage.StorageHelper.poweredExtraction(
+                                long extracted = StorageHelper.poweredExtraction(
                                         energySrc, storage, key, needed, mySrc);
                                 if (extracted > 0) {
                                     grid.setItemDirect(slot, beforeItem.copyWithCount(

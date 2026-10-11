@@ -48,3 +48,9 @@ side="CLIENT"
 
 [[mixins]]
 config="thaumicenergistics.mixins.json"
+
+[[mixins]]
+config="thaumicenergistics.provider.mixins.json"
+
+[[mixins]]
+config="thaumicenergistics.provider.essentia.mixins.json"

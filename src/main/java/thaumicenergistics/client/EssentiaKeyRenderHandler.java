@@ -5,7 +5,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.gui.AspectGuiRenderer;
@@ -13,8 +12,10 @@ import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 
 import java.util.ArrayList;
 import java.util.List;
+import appeng.api.client.AEKeyRenderHandler;
+import appeng.util.Platform;
 
-public class EssentiaKeyRenderHandler implements appeng.api.client.AEKeyRenderHandler<AEssentiaKey> {
+public class EssentiaKeyRenderHandler implements AEKeyRenderHandler<AEssentiaKey> {
 
     @Override
     public void drawInGui(Minecraft minecraft, GuiGraphics guiGraphics, int x, int y, AEssentiaKey stack) {
@@ -41,7 +42,7 @@ public class EssentiaKeyRenderHandler implements appeng.api.client.AEKeyRenderHa
     public List<Component> getTooltip(AEssentiaKey stack) {
         List<Component> tooltip = new ArrayList<>();
         tooltip.add(stack.getDisplayName());
-        tooltip.add(Component.literal(appeng.util.Platform.formatModName(stack.getModId())));
+        tooltip.add(Component.literal(Platform.formatModName(stack.getModId())));
         return tooltip;
     }
 }

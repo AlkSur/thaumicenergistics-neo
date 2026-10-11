@@ -14,6 +14,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import thaumicenergistics.common.container.GuiKnowledgeInscriber;
 import thaumicenergistics.common.container.slot.GhostSlot;
 import thaumicenergistics.common.network.KnowledgeInscriberGhostSlotPacket;
+import thaumicenergistics.common.container.ContainerKnowledgeInscriber;
 
 /**
  * 知识记录仪 JEI 拖拽：从 JEI 拉取物品到 3×3 合成网格（ghost 槽）。
@@ -44,10 +45,10 @@ public class KnowledgeInscriberGhostIngredientHandler
                             ItemStack s = stack.copyWithCount(1);
                             ghostSlot.set(s);
                             // 与手动点击一致：客户端刷新产物计算 + C2S 同步服务端
-                            if (gui.getMenu() instanceof thaumicenergistics.common.container.ContainerKnowledgeInscriber menu) {
+                            if (gui.getMenu() instanceof ContainerKnowledgeInscriber menu) {
                                 menu.onCraftingChangedClient();
                             }
-                            int gridIndex = gui.getMenu() instanceof thaumicenergistics.common.container.ContainerKnowledgeInscriber m
+                            int gridIndex = gui.getMenu() instanceof ContainerKnowledgeInscriber m
                                     ? m.getGhostGridIndex(ghostSlot) : -1;
                             PacketDistributor.sendToServer(
                                     new KnowledgeInscriberGhostSlotPacket(gui.getMenu().containerId, gridIndex, s));

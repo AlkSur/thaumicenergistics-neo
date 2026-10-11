@@ -1,7 +1,6 @@
 package thaumicenergistics.common.tiles;
 
 import java.util.EnumSet;
-import java.util.Set;
 
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -30,11 +29,10 @@ import appeng.api.util.AECableType;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.IEssentiaTransport;
 import thaumcraft.common.essentia.EssentiaTransport;
-import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.api.grid.IEssentiaGrid;
-import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModBlockEntities;
+import thaumicenergistics.init.ModItems;
 
 public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorldGridNodeHost, IGridTickable, IEssentiaTransport, EssentiaTransport {
 
@@ -72,7 +70,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
     public TileEssentiaVibrationChamber(BlockPos pos, BlockState state) {
         super(ModBlockEntities.ESSENTIA_VIBRATION_CHAMBER.get(), pos, state);
         mainNode = GridHelper.createManagedNode(this, nodeListener)
-                .setVisualRepresentation(thaumicenergistics.init.ModItems.ESSENTIA_VIBRATION_CHAMBER_ITEM.get())
+                .setVisualRepresentation(ModItems.ESSENTIA_VIBRATION_CHAMBER_ITEM.get())
                 .setInWorldNode(true)
                 .setTagName("proxy")
                 .setFlags(GridFlags.REQUIRE_CHANNEL)

@@ -9,6 +9,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 import appeng.api.upgrades.IUpgradeInventory;
@@ -21,6 +22,7 @@ import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.items.ItemEssentiaCell;
 import thaumicenergistics.common.tiles.TileEssentiaCellWorkbench;
 import thaumicenergistics.init.ModMenuTypes;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 
 /**
  * 源质元件工作台容器：cell 槽绑定到方块实体（持久化），并提供分区编辑操作。
@@ -95,12 +97,17 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
         return UpgradeInventories.empty();
     }
 
-    /** 把 AE2 InternalInventory（IUpgradeInventory）适配成 NeoForge IItemHandler，供 SlotItemHandler 使用。 */
-    private static final class CellUpgradeHandler implements IItemHandler {
+    /** 把 AE2 InternalInventory（IUpgradeInventory）适配成 NeoForge 可写句柄；SlotItemHandler.set 强转 Modifiable，缺它则客户端开 GUI 同步即 CCE。 */
+    private static final class CellUpgradeHandler implements IItemHandlerModifiable {
         private final java.util.function.Supplier<IUpgradeInventory> supplier;
 
         CellUpgradeHandler(java.util.function.Supplier<IUpgradeInventory> supplier) {
             this.supplier = supplier;
+        }
+
+        @Override
+        public void setStackInSlot(int slot, ItemStack stack) {
+            supplier.get().setItemDirect(slot, stack);
         }
 
         @Override
@@ -135,7 +142,7 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
     }
 
     /** 客户端打开菜单用（IMenuTypeExtension 注册）；workbench 为 null，分区操作走 C2S 到服务端。 */
-    public ContainerEssentiaCellWorkbench(int id, Inventory inv, net.minecraft.network.RegistryFriendlyByteBuf buf) {
+    public ContainerEssentiaCellWorkbench(int id, Inventory inv, RegistryFriendlyByteBuf buf) {
         this(id, inv);
     }
 

@@ -1,6 +1,5 @@
 package thaumicenergistics.common.tiles;
 
-import appeng.core.definitions.AEItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;

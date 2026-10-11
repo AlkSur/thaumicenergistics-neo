@@ -30,7 +30,7 @@ public abstract class MixinEAPInputEvents {
         Object value = typedIngredient.getIngredient();
 
         AEssentiaKey key = null;
-        // 新收藏：AspectIngredient（ThEEssentiaGuiHandler 提供，有图标+中文名）
+        // 新收藏：AspectIngredient（JEI 转换器注册的源质形态，有图标+中文名）
         if (value instanceof AspectIngredient ai && ai.aspect() != null) {
             Aspect aspect = ai.aspect();
             var id = TCReflection.getAspectId(aspect);

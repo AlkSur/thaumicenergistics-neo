@@ -44,7 +44,7 @@ neoForge {
 dependencies {
     compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17:api"
     compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17"   // 加这行保留！！让AE2内部类可编译
-    compileOnly files('library/thaumcraft-0.2.2.95-port.229.jar')   // 必须与整合包运行版本一致（0.2.2.95）；.34 缺少 getRemainingItems/findMatchingArcaneRecipeEntry 等 API
+    compileOnly files('library/thaumcraft-0.2.2.95-port.261.jar')   // 必须与整合包运行版本一致（0.2.2.95）；.34 缺少 getRemainingItems/findMatchingArcaneRecipeEntry 等 API
     compileOnly files('library/jei-1.21.1-neoforge-19.39.0.368.jar')
     compileOnly files('library/ae2jeiintegration-1.2.1.jar')
     compileOnly files('library/InventoryProfilesNext-neoforge-1.21.1-2.2.5.jar')
@@ -65,6 +65,12 @@ def neoforgeRange = project.findProperty('neoforge_version_range') ?: '[21,)'
 def mcRange = project.findProperty('minecraft_version_range') ?: '[1.21.1,1.22)'
 
 processResources {
+    // expand 值必须声明为 task 输入，否则 modVersion 变化时 Gradle 判 UP-TO-DATE 跳过，
+    // jar 内 mods.toml 会钉死在旧版本（2.4.32 固化事故根因）。
+    inputs.properties([
+        'version': modVersion, 'loader_version_range': loaderRange,
+        'neoforge_version_range': neoforgeRange, 'minecraft_version_range': mcRange
+    ])
     filesMatching('META-INF/neoforge.mods.toml') {
         expand([
             'version': modVersion, 'loader_version_range': loaderRange,
@@ -97,7 +103,8 @@ def gitVersion() {
     // 支持 "2.2" / "v2.2.0" / "2.2-3-gabc1234" / "abc1234"(无tag时)
     // 版本 = tag 的 X.Y + 提交数：tag 2.2 + 2 提交 → 2.2.2
     // find() 只匹配开头，忽略尾部 commit hash（-gabc1234）
-    def m = describe =~ /^v?(\d+\.\d+)(?:\.\d+)?(?:-(\d+))?/
+    // [vV] 兼容大小写标签前缀（V2.5 / v2.4）
+    def m = describe =~ /^[vV]?(\d+\.\d+)(?:\.\d+)?(?:-(\d+))?/
     if (m.find()) {
         def xy = m.group(1)                          // 2.2
         def count = m.group(2) ? m.group(2) : '0'    // tag 后提交数

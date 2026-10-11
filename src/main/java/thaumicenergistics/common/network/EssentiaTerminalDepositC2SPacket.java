@@ -6,6 +6,10 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import thaumicenergistics.ThaumicEnergistics;
+import appeng.menu.me.common.MEStorageMenu;
+import net.minecraft.world.item.ItemStack;
+import thaumicenergistics.common.container.EssentiaFillHelper;
+import thaumicenergistics.common.container.ThEEssentiaMenuAccess;
 
 /**
  * 客户端→服务端：源质容器存入 ME 网络。
@@ -15,7 +19,7 @@ import thaumicenergistics.ThaumicEnergistics;
  * </ul>
  */
 public record EssentiaTerminalDepositC2SPacket(int containerId, int slotIndex,
-        net.minecraft.world.item.ItemStack sourceStack) implements CustomPacketPayload {
+        ItemStack sourceStack) implements CustomPacketPayload {
 
     public static final Type<EssentiaTerminalDepositC2SPacket> TYPE =
             new Type<>(ThaumicEnergistics.id("essentia_terminal_deposit"));
@@ -24,17 +28,17 @@ public record EssentiaTerminalDepositC2SPacket(int containerId, int slotIndex,
             StreamCodec.composite(
                     ByteBufCodecs.VAR_INT, EssentiaTerminalDepositC2SPacket::containerId,
                     ByteBufCodecs.VAR_INT, EssentiaTerminalDepositC2SPacket::slotIndex,
-                    net.minecraft.world.item.ItemStack.OPTIONAL_STREAM_CODEC, EssentiaTerminalDepositC2SPacket::sourceStack,
+                    ItemStack.OPTIONAL_STREAM_CODEC, EssentiaTerminalDepositC2SPacket::sourceStack,
                     EssentiaTerminalDepositC2SPacket::new
             );
 
     /** 手持源质物品存入（客户端可能持有在 carried 或主手）。 */
-    public static EssentiaTerminalDepositC2SPacket fromClientStack(int containerId, net.minecraft.world.item.ItemStack stack) {
+    public static EssentiaTerminalDepositC2SPacket fromClientStack(int containerId, ItemStack stack) {
         return new EssentiaTerminalDepositC2SPacket(containerId, -1, stack.copy());
     }
 
     /** 从玩家背包格存入（Shift+右键背包格）。 */
-    public static EssentiaTerminalDepositC2SPacket fromSlot(int containerId, int slotIndex, net.minecraft.world.item.ItemStack stack) {
+    public static EssentiaTerminalDepositC2SPacket fromSlot(int containerId, int slotIndex, ItemStack stack) {
         return new EssentiaTerminalDepositC2SPacket(containerId, slotIndex, stack.copy());
     }
 
@@ -47,15 +51,15 @@ public record EssentiaTerminalDepositC2SPacket(int containerId, int slotIndex,
         ctx.enqueueWork(() -> {
             // 任意 ME 终端菜单都支持：源质容器右键 → 源质存入网络
             if (ctx.player().containerMenu.containerId == this.containerId
-                    && ctx.player().containerMenu instanceof appeng.menu.me.common.MEStorageMenu menu
-                    && menu instanceof thaumicenergistics.common.container.ThEEssentiaMenuAccess acc) {
+                    && ctx.player().containerMenu instanceof MEStorageMenu menu
+                    && menu instanceof ThEEssentiaMenuAccess acc) {
                 var player = menu.getPlayerInventory().player;
                 // 源质物品：优先包携带的 sourceStack（客户端真实来源）；否则回退菜单 carried/主手
                 var source = !this.sourceStack.isEmpty() ? this.sourceStack
                         : (!menu.getCarried().isEmpty() ? menu.getCarried()
                            : player.getMainHandItem());
                 if (!source.isEmpty()) {
-                    var result = thaumicenergistics.common.container.EssentiaFillHelper.extractContainerContent(
+                    var result = EssentiaFillHelper.extractContainerContent(
                             acc.thE_getStorage(), acc.thE_getEnergySource(),
                             menu.getActionSource(), source);
                     if (result != null) {
@@ -64,7 +68,7 @@ public record EssentiaTerminalDepositC2SPacket(int containerId, int slotIndex,
                             player.getInventory().setItem(this.slotIndex, result);
                         } else {
                             // 手持：清空 carried，空容器放回玩家背包（不留 carried，防被 AE2 自动放入网络）
-                            menu.setCarried(net.minecraft.world.item.ItemStack.EMPTY);
+                            menu.setCarried(ItemStack.EMPTY);
                             if (!result.isEmpty()) {
                                 if (!player.getInventory().add(result)) {
                                     player.drop(result, false);

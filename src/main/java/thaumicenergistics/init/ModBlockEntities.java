@@ -7,6 +7,8 @@ import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.tiles.*;
 import thaumicenergistics.common.integration.tc.VisProviderProxy;
 import java.util.function.Supplier;
+import thaumicenergistics.common.parts.VisInterfacePart;
+import thaumicenergistics.common.tiles.BrainOfProbabilityBlockEntity;
 
 public final class ModBlockEntities {
     private ModBlockEntities() {}
@@ -45,13 +47,19 @@ public final class ModBlockEntities {
             REGISTRY.register("infusion_monitor",
                     () -> BlockEntityType.Builder.of(TileInfusionMonitor::new, ModBlocks.INFUSION_MONITOR.get()).build(null));
 
+    /** M6：概率之脑（仅下格持有 BE）。 */
+    public static final Supplier<BlockEntityType<BrainOfProbabilityBlockEntity>> BRAIN_OF_PROBABILITY =
+            REGISTRY.register("brain_of_probability",
+                    () -> BlockEntityType.Builder.of(BrainOfProbabilityBlockEntity::new,
+                            ModBlocks.BRAIN_OF_PROBABILITY.get()).build(null));
+
     public static final Supplier<BlockEntityType<TileEssentiaProviderConnection>> ESSENTIA_PROVIDER_CONNECTION =
             REGISTRY.register("essentia_provider_connection",
                     () -> BlockEntityType.Builder.of(TileEssentiaProviderConnection::new, ModBlocks.ESSENTIA_PROVIDER_CONNECTION.get()).build(null));
 
     /**
      * 虚拟的 Thaumcraft vis 源，供 vis 接口的提供端使用。
-     * 不作为真实方块放置；由 {@link thaumicenergistics.common.parts.VisInterfacePart}
+     * 不作为真实方块放置；由 {@link VisInterfacePart}
      * 在运行时构造并注入到 VisNetHandler。
      */
     public static final Supplier<BlockEntityType<VisProviderProxy>> VIS_PROVIDER_PROXY =

@@ -10,6 +10,7 @@ import net.minecraft.client.model.geom.builders.MeshDefinition;
 import net.minecraft.client.model.geom.builders.PartDefinition;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
+import com.mojang.math.Axis;
 
 /**
  * 傀儡无线背包模型（简化版）。
@@ -94,7 +95,7 @@ public class GolemBackpackModel {
 
         poseStack.pushPose();
 
-        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(pearlRotation));
+        poseStack.mulPose(Axis.YP.rotationDegrees(pearlRotation));
 
         poseStack.scale(pearlScale, pearlScale, pearlScale);
 
@@ -109,7 +110,7 @@ public class GolemBackpackModel {
 
         // 前后两面（旋转 90°）
         poseStack.pushPose();
-        poseStack.mulPose(com.mojang.math.Axis.YP.rotationDegrees(90));
+        poseStack.mulPose(Axis.YP.rotationDegrees(90));
         poseStack.translate(-0.0955f, 0.275f, -0.045f - antennaWidth - faceDist);
         drawPearlFace(poseStack, buffer, light, overlay, maxU, minU, minV, maxV, red, green, blue, 0, 0, -1);
         poseStack.translate(0, 0, antennaWidth - twoFD);

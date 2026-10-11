@@ -2,7 +2,6 @@ package thaumicenergistics.common.container;
 
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
-import appeng.api.config.RedstoneMode;
 import appeng.api.config.Settings;
 import appeng.api.stacks.AEKey;
 import appeng.api.util.IConfigManager;

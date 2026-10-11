@@ -26,6 +26,8 @@ import thaumcraft.common.items.TCFunctionalItems;
 import thaumcraft.common.vis.TCVisHelper;
 
 import java.util.List;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 
 public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
 
@@ -79,8 +81,8 @@ public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
         if (item instanceof TCFunctionalItems.WandCastingItem wand) {
             if (!level.isClientSide && wand.installFocus(other, stack, player)) {
                 level.playSound(null, player.blockPosition(),
-                        net.minecraft.sounds.SoundEvents.ITEM_FRAME_ADD_ITEM,
-                        net.minecraft.sounds.SoundSource.PLAYERS, 0.45f, 1.2f);
+                        SoundEvents.ITEM_FRAME_ADD_ITEM,
+                        SoundSource.PLAYERS, 0.45f, 1.2f);
             }
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
         }

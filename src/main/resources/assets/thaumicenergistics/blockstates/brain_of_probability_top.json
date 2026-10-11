@@ -1,0 +1,17 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_top"
+      }
+    },
+    {
+      "when": {
+        "stacked": "true"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_connectors"
+      }
+    }
+  ]
+}

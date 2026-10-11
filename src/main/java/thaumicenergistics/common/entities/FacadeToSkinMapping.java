@@ -6,6 +6,8 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import appeng.items.parts.FacadeItem;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * AE2 Facade → 背包皮肤映射。
@@ -69,8 +71,8 @@ public final class FacadeToSkinMapping {
 
         // 2) AE2 Facade 物品：尝试通过 IFacadeItem 接口获取纹理方块
         try {
-            if (stack.getItem() instanceof appeng.items.parts.FacadeItem facadeItem) {
-                net.minecraft.world.level.block.state.BlockState state = facadeItem.getTextureBlockState(stack);
+            if (stack.getItem() instanceof FacadeItem facadeItem) {
+                BlockState state = facadeItem.getTextureBlockState(stack);
                 if (state != null) {
                     return state.getBlock();
                 }

@@ -1,0 +1,61 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with _leng",
+	"render_type": "cutout",
+	"texture_size": [64, 64],
+	"textures": {
+		"particle": "thaumicenergistics:block/brain_of_probability",
+		"out": "thaumicenergistics:block/bop_glass_jar"
+	},
+	"elements": [
+		{
+			"from": [3, 4, 3],
+			"to": [13, 14, 13],
+			"faces": {
+				"north": {"uv": [0, 0, 5, 5], "texture": "#out"},
+				"east": {"uv": [0, 0, 5, 5], "texture": "#out"},
+				"south": {"uv": [0, 0, 5, 5], "texture": "#out"},
+				"west": {"uv": [0, 0, 5, 5], "texture": "#out"},
+				"up": {"uv": [5, 10, 0, 5], "texture": "#out"},
+				"down": {"uv": [10, 0, 5, 5], "texture": "#out"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [75, 45, 0],
+			"translation": [0, 2.5, 0],
+			"scale": [0.375, 0.375, 0.375]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [75, 45, 0],
+			"translation": [0, 2.5, 0],
+			"scale": [0.375, 0.375, 0.375]
+		},
+		"firstperson_righthand": {
+			"rotation": [0, 45, 0],
+			"translation": [0, 2, 0],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"firstperson_lefthand": {
+			"rotation": [0, -135, 0],
+			"translation": [0, 2.25, 0],
+			"scale": [0.4, 0.4, 0.4]
+		},
+		"ground": {
+			"translation": [0, 3, 0],
+			"scale": [0.25, 0.25, 0.25]
+		},
+		"gui": {
+			"rotation": [30, -135, 0],
+			"scale": [0.625, 0.625, 0.625]
+		},
+		"head": {
+			"translation": [0, 14.5, 0]
+		},
+		"fixed": {
+			"translation": [0, 0, -2],
+			"scale": [0.5, 0.5, 0.5]
+		}
+	}
+}

@@ -6,7 +6,6 @@ import net.minecraft.world.entity.player.Inventory;
 import appeng.api.config.ActionItems;
 import appeng.client.gui.widgets.ActionButton;
 import appeng.core.AEConfig;
-import appeng.menu.slot.AppEngCraftingSlot;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.gui.AspectGuiRenderer;
 import appeng.client.gui.me.common.MEStorageScreen;

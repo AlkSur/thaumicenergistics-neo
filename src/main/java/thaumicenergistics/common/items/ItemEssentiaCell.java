@@ -32,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.init.ModItems;
 
 import java.util.List;
+import appeng.api.stacks.AEKey;
 
 public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
@@ -81,7 +82,7 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
     }
 
     @Override
-    public boolean isBlackListed(ItemStack cellItem, appeng.api.stacks.AEKey requestedAddition) {
+    public boolean isBlackListed(ItemStack cellItem, AEKey requestedAddition) {
         if (requestedAddition instanceof thaumicenergistics.common.integration.appeng.AEssentiaKey) {
             return false;
         }

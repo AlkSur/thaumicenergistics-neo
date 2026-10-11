@@ -8,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * 奥术合成样板，存储在知识核心中。
@@ -81,7 +82,7 @@ public class ArcaneCraftingPattern {
     }
 
     /** 对应 TC 奥术配方的研究键；无研究要求/老数据时可能为 null。 */
-    @org.jetbrains.annotations.Nullable
+    @Nullable
     public String getResearch() {
         return research;
     }

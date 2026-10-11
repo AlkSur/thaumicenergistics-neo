@@ -1,8 +1,6 @@
 package thaumicenergistics.common.integration.tc;
 
-import net.minecraft.resources.ResourceLocation;
 import thaumicenergistics.api.storage.IAspectStack;
-import thaumicenergistics.api.storage.AspectStack;
 import java.util.Optional;
 
 /**

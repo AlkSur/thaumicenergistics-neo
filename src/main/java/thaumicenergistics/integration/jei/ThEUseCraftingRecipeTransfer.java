@@ -1,7 +1,5 @@
 package thaumicenergistics.integration.jei;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -11,7 +9,6 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingRecipe;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -39,6 +36,9 @@ import static appeng.integration.modules.itemlists.TransferHelper.BLUE_PLUS_BUTT
 import static appeng.integration.modules.itemlists.TransferHelper.BLUE_SLOT_HIGHLIGHT_COLOR;
 import static appeng.integration.modules.itemlists.TransferHelper.ORANGE_PLUS_BUTTON_COLOR;
 import static appeng.integration.modules.itemlists.TransferHelper.RED_SLOT_HIGHLIGHT_COLOR;
+import appeng.core.localization.ItemModText;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * 奥术合成终端专用的 JEI 配方转移处理器。
@@ -79,7 +79,7 @@ public class ThEUseCraftingRecipeTransfer
             ContainerArcaneCraftingTerminal menu,
             RecipeHolder<CraftingRecipe> recipeHolder,
             IRecipeSlotsView display,
-            net.minecraft.world.entity.player.Player player,
+            Player player,
             boolean maxTransfer,
             boolean doTransfer) {
 
@@ -110,7 +110,7 @@ public class ThEUseCraftingRecipeTransfer
                     .filter(Objects::nonNull)
                     .toList();
             return helper.createUserErrorForMissingSlots(
-                    appeng.core.localization.ItemModText.NO_ITEMS.text(), missingSlotViews);
+                    ItemModText.NO_ITEMS.text(), missingSlotViews);
         }
 
         // 预览：检查缺失情况，返回对应的错误渲染
@@ -209,15 +209,15 @@ public class ThEUseCraftingRecipeTransfer
             int missing = indices.missingSlots().size();
             int craftable = indices.craftableSlots().size();
             if (missing > 0) {
-                tooltip.add(net.minecraft.network.chat.Component.translatable(
+                tooltip.add(Component.translatable(
                         "thaumicenergistics.jei.transfer.missing", missing));
             }
             if (craftable > 0) {
-                tooltip.add(net.minecraft.network.chat.Component.translatable(
+                tooltip.add(Component.translatable(
                         "thaumicenergistics.jei.transfer.craftable", craftable));
             }
             if (craftMissing) {
-                tooltip.add(net.minecraft.network.chat.Component.translatable(
+                tooltip.add(Component.translatable(
                         "thaumicenergistics.jei.transfer.ctrl_click"));
             }
         }

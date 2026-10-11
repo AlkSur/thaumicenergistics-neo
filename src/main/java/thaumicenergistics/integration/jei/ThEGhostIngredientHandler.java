@@ -13,6 +13,9 @@ import mezz.jei.api.ingredients.ITypedIngredient;
 import appeng.api.stacks.GenericStack;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.slot.FakeSlot;
+import appeng.client.gui.AEBaseScreen;
+import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.integration.tc.TCReflection;
 
 /**
  * 处理从 JEI 拖拽到 AE2 Screen 的筛选槽。
@@ -26,7 +29,7 @@ public class ThEGhostIngredientHandler implements IGhostIngredientHandler<Screen
     public <I> List<Target<I>> getTargetsTyped(Screen screen, ITypedIngredient<I> ingredient, boolean doStart) {
         List<Target<I>> targets = new ArrayList<>();
 
-        if (!(screen instanceof appeng.client.gui.AEBaseScreen<?> aeScreen)) {
+        if (!(screen instanceof AEBaseScreen<?> aeScreen)) {
             return targets;
         }
 
@@ -76,9 +79,9 @@ public class ThEGhostIngredientHandler implements IGhostIngredientHandler<Screen
 
         if (ingredient instanceof AspectIngredient ai && ai.aspect() != null) {
             // AspectIngredient → WrappedGenericStack ItemStack
-            var aspectId = thaumicenergistics.common.integration.tc.TCReflection.getAspectId(ai.aspect());
+            var aspectId = TCReflection.getAspectId(ai.aspect());
             if (aspectId != null) {
-                var key = thaumicenergistics.common.integration.appeng.AEssentiaKey.of(aspectId);
+                var key = AEssentiaKey.of(aspectId);
                 targetStack = GenericStack.wrapInItemStack(key, 0);
             }
         } else if (ingredient instanceof ItemStack stack) {
@@ -89,7 +92,9 @@ public class ThEGhostIngredientHandler implements IGhostIngredientHandler<Screen
         }
 
         if (!targetStack.isEmpty()) {
-            fakeSlot.set(targetStack);
+            // 走 AE2 原生 SET_FILTER 路径（InventoryActionPacket，服务端执行）；
+            // 不能用 FakeSlot#set（纯客户端直写，服务端不同步 → 无效写入）。
+            fakeSlot.setFilterTo(targetStack);
         }
     }
 

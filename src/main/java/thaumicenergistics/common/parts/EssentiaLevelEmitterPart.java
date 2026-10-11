@@ -6,13 +6,11 @@ import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
-import appeng.api.config.Settings;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IStackWatcher;
@@ -37,6 +35,7 @@ import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModMenuTypes;
+import appeng.api.stacks.GenericStack;
 
 /**
  * 源质发信器：与 AE2 原版 StorageLevelEmitterPart 逻辑一致，
@@ -291,7 +290,7 @@ public class EssentiaLevelEmitterPart extends AbstractLevelEmitterPart
         } else {
             ResourceLocation id = TCReflection.getAspectId(aspect);
             if (id != null) {
-                config.setStack(0, new appeng.api.stacks.GenericStack(AEssentiaKey.of(id), 1));
+                config.setStack(0, new GenericStack(AEssentiaKey.of(id), 1));
             }
         }
     }

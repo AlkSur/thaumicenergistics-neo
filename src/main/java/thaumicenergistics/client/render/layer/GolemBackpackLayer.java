@@ -15,7 +15,6 @@ import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
 import thaumicenergistics.client.render.model.GolemBackpackModel;
 import thaumicenergistics.common.entities.BackpackSkins;
 import thaumicenergistics.common.network.GolemBackpackClientData;
-import thaumicenergistics.common.network.GolemBackpackSyncPacket;
 
 /**
  * 傀儡无线背包渲染层。

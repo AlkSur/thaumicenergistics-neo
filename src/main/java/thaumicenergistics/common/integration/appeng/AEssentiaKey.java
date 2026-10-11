@@ -19,6 +19,7 @@ import net.minecraft.world.level.Level;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import thaumcraft.api.aspects.Aspect;
 
 public final class AEssentiaKey extends AEKey {
 
@@ -52,8 +53,8 @@ public final class AEssentiaKey extends AEKey {
     protected Component computeDisplayName() {
         // 使用 TC 源质的实际显示名称（如 "Aer" / "风"），而非翻译键
         String tag = id.getPath();
-        if (thaumcraft.api.aspects.Aspect.aspects != null) {
-            for (thaumcraft.api.aspects.Aspect aspect : thaumcraft.api.aspects.Aspect.aspects.values()) {
+        if (Aspect.aspects != null) {
+            for (Aspect aspect : Aspect.aspects.values()) {
                 if (aspect != null && aspect.getTag() != null && aspect.getTag().equalsIgnoreCase(tag)) {
                     return aspect.displayName();
                 }

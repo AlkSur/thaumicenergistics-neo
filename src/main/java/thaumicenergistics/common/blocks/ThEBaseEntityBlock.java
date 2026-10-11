@@ -17,9 +17,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import thaumicenergistics.common.tiles.TileEssentiaProvider;
-import thaumicenergistics.common.tiles.TileEssentiaVibrationChamber;
 import thaumicenergistics.common.tiles.TileInfusionProvider;
 import thaumicenergistics.common.tiles.ThETileBase;
+import thaumicenergistics.init.ModBlockEntities;
 
 public abstract class ThEBaseEntityBlock extends Block implements EntityBlock {
     protected ThEBaseEntityBlock(Properties p) { super(p); }
@@ -30,10 +30,10 @@ public abstract class ThEBaseEntityBlock extends Block implements EntityBlock {
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         if (level.isClientSide()) return null;
-        if (type == thaumicenergistics.init.ModBlockEntities.ESSENTIA_PROVIDER.get()) {
+        if (type == ModBlockEntities.ESSENTIA_PROVIDER.get()) {
             return createTicker((lvl, pos, st, be) -> ((TileEssentiaProvider) be).serverTick());
         }
-        if (type == thaumicenergistics.init.ModBlockEntities.INFUSION_PROVIDER.get()) {
+        if (type == ModBlockEntities.INFUSION_PROVIDER.get()) {
             return createTicker((lvl, pos, st, be) -> ((TileInfusionProvider) be).serverTick());
         }
         return null;

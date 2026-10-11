@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import thaumicenergistics.common.tiles.TileEssentiaProvider;
 import thaumicenergistics.common.tiles.TileEssentiaProviderConnection;
-import thaumicenergistics.init.ModBlocks;
+import net.minecraft.world.item.component.CustomData;
 
 /**
  * 源质无线绑定工具：
@@ -31,11 +31,11 @@ public class WirelessConnectorItem extends Item {
     }
 
     private static CompoundTag getSelectionTag(ItemStack stack) {
-        return stack.getOrDefault(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.EMPTY).copyTag();
+        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
     }
 
     private static void setSelectionTag(ItemStack stack, CompoundTag tag) {
-        stack.set(DataComponents.CUSTOM_DATA, net.minecraft.world.item.component.CustomData.of(tag));
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     }
 
     private static void clearSelection(ItemStack stack) {

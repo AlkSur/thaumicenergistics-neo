@@ -7,12 +7,13 @@ import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
 
 import java.util.Map;
 import java.util.WeakHashMap;
+import thaumicenergistics.client.render.layer.GolemBackpackLayer;
 
 /**
  * 客户端侧缓存：存储每个傀儡的背包连接状态和皮肤。
  *
  * 由 {@link GolemBackpackSyncPacket#handleOnClient} 写入，
- * 由 {@link thaumicenergistics.client.render.layer.GolemBackpackLayer} 读取。
+ * 由 {@link GolemBackpackLayer} 读取。
  *
  * 使用 WeakHashMap 以避免实体被 GC 后内存泄漏。
  *

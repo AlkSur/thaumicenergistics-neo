@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thaumicenergistics:brain_of_probability"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "thaumicenergistics:blocks/brain_of_probability"
+}

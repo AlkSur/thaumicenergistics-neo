@@ -7,14 +7,17 @@ import java.util.List;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Containers;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.SimpleContainer;
 
@@ -50,12 +53,22 @@ import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.crafting.IArcaneRecipe;
 
-import thaumicenergistics.api.grid.IEssentiaGrid;
+import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.tc.ArcaneCraftingPattern;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.inventory.HandlerKnowledgeCore;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModItems;
+import appeng.api.ids.AEComponents;
+import appeng.api.implementations.items.IMemoryCard;
+import appeng.api.implementations.items.MemoryCardMessages;
+import appeng.me.service.P2PService;
+import appeng.parts.p2p.P2PTunnelPart;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
+import thaumicenergistics.common.network.AssemblerPreviewSyncPacket;
+import thaumicenergistics.common.parts.VisInterfacePart;
 
 public class TileArcaneAssembler extends ThETileBase
         implements IInWorldGridNodeHost, IActionHost, IGridTickable, ICraftingProvider, ICraftingMachine {
@@ -271,12 +284,12 @@ public class TileArcaneAssembler extends ThETileBase
             return;
         }
 
-        appeng.me.service.P2PService p2p = appeng.me.service.P2PService.get(grid);
+        P2PService p2p = P2PService.get(grid);
         if (p2p == null) {
             return;
         }
-        appeng.parts.p2p.P2PTunnelPart<?> input = p2p.getInput(visSourceFreq);
-        if (!(input instanceof thaumicenergistics.common.parts.VisInterfacePart visSource)) {
+        P2PTunnelPart<?> input = p2p.getInput(visSourceFreq);
+        if (!(input instanceof VisInterfacePart visSource)) {
             return; // 频率设了但找不到 vis_interface P2P 输入 → 不抽
         }
 
@@ -314,7 +327,7 @@ public class TileArcaneAssembler extends ThETileBase
         if (currentResult.isEmpty()) {
             isCrafting = false;
             previewGrid = emptyPreviewGrid();
-            thaumicenergistics.common.network.AssemblerPreviewSyncPacket.send(this, false);
+            AssemblerPreviewSyncPacket.send(this, false);
             return TickRateModulation.IDLE;
         }
 
@@ -372,7 +385,7 @@ public class TileArcaneAssembler extends ThETileBase
             internalInventory.setItem(TARGET_SLOT, ItemStack.EMPTY);
             setChanged();
             markForUpdate();
-            thaumicenergistics.common.network.AssemblerPreviewSyncPacket.send(this, false);
+            AssemblerPreviewSyncPacket.send(this, false);
 
             return TickRateModulation.URGENT;
         }
@@ -426,7 +439,7 @@ public class TileArcaneAssembler extends ThETileBase
         List<ItemStack> pearls = new ArrayList<>();
         if (previewGrid == null) return pearls;
         for (ItemStack stack : previewGrid) {
-            if (!stack.isEmpty() && stack.getItem() == net.minecraft.core.registries.BuiltInRegistries.ITEM.get(PRIMORDIAL_PEARL_ID)) {
+            if (!stack.isEmpty() && stack.getItem() == BuiltInRegistries.ITEM.get(PRIMORDIAL_PEARL_ID)) {
                 pearls.add(stack.copy());
             }
         }
@@ -504,18 +517,41 @@ public class TileArcaneAssembler extends ThETileBase
         ItemStack[] ingredients = acp.getIngredients();
 
         List<GenericStack> inputs = new ArrayList<>();
+        List<GenericStack[]> alternatives = new ArrayList<>();
         if (ingredients != null) {
             for (ItemStack ing : ingredients) {
                 if (ing == null || ing.isEmpty()) continue;
                 AEItemKey key = AEItemKey.of(ing);
                 if (key != null) {
                     inputs.add(new GenericStack(key, ing.getCount()));
+                    alternatives.add(expandTagAlternates(ing));
                 }
             }
         }
 
         return new ArcaneAssemblerPattern(AEItemKey.of(result), null, aspects, result, inputs,
-                acp.getResearch(), acp.getIngredients());
+                acp.getResearch(), acp.getIngredients(), alternatives);
+    }
+
+    /**
+     * 样板编码把通配具象化成了编码时的单一变体（如 wisp_essence_ordo），AE2 自动合成时网络里
+     * 若是另一变体（wisp_essence_aer）即报材料不足——手工奥术合成走 tag 匹配没这问题。
+     * 此处把属于本模组自定义通配 tag（wisp_essences/monitors 等）的格子展开为 tag 全部物品，
+     * 作为样板输入的备选变体；只认本模组命名空间，避免把 forge 等通用 tag 成员全卷进来。
+     */
+    private static GenericStack[] expandTagAlternates(ItemStack ing) {
+        for (TagKey<Item> tag : ing.getItemHolder().tags().toList()) {
+            if (!tag.location().getNamespace().equals(ThaumicEnergistics.MODID)) continue;
+            var named = BuiltInRegistries.ITEM.getTag(tag);
+            if (named.isEmpty()) continue;
+            List<GenericStack> alts = new ArrayList<>();
+            for (Holder<Item> holder : named.get()) {
+                AEItemKey key = AEItemKey.of(holder.value());
+                if (key != null) alts.add(new GenericStack(key, ing.getCount()));
+            }
+            if (alts.size() > 1) return alts.toArray(new GenericStack[0]);
+        }
+        return new GenericStack[]{new GenericStack(AEItemKey.of(ing), ing.getCount())};
     }
 
     private boolean beginCrafting(ArcaneAssemblerPattern arcanePattern) {
@@ -540,7 +576,7 @@ public class TileArcaneAssembler extends ThETileBase
         this.internalInventory.setItem(TARGET_SLOT, result.copy());
         setChanged();
         markForUpdate();
-        thaumicenergistics.common.network.AssemblerPreviewSyncPacket.send(this, true);
+        AssemblerPreviewSyncPacket.send(this, true);
         return true;
     }
 
@@ -554,7 +590,7 @@ public class TileArcaneAssembler extends ThETileBase
         ItemStack icon = new ItemStack(thaumicenergistics.init.ModItems.ARCANE_ASSEMBLER_ITEM.get());
         return new PatternContainerGroup(
                 AEItemKey.of(icon),
-                net.minecraft.network.chat.Component.translatable("block.thaumicenergistics.arcane_assembler"),
+                Component.translatable("block.thaumicenergistics.arcane_assembler"),
                 List.of()
         );
     }
@@ -603,25 +639,25 @@ public class TileArcaneAssembler extends ThETileBase
      * 复刻 1.7.10 onMemoryCardActivate，但用 P2P 频率替代 DigiVisSourceData 位置（适配 neo vis_interface P2P）。
      * 卡上有 EXPORTED_P2P_FREQUENCY → 存频率；空白卡 → 清空；其它 → 无效。
      */
-    public void onMemoryCardActivate(net.minecraft.world.entity.player.Player player,
-                                     appeng.api.implementations.items.IMemoryCard memoryCard,
+    public void onMemoryCardActivate(Player player,
+                                     IMemoryCard memoryCard,
                                      net.minecraft.world.item.ItemStack heldItem) {
-        Short freq = heldItem.get(appeng.api.ids.AEComponents.EXPORTED_P2P_FREQUENCY);
+        Short freq = heldItem.get(AEComponents.EXPORTED_P2P_FREQUENCY);
         if (freq != null) {
             // 卡上带 P2P 频率（从 vis_interface shift+右键复制来的）→ 设为 vis 源
             this.visSourceFreq = freq;
             this.setChanged();
-            memoryCard.notifyUser(player, appeng.api.implementations.items.MemoryCardMessages.SETTINGS_LOADED);
-        } else if (heldItem.get(appeng.api.ids.AEComponents.EXPORTED_SETTINGS_SOURCE) == null) {
+            memoryCard.notifyUser(player, MemoryCardMessages.SETTINGS_LOADED);
+        } else if (heldItem.get(AEComponents.EXPORTED_SETTINGS_SOURCE) == null) {
             // 空白卡 → 清空 vis 源
             if (this.visSourceFreq != 0) {
                 this.visSourceFreq = 0;
                 this.setChanged();
             }
-            memoryCard.notifyUser(player, appeng.api.implementations.items.MemoryCardMessages.SETTINGS_CLEARED);
+            memoryCard.notifyUser(player, MemoryCardMessages.SETTINGS_CLEARED);
         } else {
             // 卡上有其它配置（非 P2P 频率）→ 不兼容
-            memoryCard.notifyUser(player, appeng.api.implementations.items.MemoryCardMessages.INVALID_MACHINE);
+            memoryCard.notifyUser(player, MemoryCardMessages.INVALID_MACHINE);
         }
     }
 
@@ -816,18 +852,25 @@ public class TileArcaneAssembler extends ThETileBase
         public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
                                       AspectList aspects, ItemStack resultStack,
                                       List<GenericStack> inputStacks) {
-            this(definition, recipe, aspects, resultStack, inputStacks, null, null);
+            this(definition, recipe, aspects, resultStack, inputStacks, null, null, null);
         }
 
         public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
                                       AspectList aspects, ItemStack resultStack,
                                       List<GenericStack> inputStacks, String research) {
-            this(definition, recipe, aspects, resultStack, inputStacks, research, null);
+            this(definition, recipe, aspects, resultStack, inputStacks, research, null, null);
         }
 
         public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
                                       AspectList aspects, ItemStack resultStack,
                                       List<GenericStack> inputStacks, String research, ItemStack[] grid) {
+            this(definition, recipe, aspects, resultStack, inputStacks, research, grid, null);
+        }
+
+        public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
+                                      AspectList aspects, ItemStack resultStack,
+                                      List<GenericStack> inputStacks, String research, ItemStack[] grid,
+                                      List<GenericStack[]> inputAlternatives) {
             this.definition = definition;
             this.recipe = recipe;
             this.aspects = aspects;
@@ -837,10 +880,15 @@ public class TileArcaneAssembler extends ThETileBase
             this.inputs = new IInput[inputStacks.size()];
             for (int i = 0; i < inputStacks.size(); i++) {
                 GenericStack stack = inputStacks.get(i);
+                // 通配变体组（tag 展开结果）；null/单元素退化为精确匹配（与旧行为一致）
+                GenericStack[] alts = (inputAlternatives != null && i < inputAlternatives.size()
+                        && inputAlternatives.get(i) != null)
+                        ? inputAlternatives.get(i)
+                        : new GenericStack[]{stack};
                 this.inputs[i] = new IInput() {
                     @Override
                     public GenericStack[] getPossibleInputs() {
-                        return new GenericStack[]{stack};
+                        return alts;
                     }
 
                     @Override
@@ -850,9 +898,13 @@ public class TileArcaneAssembler extends ThETileBase
 
                     @Override
                     public boolean isValid(AEKey input, Level level) {
-                        return input instanceof AEItemKey itemKey
-                                && stack.what() instanceof AEItemKey stackKey
-                                && itemKey.equals(stackKey);
+                        if (!(input instanceof AEItemKey itemKey)) return false;
+                        for (GenericStack alt : alts) {
+                            if (alt.what() instanceof AEItemKey altKey && altKey.equals(itemKey)) {
+                                return true;
+                            }
+                        }
+                        return false;
                     }
 
                     @Nullable
@@ -862,7 +914,7 @@ public class TileArcaneAssembler extends ThETileBase
                         // 规划端据此按"每次 1 单"顺序模拟、执行端把珍珠计入 CPU waitingFor，
                         // 机器合成完成把珍珠退回网络后 CPU 自动捕获续下一单——1 颗珍珠可连续多单。
                         if (what instanceof AEItemKey itemKey
-                                && itemKey.getItem() == net.minecraft.core.registries.BuiltInRegistries.ITEM.get(PRIMORDIAL_PEARL_ID)) {
+                                && itemKey.getItem() == BuiltInRegistries.ITEM.get(PRIMORDIAL_PEARL_ID)) {
                             return what;
                         }
                         return null;

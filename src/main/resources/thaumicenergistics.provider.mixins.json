@@ -1,0 +1,16 @@
+{
+  "required": false,
+  "package": "thaumicenergistics.mixins.ae2.provider",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "thaumicenergistics.refmap.json",
+  "plugin": "thaumicenergistics.mixins.ae2.provider.ThEProviderMixinPlugin",
+  "mixins": [
+    "MixinPatternProviderLogic",
+    "MixinPatternProviderLogicHost",
+    "MixinPatternProviderMenu"
+  ],
+  "client": [
+    "MixinPatternProviderScreen"
+  ],
+  "server": []
+}

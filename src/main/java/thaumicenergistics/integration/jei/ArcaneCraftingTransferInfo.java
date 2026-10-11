@@ -11,7 +11,6 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.recipe.transfer.IRecipeTransferInfo;
 
-import appeng.menu.SlotSemantics;
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
 import thaumicenergistics.init.ModMenuTypes;
 

@@ -18,6 +18,14 @@ import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.common.container.slot.ReadOnlySlot;
 import thaumicenergistics.common.tiles.TileArcaneAssembler;
 import thaumicenergistics.init.ModMenuTypes;
+import com.mojang.datafixers.util.Pair;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.Equipable;
+import thaumicenergistics.init.ModItems;
 
 /**
  * 奥术装配器 Container。
@@ -166,7 +174,7 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
         // ===== 3. 知识核心 (Tile.KCORE_SLOT = 0) =====
         addSlot(new SlotItemHandler(machineHandler, TileArcaneAssembler.KCORE_SLOT, KCORE_X, KCORE_Y) {
             @Override public boolean mayPlace(ItemStack stack) {
-                return stack.is(thaumicenergistics.init.ModItems.KNOWLEDGE_CORE.get());
+                return stack.is(ModItems.KNOWLEDGE_CORE.get());
             }
         });
 
@@ -196,31 +204,31 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
         for (int i = 0; i < ARMOR_COUNT; i++) {
             final int armorIdx = i;
             int invIdx = TileArcaneAssembler.ARMOR_SLOT_START + i;
-            final net.minecraft.world.entity.EquipmentSlot eq = switch (i) {
-                case 0 -> net.minecraft.world.entity.EquipmentSlot.HEAD;
-                case 1 -> net.minecraft.world.entity.EquipmentSlot.CHEST;
-                case 2 -> net.minecraft.world.entity.EquipmentSlot.LEGS;
-                default -> net.minecraft.world.entity.EquipmentSlot.FEET;
+            final EquipmentSlot eq = switch (i) {
+                case 0 -> EquipmentSlot.HEAD;
+                case 1 -> EquipmentSlot.CHEST;
+                case 2 -> EquipmentSlot.LEGS;
+                default -> EquipmentSlot.FEET;
             };
             // 空槽图标：原版头盔/胸甲/护腿/靴子（BLOCK_ATLAS 图集，同 WCWT 手动合成区做法）
-            final net.minecraft.resources.ResourceLocation armorIcon = switch (i) {
-                case 0 -> net.minecraft.world.inventory.InventoryMenu.EMPTY_ARMOR_SLOT_HELMET;
-                case 1 -> net.minecraft.world.inventory.InventoryMenu.EMPTY_ARMOR_SLOT_CHESTPLATE;
-                case 2 -> net.minecraft.world.inventory.InventoryMenu.EMPTY_ARMOR_SLOT_LEGGINGS;
-                default -> net.minecraft.world.inventory.InventoryMenu.EMPTY_ARMOR_SLOT_BOOTS;
+            final ResourceLocation armorIcon = switch (i) {
+                case 0 -> InventoryMenu.EMPTY_ARMOR_SLOT_HELMET;
+                case 1 -> InventoryMenu.EMPTY_ARMOR_SLOT_CHESTPLATE;
+                case 2 -> InventoryMenu.EMPTY_ARMOR_SLOT_LEGGINGS;
+                default -> InventoryMenu.EMPTY_ARMOR_SLOT_BOOTS;
             };
             addSlot(new SlotItemHandler(machineHandler, invIdx, ARMOR_X, ARMOR_Y + i * 18) {
                 @Override public boolean mayPlace(ItemStack s) {
                     if (s.getItem() instanceof IVisDiscountGear) return true;
                     if (s.getItem() instanceof IWarpingGear) return true;
-                    if (s.getItem() instanceof net.minecraft.world.item.Equipable eqItem)
+                    if (s.getItem() instanceof Equipable eqItem)
                         return eqItem.getEquipmentSlot() == eq;
                     return false;
                 }
                 @Override
-                public com.mojang.datafixers.util.Pair<net.minecraft.resources.ResourceLocation, net.minecraft.resources.ResourceLocation> getNoItemIcon() {
-                    return com.mojang.datafixers.util.Pair.of(
-                            net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS, armorIcon);
+                public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
+                    return Pair.of(
+                            InventoryMenu.BLOCK_ATLAS, armorIcon);
                 }
                 @Override public void setChanged() {
                     super.setChanged();
@@ -242,9 +250,9 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
     }
 
     private ItemStackHandler wrapMachineInventory() {
-        final net.minecraft.world.SimpleContainer inv =
+        final SimpleContainer inv =
                 (assembler != null) ? assembler.getInternalInventory()
-                        : new net.minecraft.world.SimpleContainer(TileArcaneAssembler.SLOT_COUNT);
+                        : new SimpleContainer(TileArcaneAssembler.SLOT_COUNT);
         return new ItemStackHandler(inv.getContainerSize()) {
             @Override public int getSlots() { return inv.getContainerSize(); }
             @Override public ItemStack getStackInSlot(int slot) { return inv.getItem(slot); }
@@ -288,14 +296,14 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
             // 玩家背包 → 知识核心 → 护甲 → 速度卡 → 背包↔快捷栏
             boolean merged = false;
 
-            if (stack.is(thaumicenergistics.init.ModItems.KNOWLEDGE_CORE.get())) {
+            if (stack.is(ModItems.KNOWLEDGE_CORE.get())) {
                 merged = moveItemStackTo(stack, KCORE_IDX, KCORE_IDX + 1, false);
             }
 
             if (!merged && (stack.getItem() instanceof IVisDiscountGear
                     || stack.getItem() instanceof IWarpingGear
-                    || stack.getItem() instanceof net.minecraft.world.item.ArmorItem
-                    || stack.getItem() instanceof net.minecraft.world.item.Equipable)) {
+                    || stack.getItem() instanceof ArmorItem
+                    || stack.getItem() instanceof Equipable)) {
                 for (int a = 0; a < ARMOR_COUNT && !merged; a++) {
                     Slot armorSlot = slots.get(ARMOR_START + a);
                     if (armorSlot.mayPlace(stack) && !armorSlot.hasItem()) {

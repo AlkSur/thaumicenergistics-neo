@@ -16,10 +16,11 @@ import appeng.blockentity.networking.WirelessAccessPointBlockEntity;
 import appeng.util.Platform;
 import net.neoforged.neoforge.fluids.FluidStack;
 import org.jetbrains.annotations.Nullable;
-import thaumcraft.api.aspects.Aspect;
 import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
 
 import java.util.Set;
+import appeng.api.networking.security.IActionHost;
+import thaumicenergistics.api.grid.IEssentiaGrid;
 
 /**
  * 傀儡与 AE2 无线网络的连接桥。
@@ -160,10 +161,10 @@ public class WirelessAELinkGolem {
     // ==================== 源质网络操作 ====================
 
     @Nullable
-    public thaumicenergistics.api.grid.IEssentiaGrid getEssentiaGrid() {
+    public IEssentiaGrid getEssentiaGrid() {
         IGrid grid = getGrid();
         if (grid == null) return null;
-        return grid.getService(thaumicenergistics.api.grid.IEssentiaGrid.class);
+        return grid.getService(IEssentiaGrid.class);
     }
 
     /**
@@ -174,7 +175,7 @@ public class WirelessAELinkGolem {
      * @return 实际提取的量
      */
     public int extractEssentia(net.minecraft.resources.ResourceLocation aspectId, int maxAmount) {
-        thaumicenergistics.api.grid.IEssentiaGrid essentiaGrid = getEssentiaGrid();
+        IEssentiaGrid essentiaGrid = getEssentiaGrid();
         if (essentiaGrid == null) return 0;
         if (actionSource == null) return 0;
 
@@ -191,7 +192,7 @@ public class WirelessAELinkGolem {
      * @return 实际存入的量
      */
     public int depositEssentia(net.minecraft.resources.ResourceLocation aspectId, int amount) {
-        thaumicenergistics.api.grid.IEssentiaGrid essentiaGrid = getEssentiaGrid();
+        IEssentiaGrid essentiaGrid = getEssentiaGrid();
         if (essentiaGrid == null) return 0;
         if (actionSource == null) return 0;
 
@@ -236,7 +237,7 @@ public class WirelessAELinkGolem {
         cachedAccessPoint = accessPoint;
 
         // 创建 ActionSource：使用 AP 作为 MachineSource
-        if (accessPoint instanceof appeng.api.networking.security.IActionHost actionHost) {
+        if (accessPoint instanceof IActionHost actionHost) {
             actionSource = IActionSource.ofMachine(actionHost);
         }
     }

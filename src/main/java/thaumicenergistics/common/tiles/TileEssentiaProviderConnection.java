@@ -12,6 +12,7 @@ import thaumcraft.api.aspects.IEssentiaTransport;
 import thaumcraft.common.essentia.EssentiaTransport;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModBlocks;
+import net.minecraft.world.level.Level;
 
 /**
  * 源质无线接收器：通过无线连接器与源质供应器建立连接后，
@@ -43,7 +44,7 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
     private static final int PIPE_SCAN_RANGE = 16;
 
     /** 服务端 tick：周期校验连接 + 主动沿模拟管道拉取源质（蒸馏器/罐/管道不主动推，需接收器拉）。 */
-    public static void serverTick(net.minecraft.world.level.Level level, BlockPos pos, BlockState state, TileEssentiaProviderConnection be) {
+    public static void serverTick(Level level, BlockPos pos, BlockState state, TileEssentiaProviderConnection be) {
         if (level.isClientSide()) return;
         if (be.linkedProviderPos != null && ++be.linkCheckCounter >= 40) {
             be.linkCheckCounter = 0;

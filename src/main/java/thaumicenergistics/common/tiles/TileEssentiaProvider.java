@@ -13,6 +13,11 @@ import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModItems;
 
 import java.util.List;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.Tag;
 
 public class TileEssentiaProvider extends TileProviderBase implements IEssentiaTransport, EssentiaTransport {
 
@@ -291,22 +296,22 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     // ===== NBT =====
 
     @Override
-    protected void saveAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+        ListTag list = new ListTag();
         for (BlockPos pos : linkedReceivers) {
-            list.add(net.minecraft.nbt.LongTag.valueOf(pos.asLong()));
+            list.add(LongTag.valueOf(pos.asLong()));
         }
         tag.put("LinkedReceivers", list);
     }
 
     @Override
-    protected void loadAdditional(net.minecraft.nbt.CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         linkedReceivers.clear();
         if (tag.contains("LinkedReceivers")) {
-            for (net.minecraft.nbt.Tag t : tag.getList("LinkedReceivers", net.minecraft.nbt.Tag.TAG_LONG)) {
-                linkedReceivers.add(BlockPos.of(((net.minecraft.nbt.LongTag) t).getAsLong()));
+            for (Tag t : tag.getList("LinkedReceivers", Tag.TAG_LONG)) {
+                linkedReceivers.add(BlockPos.of(((LongTag) t).getAsLong()));
             }
         }
     }

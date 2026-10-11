@@ -16,24 +16,25 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.common.extensions.IPlayerExtension;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.EnumSet;
 import java.util.List;
 
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
-import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.util.AECableType;
-import net.minecraft.world.item.Items;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModBlocks;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import thaumcraft.common.blockentities.InfusionMatrixBlockEntity;
+import thaumicenergistics.init.ModItems;
 
 /**
  * 注魔监视器（灵气观测器）方块实体。
@@ -76,6 +77,11 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     /** 上次扫描到的祭坛注魔中状态（翻转时强制立即重算风险，抓住注魔启动瞬间的高不稳定度）。 */
     private boolean cachedCrafting = false;
 
+    // ===== M4：注魔结束红石脉冲 =====
+    /** 脉冲剩余时长（tick）。仅运行期内存，不持久化——重载不回放（边界语义①）。 */
+    private static final int PULSE_DURATION = 40; // 2 秒，裁决 #5
+    private int pulseTicks = 0;
+
     /** 区块卸载/方块移除中：禁止 setBlock / markForUpdate（卸载时改方块状态会触发区块重载，停服保存死循环）。 */
     private boolean unloading = false;
 
@@ -114,7 +120,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     public TileInfusionMonitor(BlockPos pos, BlockState state) {
         super(ModBlockEntities.INFUSION_MONITOR.get(), pos, state);
         this.mainNode = GridHelper.createManagedNode(this, nodeListener)
-                .setVisualRepresentation(thaumicenergistics.init.ModItems.INFUSION_MONITOR_ITEM.get())
+                .setVisualRepresentation(ModItems.INFUSION_MONITOR_ITEM.get())
                 .setInWorldNode(true)
                 .setTagName("proxy")
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
@@ -167,6 +173,15 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
     public static void tick(Level level, BlockPos pos, BlockState state, TileInfusionMonitor be) {
         if (level.isClientSide()) return;
+        // M4 脉冲计时：递减到 0 自动复位；counter 为 0 但方块仍为激活态（掉线重启残留）→ 自愈复位
+        if (be.pulseTicks > 0) {
+            be.pulseTicks--;
+            if (be.pulseTicks == 0) {
+                be.updatePulseState(false);
+            }
+        } else if (state.getValue(ModBlocks.PULSE)) {
+            be.updatePulseState(false);
+        }
         // 无祭坛缓存时全量扫描退避到 SCAN_MISS_INTERVAL（否则每 10 tick 扫 9800 次 getBlockEntity，
         // 附近没建祭坛时也持续 ~70us/t）
         int interval = be.matrixPos == null ? SCAN_MISS_INTERVAL : SCAN_INTERVAL;
@@ -187,9 +202,16 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         boolean craftingChanged = false;
         // 快速路径：缓存矩阵仍在 → 跳过全量扫描
         if (found != null) {
-            if (level.getBlockEntity(found) instanceof thaumcraft.common.blockentities.InfusionMatrixBlockEntity matrix) {
+            if (level.getBlockEntity(found) instanceof InfusionMatrixBlockEntity matrix) {
                 boolean crafting = matrix.crafting();
                 craftingChanged = crafting != cachedCrafting;
+                // M4：忙碌→空闲跳变 = 注魔结束（成功/失败均触发；TC port.261 无完成事件，
+                // 故挂既有探测循环做下降沿检测，零额外扫描）。
+                // cachedCrafting 仅运行期内存 → 重载后从 false 起步，不会把已结束的旧注魔补发脉冲（边界语义①）；
+                // 每个 BE 独立检测，多观测器覆盖同一矩阵各自脉冲（边界语义②）。
+                if (craftingChanged && cachedCrafting && !crafting) {
+                    startPulse();
+                }
                 cachedCrafting = crafting;
             } else {
                 found = null; // 缓存失效 → 走全量扫描
@@ -208,7 +230,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
             riskCounter += SCAN_INTERVAL;
             if (riskCounter >= RISK_INTERVAL || !cachedRisk.found() || craftingChanged) {
                 riskCounter = 0;
-                if (level.getBlockEntity(found) instanceof thaumcraft.common.blockentities.InfusionMatrixBlockEntity matrix) {
+                if (level.getBlockEntity(found) instanceof InfusionMatrixBlockEntity matrix) {
                     newRisk = InfusionRiskCalculator.computeRisk(level,
                             new InfusionRiskCalculator.InfusionMatrixInfo(found, matrix));
                 } else {
@@ -225,6 +247,27 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         if (riskChanged || !java.util.Objects.equals(found, this.matrixPos)) {
             this.matrixPos = found;
             markForUpdate();
+        }
+    }
+
+    // ===== M4：注魔结束红石脉冲 =====
+
+    /** 触发单次脉冲：置激活态并计时，PULSE_DURATION tick 后由 tick 自动复位。 */
+    private void startPulse() {
+        this.pulseTicks = PULSE_DURATION;
+        updatePulseState(true);
+    }
+
+    /** 写 PULSE 方块状态（与 updateNetworkState 同款防护：卸载/移除中禁止 setBlock）。 */
+    private void updatePulseState(boolean pulsing) {
+        if (level == null || level.isClientSide() || unloading || isRemoved()) return;
+        BlockState st = getBlockState();
+        if (st.getValue(ModBlocks.PULSE) != pulsing) {
+            level.setBlock(worldPosition, st.setValue(ModBlocks.PULSE, pulsing), 3);
+            BlockEntity be = level.getBlockEntity(worldPosition);
+            if (be != null && be != this) {
+                be.setChanged();
+            }
         }
     }
 
@@ -306,7 +349,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         if (bubble == null || level == null) return;
         try {
             if (READ_NBT_METHOD == null) {
-                READ_NBT_METHOD = net.minecraft.world.entity.Entity.class
+                READ_NBT_METHOD = Entity.class
                         .getDeclaredMethod("readAdditionalSaveData", CompoundTag.class);
                 READ_NBT_METHOD.setAccessible(true);
             }
@@ -478,8 +521,8 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
     public static boolean isThaumonomicon(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        return stack.is(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
-                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("thaumcraft", "thaumonomicon")));
+        return stack.is(BuiltInRegistries.ITEM.get(
+                ResourceLocation.fromNamespaceAndPath("thaumcraft", "thaumonomicon")));
     }
 
     // ===== 访问器 =====

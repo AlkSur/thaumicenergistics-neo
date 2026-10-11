@@ -9,6 +9,8 @@ import thaumcraft.api.research.ResearchCategories;
 import thaumcraft.api.research.ResearchItem;
 import thaumcraft.api.research.ResearchPage;
 import thaumcraft.common.research.TCResearchIndex;
+import net.minecraft.world.item.Items;
+import thaumicenergistics.ThaumicEnergistics;
 
 /**
  * 伪前置桩节点。在 ThE 的研究 tab 中创建一个占位节点，
@@ -86,7 +88,7 @@ public class PseudoResearchItem extends ResearchItem {
         } else {
             // 最终备选：ThE 研究 tab 图标
             pseudo = new PseudoResearchItem(pseudoKey, category, column, row,
-                    ResourceLocation.fromNamespaceAndPath(thaumicenergistics.ThaumicEnergistics.MODID, "textures/research/tab_icon.png"),
+                    ResourceLocation.fromNamespaceAndPath(ThaumicEnergistics.MODID, "textures/research/tab_icon.png"),
                     realKey, realCategory);
         }
 
@@ -108,7 +110,7 @@ public class PseudoResearchItem extends ResearchItem {
                         ResourceLocation id = ResourceLocation.tryParse(itemId);
                         if (id == null) return ItemStack.EMPTY;
                         Item item = BuiltInRegistries.ITEM.get(id);
-                        return (item == null || item == net.minecraft.world.item.Items.AIR) ? ItemStack.EMPTY : new ItemStack(item);
+                        return (item == null || item == Items.AIR) ? ItemStack.EMPTY : new ItemStack(item);
                     })
                     .orElse(ItemStack.EMPTY);
         } catch (Exception e) {

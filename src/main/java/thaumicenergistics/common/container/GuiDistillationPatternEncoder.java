@@ -9,6 +9,7 @@ import net.minecraft.world.entity.player.Inventory;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.gui.AspectGuiRenderer;
 import thaumicenergistics.ThaumicEnergistics;
+import net.minecraft.client.Minecraft;
 
 public class GuiDistillationPatternEncoder extends AbstractContainerScreen<ContainerDistillationPatternEncoder> {
 
@@ -54,7 +55,7 @@ public class GuiDistillationPatternEncoder extends AbstractContainerScreen<Conta
                 // 按钮文字居中
                 String s = this.getMessage().getString();
                 if (!s.isEmpty()) {
-                    var font = net.minecraft.client.Minecraft.getInstance().font;
+                    var font = Minecraft.getInstance().font;
                     int tw = font.width(s);
                     g.drawString(font, s,
                             this.getX() + (this.width - tw) / 2,

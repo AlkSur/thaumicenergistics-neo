@@ -6,13 +6,11 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -24,6 +22,7 @@ import appeng.api.networking.energy.IEnergySource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.ITerminalHost;
 import appeng.api.storage.StorageHelper;
+import appeng.core.definitions.AEItems;
 import appeng.helpers.ICraftingGridMenu;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
@@ -34,17 +33,19 @@ import appeng.menu.slot.CraftingMatrixSlot;
 import appeng.me.storage.LinkStatusRespectingInventory;
 import appeng.util.inv.PlayerInternalInventory;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
 import thaumicenergistics.common.network.ArcaneTerminalClearC2SPacket;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
-import thaumcraft.api.wands.WandCap;
 import net.minecraft.world.item.crafting.Ingredient;
 import thaumcraft.common.items.TCFunctionalItems;
 import thaumcraft.common.lib.crafting.ThaumcraftCraftingManager;
-import thaumcraft.common.vis.TCVisHelper;
 import thaumicenergistics.common.container.slot.ArcaneCraftingResultSlot;
+import thaumicenergistics.common.items.VisConnectorCardItem;
+import thaumicenergistics.common.items.WirelessArcaneCraftingTerminalMenuHost;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
+import thaumicenergistics.common.parts.ArcaneVisReplenish;
 import thaumicenergistics.init.ModMenuTypes;
 
 public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements ICraftingGridMenu {
@@ -68,6 +69,28 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
     @Override
     public void broadcastChanges() {
         super.broadcastChanges();
+        // 无线奥术合成终端（T-M3-VISCARD-REV）：终端升级槽装有 vis 连接卡时自动充能——
+        // 遍历所在网络全部要素中继接口（replenishAuto），无需频率/绑定；仅菜单打开期间驱动（D1）。
+        if (!isClientSide()
+                && this.craftingInventoryHost instanceof WirelessArcaneCraftingTerminalMenuHost wirelessHost) {
+            var upgrades = wirelessHost.getUpgrades();
+            boolean hasVisCard = false;
+            for (int i = 0; i < upgrades.size(); i++) {
+                if (upgrades.getStackInSlot(i).getItem() instanceof VisConnectorCardItem) {
+                    hasVisCard = true;
+                    break;
+                }
+            }
+            if (hasVisCard) {
+                var node = wirelessHost.getActionableNode();
+                var wandInv = wirelessHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
+                var wandStack = wandInv != null ? wandInv.getStackInSlot(0) : ItemStack.EMPTY;
+                if (ArcaneVisReplenish.replenishAuto(
+                        node != null ? node.getGrid() : null, wandStack)) {
+                    wirelessHost.saveWandInv();
+                }
+            }
+        }
         // vis 充能恢复后自动重算结果槽：结果槽空 + 奥术配方有效 + vis 已足够 → 重新显示产物。
         // 节流：仅"待恢复"状态每 10 tick 检查一次（findMatchingArcaneRecipe 只在满足时执行）
         var player = getPlayerInventory().player;
@@ -135,6 +158,30 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
                 updateCurrentRecipeAndOutput(false);
             }
         }, SlotSemantics.STORAGE);
+
+        // WTBRIDGE-SLOT：无线终端专属——量子缠绕奇点安装槽（桥卡链路第三环：奇点写入 UI）。
+        // 有线部件宿主无此槽（instanceof 守卫）；客户端/服务端 host 类型一致故槽集一致。
+        // ae2wtlib 缺席时准入拦截（组件无处写回，防放入即丢）；ae2 原生缠绕奇点直接编译引用。
+        // 语义挂 AE2 原生 UPGRADE 组（注册顺序在基类 setupUpgrades 的升级卡槽之后）——右侧
+        // 升级卡槽面板按 getSlots(UPGRADE) 挂单一 UpgradesPanel，奇点槽自动成为同面板第三格
+        // （2 升级卡 + 1 奇点，一个整体）。注意：WACT host 非 IViewCellStorage，VIEW_CELL 组
+        // 为空、其面板不挂载，槽挂该组将无人摆位；奇点槽仅语义归类，仍绑自有 singularityInv，
+        // 升级库存读写（isInstalled 等）不受影响。
+        if (this.craftingInventoryHost instanceof WirelessArcaneCraftingTerminalMenuHost wirelessHost) {
+            var singularityInv = wirelessHost.getSubInventory(WirelessArcaneCraftingTerminalMenuHost.INV_SINGULARITY);
+            this.addSlot(new AppEngSlot(singularityInv, 0) {
+                @Override
+                public int getMaxStackSize() {
+                    return 1;
+                }
+
+                @Override
+                public boolean mayPlace(ItemStack stack) {
+                    return ModList.get().isLoaded(WirelessArcaneCraftingTerminalMenuHost.AE2WTLIB_MODID)
+                            && stack.is(AEItems.QUANTUM_ENTANGLED_SINGULARITY.asItem());
+                }
+            }, SlotSemantics.UPGRADE);
+        }
 
         updateCurrentRecipeAndOutput(true);
 

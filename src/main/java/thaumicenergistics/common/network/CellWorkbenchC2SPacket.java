@@ -10,6 +10,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.ContainerEssentiaCellWorkbench;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * 客户端→服务端 网络包：源质元件工作台分区操作。
@@ -89,7 +90,7 @@ public record CellWorkbenchC2SPacket(
                 boolean changed;
                 switch (this.action) {
                     case ACTION_REQUEST -> {
-                        if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                        if (ctx.player() instanceof ServerPlayer sp) {
                             CellWorkbenchSyncPacket.sendToClient(sp, menu.getPartitionAspects());
                         }
                         return;
@@ -108,7 +109,7 @@ public record CellWorkbenchC2SPacket(
                     default -> changed = false;
                 }
                 if (changed) {
-                    if (ctx.player() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    if (ctx.player() instanceof ServerPlayer sp) {
                         CellWorkbenchSyncPacket.sendToClient(sp, menu.getPartitionAspects());
                     }
                 }

@@ -1,0 +1,207 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north",
+        "screen": "off"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_off"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "screen": "on"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_on"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "screen": "working"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_working"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "screen": "failed"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_failed"
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "screen": "success"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_success"
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "screen": "off"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_off",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "screen": "on"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_on",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "screen": "working"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_working",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "screen": "failed"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_failed",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "screen": "success"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_success",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "screen": "off"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_off",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "screen": "on"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_on",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "screen": "working"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_working",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "screen": "failed"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_failed",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "screen": "success"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_success",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "screen": "off"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_off",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "screen": "on"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_on",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "screen": "working"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_working",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "screen": "failed"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_failed",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "screen": "success"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_screen_success",
+        "y": 270
+      }
+    },
+    {
+      "when": {
+        "jar": "true"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/brain_of_probability_jar"
+      }
+    }
+  ]
+}

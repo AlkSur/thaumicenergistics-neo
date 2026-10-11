@@ -90,6 +90,10 @@
       "bottom": 90,
       "width": 59,
       "height": 66
+    },
+    "upgrades": {
+      "left": 192,
+      "top": 0
     }
   }
 }

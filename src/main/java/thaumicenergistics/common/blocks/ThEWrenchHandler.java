@@ -12,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import thaumicenergistics.ThaumicEnergistics;
+import appeng.datagen.providers.tags.ConventionTags;
 
 /**
  * AE2 扳手拆卸处理。AE2 的 WrenchHook 只处理 AEBaseBlockEntity，ThE 方块 BE 不走该路径；
@@ -37,7 +38,7 @@ public final class ThEWrenchHandler {
             return;
         }
         var stack = player.getItemInHand(event.getHand());
-        if (!player.isShiftKeyDown() || !stack.is(appeng.datagen.providers.tags.ConventionTags.WRENCH)) {
+        if (!player.isShiftKeyDown() || !stack.is(ConventionTags.WRENCH)) {
             return;
         }
 

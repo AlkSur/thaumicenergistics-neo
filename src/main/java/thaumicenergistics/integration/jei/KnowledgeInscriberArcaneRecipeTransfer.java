@@ -20,6 +20,7 @@ import thaumicenergistics.common.container.ContainerKnowledgeInscriber;
 import thaumicenergistics.common.container.slot.GhostSlot;
 import thaumicenergistics.common.network.KnowledgeInscriberGhostSlotPacket;
 import thaumicenergistics.init.ModMenuTypes;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * 知识记录仪 JEI 奥术配方 "+" 一键放置：
@@ -56,7 +57,7 @@ public class KnowledgeInscriberArcaneRecipeTransfer
             ContainerKnowledgeInscriber menu,
             JeiArcaneRecipe recipe,
             mezz.jei.api.gui.ingredient.IRecipeSlotsView display,
-            net.minecraft.world.entity.player.Player player,
+            Player player,
             boolean maxTransfer,
             boolean doTransfer) {
         // 预览：始终可转移（ghost 槽不消耗物品）

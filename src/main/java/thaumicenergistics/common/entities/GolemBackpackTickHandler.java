@@ -20,6 +20,9 @@ import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.network.GolemBackpackSyncPacket;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import thaumcraft.api.aspects.IEssentiaContainerItem;
 
 /**
  * 傀儡背包无线网络交互的 Tick 驱动 AI。
@@ -258,7 +261,7 @@ public final class GolemBackpackTickHandler {
             ItemStack filter = golem.getFilter(slot);
             if (filter.isEmpty()) continue;
 
-            var fluidHandler = filter.getCapability(net.neoforged.neoforge.capabilities.Capabilities.FluidHandler.ITEM);
+            var fluidHandler = filter.getCapability(Capabilities.FluidHandler.ITEM);
             if (fluidHandler == null) continue;
 
             for (int tank = 0; tank < fluidHandler.getTanks(); tank++) {
@@ -289,7 +292,7 @@ public final class GolemBackpackTickHandler {
         int amount = golem.essentiaAmount();
 
         if (aspect != null && amount > 0) {
-            net.minecraft.resources.ResourceLocation aspectId = TCReflection.getAspectId(aspect);
+            ResourceLocation aspectId = TCReflection.getAspectId(aspect);
             int deposited = link.depositEssentia(aspectId, amount);
             if (deposited > 0) {
                 int remaining = amount - deposited;
@@ -303,12 +306,12 @@ public final class GolemBackpackTickHandler {
             ItemStack filter = golem.getFilter(slot);
             if (filter.isEmpty()) continue;
 
-            if (filter.getItem() instanceof thaumcraft.api.aspects.IEssentiaContainerItem containerItem) {
+            if (filter.getItem() instanceof IEssentiaContainerItem containerItem) {
                 AspectList aspectList = containerItem.getAspects(filter);
                 if (aspectList == null || aspectList.size() == 0) continue;
 
                 for (Aspect filterAspect : aspectList.getAspects()) {
-                    net.minecraft.resources.ResourceLocation aspectId = TCReflection.getAspectId(filterAspect);
+                    ResourceLocation aspectId = TCReflection.getAspectId(filterAspect);
                     int requestAmount = Math.min(golem.carryLimit(), WirelessAELinkGolem.getMaxEssentiaRate(golem));
                     int extracted = link.extractEssentia(aspectId, requestAmount);
                     if (extracted > 0) {

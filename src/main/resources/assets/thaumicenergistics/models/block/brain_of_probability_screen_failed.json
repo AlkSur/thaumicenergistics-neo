@@ -1,0 +1,6 @@
+{
+  "parent": "thaumicenergistics:block/brain_of_probability",
+  "textures": {
+    "on": "thaumicenergistics:block/bop_animation_no"
+  }
+}

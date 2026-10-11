@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import thaumicenergistics.ThaumicEnergistics;
+import net.minecraft.client.Minecraft;
 
 /**
  * 知识记录仪 GUI。
@@ -60,7 +61,7 @@ public class GuiKnowledgeInscriber extends AbstractContainerScreen<ContainerKnow
                 // 按钮文字居中
                 String s = this.getMessage().getString();
                 if (!s.isEmpty()) {
-                    var font = net.minecraft.client.Minecraft.getInstance().font;
+                    var font = Minecraft.getInstance().font;
                     int tw = font.width(s);
                     g.drawString(font, s,
                             this.getX() + (this.width - tw) / 2,
