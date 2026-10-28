@@ -26,7 +26,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import thaumcraft.integration.jei.JeiArcaneRecipe;
 import thaumcraft.integration.jei.ThaumcraftJeiPlugin;
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
-import thaumicenergistics.init.ModMenuTypes;
 
 import static appeng.integration.modules.itemlists.TransferHelper.BLUE_PLUS_BUTTON_COLOR;
 import static appeng.integration.modules.itemlists.TransferHelper.BLUE_SLOT_HIGHLIGHT_COLOR;
@@ -55,7 +54,9 @@ public class ThEUseArcaneRecipeTransfer
 
     @Override
     public Optional<MenuType<ContainerArcaneCraftingTerminal>> getMenuType() {
-        return Optional.of(ModMenuTypes.ARCANE_CRAFTING_TERMINAL.get());
+        // JEI stores one handler per container class and recipe category, not per menu type.
+        // Both wired and wireless arcane terminals use this exact container class.
+        return Optional.empty();
     }
 
     @Override

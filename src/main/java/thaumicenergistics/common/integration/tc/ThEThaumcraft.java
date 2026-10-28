@@ -198,7 +198,8 @@ public final class ThEThaumcraft {
                 .setPages(
                         new ResearchPage("tc.research_text.ESSENTIASTORAGE"),
                         new ResearchPage(RecipeRegistration.STORAGE_COMPONENT_1K),
-                        new ResearchPage(new IArcaneRecipe[]{RecipeRegistration.STORAGE_COMPONENT_4K, RecipeRegistration.STORAGE_COMPONENT_16K, RecipeRegistration.STORAGE_COMPONENT_64K}))
+                        new ResearchPage(new IArcaneRecipe[]{RecipeRegistration.STORAGE_COMPONENT_4K, RecipeRegistration.STORAGE_COMPONENT_16K, RecipeRegistration.STORAGE_COMPONENT_64K,
+                                RecipeRegistration.STORAGE_COMPONENT_256K, RecipeRegistration.STORAGE_COMPONENT_1M, RecipeRegistration.STORAGE_COMPONENT_4M, RecipeRegistration.STORAGE_COMPONENT_16M, RecipeRegistration.STORAGE_COMPONENT_64M, RecipeRegistration.STORAGE_COMPONENT_256M}))
                 .registerResearchItem();
     }
 

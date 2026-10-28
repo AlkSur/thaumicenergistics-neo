@@ -12,6 +12,7 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.blocks.BrainOfProbabilityBlock;
+import thaumicenergistics.common.blocks.FumoBlock;
 import thaumicenergistics.common.blocks.BrainOfProbabilityTopBlock;
 import thaumicenergistics.common.blocks.OrientableEntityBlock;
 import thaumicenergistics.common.blocks.ThEBaseEntityBlock;
@@ -350,6 +351,24 @@ public final class ModBlocks {
             return java.util.List.of(new ItemStack(ModItems.ALKUSURE86_FUMO_ITEM.get()));
         }
     });
+
+    /** 玩偶通用：拿起方块到手（空手进主手，否则进背包），并移除方块。 */
+    private static void pickUpFumo(Level level, BlockPos pos, Player player, Block block) {
+        if (level.isClientSide) return;
+        ItemStack item = new ItemStack(block.asItem());
+        if (player.getMainHandItem().isEmpty()) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, item);
+        } else if (!player.getInventory().add(item)) {
+            Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, item);
+        }
+        level.removeBlock(pos, false);
+    }
+
+    // Preserve the registered IDs; both dolls now share Alkusure86's two-state interaction.
+    public static final DeferredBlock<Block> MAIQILIN_FUMO = REGISTRY.register("maiqilinfumo",
+            () -> new FumoBlock(PD));
+    public static final DeferredBlock<Block> BEIWUCN_FUMO = REGISTRY.register("beiwucnfumo",
+            () -> new FumoBlock(PD));
 
     // ==================== 源质无线接收器 ====================
 

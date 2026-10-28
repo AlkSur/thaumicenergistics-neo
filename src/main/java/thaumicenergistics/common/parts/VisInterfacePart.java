@@ -75,7 +75,18 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
 
     public VisInterfacePart(IPartItem<?> partItem) {
         super(partItem);
+        getMainNode().addService(IGridTickable.class, this);
         this.uid = System.currentTimeMillis() ^ this.hashCode();
+    }
+
+    @Override
+    public void removeFromWorld() {
+        // A removed grid node will no longer tick, so its TC registration must be retired here.
+        try {
+            removeProvider();
+        } finally {
+            super.removeFromWorld();
+        }
     }
 
     @Override
@@ -158,6 +169,9 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
             return null;
         }
         BlockPos front = getBlockEntity().getBlockPos().relative(getSide());
+        if (!level.hasChunkAt(front)) {
+            return null;
+        }
         BlockEntity be = level.getBlockEntity(front);
         if (be instanceof VisRelayBlockEntity relay) {
             return relay;
@@ -246,7 +260,7 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
 
     private void registerProvider() {
         Level level = getLevel();
-        if (level == null || getBlockEntity() == null) {
+        if (level == null || level.isClientSide() || getBlockEntity() == null) {
             return;
         }
         if (visProviderProxy != null) {
@@ -254,6 +268,9 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
             return;
         }
         BlockPos front = getBlockEntity().getBlockPos().relative(getSide());
+        if (!level.hasChunkAt(front)) {
+            return;
+        }
         BlockState state = level.getBlockState(front);
         VisProviderProxy proxy = new VisProviderProxy(front, state);
         proxy.bind(this, level);
@@ -264,12 +281,14 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
     }
 
     private void removeProvider() {
-        if (visProviderProxy != null) {
-            VisNetHandler.removeNode(visProviderProxy);
-            this.visProviderProxy = null;
-        }
+        VisProviderProxy oldProxy = this.visProviderProxy;
+        this.visProviderProxy = null;
         this.providerActive = false;
         this.isProvider = false;
+        if (oldProxy != null) {
+            // TC's node lifecycle also detaches descendants and marks the old node removed.
+            oldProxy.setRemoved();
+        }
     }
 
     private void setDrainColor(int color) {
@@ -298,13 +317,10 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        if (!isActive()) {
-            removeProvider();
-            return TickRateModulation.SAME;
-        }
-        if (shouldProvide() && !providerActive) {
+        boolean provide = !isClientSide() && isActive() && shouldProvide();
+        if (provide && !providerActive) {
             registerProvider();
-        } else if (!shouldProvide() && providerActive) {
+        } else if (!provide) {
             removeProvider();
         }
         if (visDrainingColor != 0 && (System.currentTimeMillis() - lastColorUpdate) > TIME_TO_CLEAR) {

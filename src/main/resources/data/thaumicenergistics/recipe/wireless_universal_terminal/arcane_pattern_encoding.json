@@ -1,0 +1,10 @@
+{
+  "partner": "pattern_encoding",
+  "neoforge:conditions": [
+    {
+      "modid": "ae2wtlib",
+      "type": "neoforge:mod_loaded"
+    }
+  ],
+  "type": "thaumicenergistics:safe_terminal_merge"
+}

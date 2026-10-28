@@ -2,9 +2,11 @@ package thaumicenergistics.init;
 
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import thaumicenergistics.ThaumicEnergistics;
+import thaumicenergistics.common.integration.ae2wt.AE2WTCompat;
 import thaumicenergistics.common.items.*;
 import appeng.core.AEConfig;
 import thaumicenergistics.common.items.WirelessConnectorItem;
@@ -17,11 +19,23 @@ public final class ModItems {
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_4K = REGISTRY.registerItem("essentia_cell_4k", ItemEssentiaCell::create4k);
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_16K = REGISTRY.registerItem("essentia_cell_16k", ItemEssentiaCell::create16k);
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_64K = REGISTRY.registerItem("essentia_cell_64k", ItemEssentiaCell::create64k);
+    public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_256K = REGISTRY.registerItem("essentia_cell_256k", ItemEssentiaCell::create256k);
+    public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_1M = REGISTRY.registerItem("essentia_cell_1m", ItemEssentiaCell::create1m);
+    public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_4M = REGISTRY.registerItem("essentia_cell_4m", ItemEssentiaCell::create4m);
+    public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_16M = REGISTRY.registerItem("essentia_cell_16m", ItemEssentiaCell::create16m);
+    public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_64M = REGISTRY.registerItem("essentia_cell_64m", ItemEssentiaCell::create64m);
+    public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_256M = REGISTRY.registerItem("essentia_cell_256m", ItemEssentiaCell::create256m);
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_CREATIVE = REGISTRY.registerItem("essentia_cell_creative", ItemEssentiaCell::createCreative);
     public static final DeferredItem<Item> STORAGE_COMPONENT_1K = REGISTRY.registerSimpleItem("storage_component_1k");
     public static final DeferredItem<Item> STORAGE_COMPONENT_4K = REGISTRY.registerSimpleItem("storage_component_4k");
     public static final DeferredItem<Item> STORAGE_COMPONENT_16K = REGISTRY.registerSimpleItem("storage_component_16k");
     public static final DeferredItem<Item> STORAGE_COMPONENT_64K = REGISTRY.registerSimpleItem("storage_component_64k");
+    public static final DeferredItem<Item> STORAGE_COMPONENT_256K = REGISTRY.registerSimpleItem("storage_component_256k");
+    public static final DeferredItem<Item> STORAGE_COMPONENT_1M = REGISTRY.registerSimpleItem("storage_component_1m");
+    public static final DeferredItem<Item> STORAGE_COMPONENT_4M = REGISTRY.registerSimpleItem("storage_component_4m");
+    public static final DeferredItem<Item> STORAGE_COMPONENT_16M = REGISTRY.registerSimpleItem("storage_component_16m");
+    public static final DeferredItem<Item> STORAGE_COMPONENT_64M = REGISTRY.registerSimpleItem("storage_component_64m");
+    public static final DeferredItem<Item> STORAGE_COMPONENT_256M = REGISTRY.registerSimpleItem("storage_component_256m");
     public static final DeferredItem<Item> STORAGE_CASING = REGISTRY.registerSimpleItem("storage_casing");
     public static final DeferredItem<Item> COALESCENCE_CORE = REGISTRY.registerSimpleItem("coalescence_core");
     public static final DeferredItem<Item> DIFFUSION_CORE = REGISTRY.registerSimpleItem("diffusion_core");
@@ -29,11 +43,18 @@ public final class ModItems {
             () -> new Item(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<ItemFocusAEWrench> FOCUS_AEWRENCH = REGISTRY.register("focus_aewrench",
             () -> new ItemFocusAEWrench());
-    public static final DeferredItem<WirelessArcaneCraftingTerminalItem> WIRELESS_ARCANE_CRAFTING_TERMINAL =
+    /**
+     * 无线奥术合成终端：注册 ID 恒定，按运行环境选实现——ae2wtlib 完整模组存在时用
+     * {@code ItemWT} 体系实现（纳入通用终端合并/模式切换），否则用独立实现。
+     * 两实现参数一致（AEConfig 无线终端电池 + stacksTo(1)）。
+     */
+    public static final DeferredItem<Item> WIRELESS_ARCANE_CRAFTING_TERMINAL =
             REGISTRY.register("wireless_arcane_crafting_terminal",
-                    () -> new WirelessArcaneCraftingTerminalItem(
-                            AEConfig.instance().getWirelessTerminalBattery(),
-                            new Item.Properties().stacksTo(1)));
+                    () -> ModList.get().isLoaded("ae2wtlib")
+                            ? AE2WTCompat.createTerminalItem()
+                            : new WirelessArcaneCraftingTerminalItem(
+                                    AEConfig.instance().getWirelessTerminalBattery(),
+                                    new Item.Properties().stacksTo(1)));
     public static final DeferredItem<VisConnectorCardItem> VIS_CONNECTOR_CARD = REGISTRY.register(
             "vis_connector_card",
             () -> new VisConnectorCardItem(new Item.Properties().stacksTo(1)));
@@ -61,6 +82,8 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> DISTILLATION_ENCODER_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.DISTILLATION_ENCODER);
     public static final DeferredItem<BlockItem> INFUSION_MONITOR_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.INFUSION_MONITOR);
     public static final DeferredItem<BlockItem> ALKUSURE86_FUMO_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.ALKUSURE86_FUMO);
+    public static final DeferredItem<BlockItem> MAIQILIN_FUMO_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.MAIQILIN_FUMO);
+    public static final DeferredItem<BlockItem> BEIWUCN_FUMO_ITEM = REGISTRY.registerSimpleBlockItem(ModBlocks.BEIWUCN_FUMO);
     public static final DeferredItem<BlockItem> ESSENTIA_PROVIDER_CONNECTION_ITEM =
             REGISTRY.registerSimpleBlockItem(ModBlocks.ESSENTIA_PROVIDER_CONNECTION);
 

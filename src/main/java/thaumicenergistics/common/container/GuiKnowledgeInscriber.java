@@ -2,6 +2,7 @@ package thaumicenergistics.common.container;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -22,8 +23,8 @@ public class GuiKnowledgeInscriber extends AbstractContainerScreen<ContainerKnow
     private static final ResourceLocation BUTTON_TEX = ResourceLocation.fromNamespaceAndPath(
             ThaumicEnergistics.MODID, "textures/gui/button.png");
 
-    // 主区宽度 175（中轴线 87.5，主区对称居中）；知识核心槽在右侧单独渲染（x=176~209 边栏），不计入主区宽度。
-    private static final int GUI_WIDTH = 175;
+    // All slots now fit inside the 176-pixel main panel, including the knowledge core.
+    private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 244;
 
     private Button saveButton;
@@ -45,12 +46,10 @@ public class GuiKnowledgeInscriber extends AbstractContainerScreen<ContainerKnow
         int left = (width - imageWidth) / 2;
         int top = (height - imageHeight) / 2;
 
-        // 保存/删除样板按钮：放预览产物槽（结果槽 116,108）上方，等比 32×13。
-        // 按钮中心与结果槽中心（x=125）关于同一 y 轴对称 → 按钮 x = 125-16 = 109。
-        // 材质 button.png：常态 (0,0,32,13)，悬停/按下 (0,15,32,12)。
+        // Center the status/save/delete button above the knowledge core slot (145 + 8).
         saveButton = new Button(
-                left + 109, top + 90, 32, 13, Component.empty(),
-                btn -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, 0),
+                left + 137, top + 103, 32, 13, Component.empty(),
+                btn -> this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, ContainerKnowledgeInscriber.BUTTON_SAVE_DELETE),
                 b -> Component.empty()) {
             @Override
             protected void renderWidget(GuiGraphics g, int mx, int my, float pt) {
@@ -71,6 +70,25 @@ public class GuiKnowledgeInscriber extends AbstractContainerScreen<ContainerKnow
             }
         };
         addRenderableWidget(saveButton);
+
+        // The 8x8 cross is already part of the supplied texture; keep its exact appearance.
+        Button clearButton = new Button(left + 71, top + 89, 8, 8,
+                Component.translatable("thaumicenergistics.gui.knowledge_inscriber.clear_grid"), btn -> {
+                    menu.onClearGrid();
+                    saveState = menu.getCurrentSaveState();
+                    updateSaveButton();
+                    minecraft.gameMode.handleInventoryButtonClick(menu.containerId,
+                            ContainerKnowledgeInscriber.BUTTON_CLEAR_GRID);
+                }, narration -> narration.get()) {
+            @Override
+            protected void renderWidget(GuiGraphics g, int mx, int my, float pt) {
+                if (isHoveredOrFocused()) {
+                    g.fill(getX(), getY(), getX() + width, getY() + height, 0x40FFFFFF);
+                }
+            }
+        };
+        clearButton.setTooltip(Tooltip.create(Component.translatable("thaumicenergistics.gui.knowledge_inscriber.clear_grid")));
+        addRenderableWidget(clearButton);
         // 立即设置按钮文字/激活（F11 全屏切换会重建按钮，init 里必须重设，否则文字丢失）
         updateSaveButton();
     }
@@ -112,10 +130,7 @@ public class GuiKnowledgeInscriber extends AbstractContainerScreen<ContainerKnow
     protected void renderBg(GuiGraphics g, float pt, int mx, int my) {
         int x = (width - imageWidth) / 2;
         int y = (height - imageHeight) / 2;
-        // 主区（0~175）对称居中
         g.blit(TEX, x, y, 0, 0, GUI_WIDTH, imageHeight);
-        // 右侧知识核心槽边栏（x=176~209）单独渲染，不占主区宽度
-        g.blit(TEX, x + 176, y, 176, 0, 34, imageHeight);
     }
 
     @Override

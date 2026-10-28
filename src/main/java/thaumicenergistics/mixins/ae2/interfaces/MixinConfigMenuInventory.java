@@ -49,7 +49,9 @@ public abstract class MixinConfigMenuInventory {
     private void convertEssentiaContainer(ItemStack stack,
                                           CallbackInfoReturnable<@Nullable GenericStack> cir) {
         // 如果 AE2 原生逻辑已经成功转换，不做任何事
-        if (cir.getReturnValue() != null) {
+        if (GenericStack.unwrapItemStack(stack) != null
+                || (cir.getReturnValue() != null
+                    && !(cir.getReturnValue().what() instanceof appeng.api.stacks.AEItemKey))) {
             return;
         }
 

@@ -3,13 +3,13 @@ package thaumicenergistics.common.essentia.capability;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
+import java.util.function.Predicate;
+import net.minecraft.resources.ResourceLocation;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
 
-import thaumcraft.api.aspects.Aspect;
-import thaumcraft.api.aspects.IEssentiaTransport;
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.TCReflection;
@@ -25,6 +25,21 @@ import thaumicenergistics.common.integration.tc.TCReflection;
 public final class EssentiaTransfer {
 
     private EssentiaTransfer() {}
+
+    public record Push(long moved, AspectStack leftover) {
+        public static final Push NONE = new Push(0, AspectStack.EMPTY);
+    }
+
+    /** 供应器输入已由 CPU 交付，此入口只向目标交付，不再从网络抽取。 */
+    public static long insertOwned(AEssentiaKey key, long amount, BlockEntity container,
+            @Nullable Direction accessSide) {
+        if (container == null || key == null || amount <= 0) return 0;
+        var aspect = TCReflection.findAspectById(key.getId());
+        if (aspect == null) return 0;
+        int wanted = (int) Math.min(amount, Integer.MAX_VALUE);
+        return thaumicenergistics.common.integration.tc.EssentiaEndpoints.insert(
+                container, key.getId(), wanted, accessSide);
+    }
 
     /**
      * 容器 → 网络 的搬运产物。
@@ -49,32 +64,44 @@ public final class EssentiaTransfer {
      * @param rate      单次最大搬运量
      * @return 搬运产物；无搬运时为 {@link Pull#NONE}
      */
-    public static Pull pull(@Nullable BlockEntity container, IGrid grid, IActionSource source, int rate) {
+    public static Pull pull(@Nullable BlockEntity container, IGrid grid, IActionSource source, int rate,
+            @Nullable Direction accessSide) {
+        return pull(container, grid, source, rate, accessSide, id -> true);
+    }
+
+    public static Pull pull(@Nullable BlockEntity container, IGrid grid, IActionSource source, int rate,
+            @Nullable Direction accessSide, Predicate<ResourceLocation> filter) {
         if (container == null || rate <= 0) return Pull.NONE;
+        // 多要素容器不能因首项被过滤或网络已满而饿死后续可接收项。
+        for (var available : thaumicenergistics.common.integration.tc.EssentiaEndpoints.contents(container, accessSide)) {
+            if (available.isEmpty() || !filter.test(available.aspectId())) continue;
+            var key = AEssentiaKey.of(available.aspectId());
+            long acceptable = grid.getStorageService().getInventory().insert(
+                    key, Math.min(rate, available.amount()), Actionable.SIMULATE, source);
+            if (acceptable <= 0) continue;
+            return pullAvailable(container, grid, source, rate, accessSide, available, key, acceptable);
+        }
+        return Pull.NONE;
+    }
 
-        // 1) 非破坏性预检：先窥视容器能给什么（无源质直接退出）
-        AspectStack available = TCReflection.peekEssentia(container, rate);
-        if (available == null || available.isEmpty()) return Pull.NONE;
-        AEssentiaKey key = AEssentiaKey.of(available.aspectId());
-        if (key == null) return Pull.NONE;
-
-        // 2) 预检网络能接收多少；为 0（无源质存储 / 已满）则完全不抽取
-        long acceptable = grid.getStorageService().getInventory().insert(
-                key, available.amount(), Actionable.SIMULATE, source);
-        if (acceptable <= 0) return Pull.NONE;
+    private static Pull pullAvailable(BlockEntity container, IGrid grid, IActionSource source, int rate,
+            @Nullable Direction accessSide, AspectStack available, AEssentiaKey key, long acceptable) {
 
         // 3) 定向抽取（取「容器能给」与「网络能收」的较小值）
-        int toExtract = (int) Math.min(available.amount(), acceptable);
-        AspectStack extracted = TCReflection.extractEssentia(container, available.aspectId(), toExtract);
-        if (extracted == null || extracted.isEmpty()) return Pull.NONE;
-
-        // 4) 实插；模拟与实插不一致时残留交回调用方缓冲重试，绝不归还 / 丢弃
-        long injected = grid.getStorageService().getInventory().insert(
-                key, extracted.amount(), Actionable.MODULATE, source);
-        AspectStack leftover = injected < extracted.amount()
-                ? new AspectStack(extracted.aspectId(), extracted.amount() - injected)
-                : AspectStack.EMPTY;
-        return new Pull(injected, leftover);
+        int toExtract = (int) Math.min(rate, Math.min(available.amount(), acceptable));
+        AspectStack[] leftover = {AspectStack.EMPTY};
+        long injected = EssentiaEnergy.transfer(grid, toExtract, allowed -> {
+            var extracted = thaumicenergistics.common.integration.tc.EssentiaEndpoints.extract(
+                    container, available.aspectId(), (int) allowed, accessSide);
+            if (extracted == null || extracted.isEmpty()) return 0;
+            long inserted = grid.getStorageService().getInventory().insert(
+                    key, extracted.amount(), Actionable.MODULATE, source);
+            if (inserted < extracted.amount()) {
+                leftover[0] = new AspectStack(extracted.aspectId(), extracted.amount() - inserted);
+            }
+            return inserted;
+        });
+        return new Pull(injected, leftover[0]);
     }
 
     /**
@@ -86,28 +113,23 @@ public final class EssentiaTransfer {
      * @param accessSide 容器接收面的朝向（TC 管道 {@code addEssentia} 需要；可空）
      * @return 实际注入容器的源质量；0 表示本次无搬运（调用方据此判「无所作为」）
      */
-    public static long push(IGrid grid, IActionSource source, @Nullable AEssentiaKey key, long amount,
+    public static Push push(IGrid grid, IActionSource source, @Nullable AEssentiaKey key, long amount,
                             @Nullable BlockEntity container, @Nullable Direction accessSide) {
-        if (container == null || key == null || amount <= 0) return 0;
-
-        long extracted = grid.getStorageService().getInventory().extract(
-                key, amount, Actionable.MODULATE, source);
-        if (extracted <= 0) return 0;
-
-        // 先按 IAspectContainer 注入，失败再回退 TC 源质管道接口
-        int injected = TCReflection.insertEssentia(container, new AspectStack(key.getId(), extracted));
-        if (injected <= 0 && container instanceof IEssentiaTransport transport) {
-            Aspect aspect = TCReflection.findAspectById(key.getId());
-            if (aspect != null) {
-                int want = (int) Math.min(extracted, Integer.MAX_VALUE);
-                injected = transport.addEssentia(aspect, want, accessSide);
+        if (container == null || key == null || amount <= 0) return Push.NONE;
+        AspectStack[] pending = {AspectStack.EMPTY};
+        long moved = EssentiaEnergy.transfer(grid, amount, allowed -> {
+            var inventory = grid.getStorageService().getInventory();
+            long extracted = inventory.extract(key, allowed, Actionable.MODULATE, source);
+            long inserted = insertOwned(key, extracted, container, accessSide);
+            long remaining = extracted - inserted;
+            if (remaining > 0) {
+                long returned = inventory.insert(key, remaining, Actionable.MODULATE, source);
+                if (returned < remaining) {
+                    pending[0] = new AspectStack(key.getId(), remaining - returned);
+                }
             }
-        }
-        if (injected < extracted) {
-            // 退回未注入的部分
-            grid.getStorageService().getInventory().insert(
-                    key, extracted - injected, Actionable.MODULATE, source);
-        }
-        return injected;
+            return inserted;
+        });
+        return new Push(moved, pending[0]);
     }
 }

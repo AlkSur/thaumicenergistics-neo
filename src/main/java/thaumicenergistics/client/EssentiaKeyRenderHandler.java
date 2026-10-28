@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 import thaumcraft.api.aspects.Aspect;
@@ -31,6 +33,33 @@ public class EssentiaKeyRenderHandler implements AEKeyRenderHandler<AEssentiaKey
     @Override
     public void drawOnBlockFace(PoseStack poseStack, MultiBufferSource buffers, AEssentiaKey what,
                                 float scale, int combinedLight, Level level) {
+        Aspect aspect = Aspect.getAspect(what.getId().getPath());
+        if (aspect == null || scale <= 0) return;
+        int color = 0xFF000000 | aspect.getColor();
+        float half = scale / 2;
+        poseStack.pushPose();
+        try {
+            // Direct aspect textures are not sprites in the block texture atlas.
+            poseStack.translate(0, 0, 0.01f);
+            var pose = poseStack.last();
+            var buffer = buffers.getBuffer(RenderType.entityTranslucent(aspect.getImage()));
+            var normal = new org.joml.Vector3f(0, 0, 1);
+            pose.normal().transform(normal).normalize();
+            buffer.addVertex(pose, -half, -half, 0).setColor(color).setUv(0, 1)
+                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(combinedLight)
+                    .setNormal(normal.x, normal.y, normal.z);
+            buffer.addVertex(pose, half, -half, 0).setColor(color).setUv(1, 1)
+                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(combinedLight)
+                    .setNormal(normal.x, normal.y, normal.z);
+            buffer.addVertex(pose, half, half, 0).setColor(color).setUv(1, 0)
+                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(combinedLight)
+                    .setNormal(normal.x, normal.y, normal.z);
+            buffer.addVertex(pose, -half, half, 0).setColor(color).setUv(0, 0)
+                    .setOverlay(OverlayTexture.NO_OVERLAY).setLight(combinedLight)
+                    .setNormal(normal.x, normal.y, normal.z);
+        } finally {
+            poseStack.popPose();
+        }
     }
 
     @Override

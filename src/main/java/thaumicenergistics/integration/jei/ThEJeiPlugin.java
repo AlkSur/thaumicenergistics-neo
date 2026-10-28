@@ -11,6 +11,16 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IModIngredientRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
+import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.registration.IVanillaCategoryExtensionRegistration;
+import mezz.jei.api.recipe.category.extensions.vanilla.crafting.ICraftingCategoryExtension;
+import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
+import mezz.jei.api.gui.ingredient.ICraftingGridHelper;
+import mezz.jei.api.recipe.IFocusGroup;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.client.Minecraft;
+import thaumicenergistics.common.features.SafeTerminalMergeRecipe;
 
 import static mezz.jei.api.constants.RecipeTypes.CRAFTING;
 import net.minecraft.resources.ResourceLocation;
@@ -64,6 +74,30 @@ public class ThEJeiPlugin implements IModPlugin {
     }
 
     @Override
+    public void registerVanillaCategoryExtensions(IVanillaCategoryExtensionRegistration registration) {
+        registration.getCraftingCategory().addExtension(SafeTerminalMergeRecipe.class,
+                new ICraftingCategoryExtension<SafeTerminalMergeRecipe>() {
+                    @Override
+                    public void setRecipe(RecipeHolder<SafeTerminalMergeRecipe> holder, IRecipeLayoutBuilder builder,
+                            ICraftingGridHelper grid, IFocusGroup focuses) {
+                        grid.createAndSetIngredients(builder, holder.value().getIngredients(), 0, 0);
+                        grid.createAndSetOutputs(builder, List.of(holder.value().displayResult()));
+                        builder.setShapeless();
+                    }
+                });
+    }
+
+    @Override
+    public void registerRecipes(IRecipeRegistration registration) {
+        var level = Minecraft.getInstance().level;
+        if (level == null) return;
+        // CustomRecipe 为特殊配方，显式添加已由条件加载的真实配方，避免依赖普通配方收集器。
+        var recipes = level.getRecipeManager().getAllRecipesFor(RecipeType.CRAFTING).stream()
+                .filter(holder -> holder.value() instanceof SafeTerminalMergeRecipe).toList();
+        registration.addRecipes(CRAFTING, recipes);
+    }
+
+    @Override
     public void registerIngredients(IModIngredientRegistration registration) {
         List<AspectIngredient> ingredients = new ArrayList<>();
         if (Aspect.aspects != null) {
@@ -84,13 +118,8 @@ public class ThEJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
-        // 注册 IRecipeTransferInfo 让 JEI 显示 "+" 按钮
-        registration.addRecipeTransferHandler(new ArcaneCraftingTransferInfo());
-        registration.addRecipeTransferHandler(new ArcaneRecipeTransferInfo());
-        // 无线奥术合成终端：MenuType 不同，需单独注册槽位映射（转移 handler 按容器类共用）
-        registration.addRecipeTransferHandler(new WirelessArcaneCraftingTransferInfo());
-        registration.addRecipeTransferHandler(new ThEWirelessArcaneCraftingTransferInfo());
-        // 注册 IRecipeTransferHandler 让点击 "+" 时走 ME 网络
+        // One network-aware handler per container class/category covers both menu types.
+        // Separate basic slot mappings would overwrite each other in JEI's registration table.
         registration.addRecipeTransferHandler(new ThEUseCraftingRecipeTransfer(registration.getTransferHelper()), CRAFTING);
         registration.addRecipeTransferHandler(new ThEUseArcaneRecipeTransfer(registration.getTransferHelper()), ThaumcraftJeiPlugin.ARCANE);
 

@@ -13,6 +13,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
+import appeng.api.stacks.GenericStack;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
@@ -65,7 +66,10 @@ public final class AEssentiaKey extends AEKey {
     }
 
 
+    @Override
     public void addDrops(long amount, List<ItemStack> drops, Level level, BlockPos pos) {
+        // AE2 的包装物品保留精确的 long 数量，可用容器取回或在终端抽空。
+        if (amount > 0) drops.add(GenericStack.wrapInItemStack(this, amount));
     }
 
     @Override

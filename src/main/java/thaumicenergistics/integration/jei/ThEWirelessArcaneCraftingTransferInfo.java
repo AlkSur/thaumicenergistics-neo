@@ -28,7 +28,7 @@ public class ThEWirelessArcaneCraftingTransferInfo
 
     @Override
     public Optional<MenuType<ContainerArcaneCraftingTerminal>> getMenuType() {
-        return Optional.of(ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL.get());
+        return Optional.of(ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL_TYPE);
     }
 
     @Override

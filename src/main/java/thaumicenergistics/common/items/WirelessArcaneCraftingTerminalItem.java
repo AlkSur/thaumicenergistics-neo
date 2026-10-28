@@ -25,7 +25,7 @@ public class WirelessArcaneCraftingTerminalItem extends WirelessTerminalItem {
 
     @Override
     public MenuType<?> getMenuType() {
-        return thaumicenergistics.init.ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL.get();
+        return thaumicenergistics.init.ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL_TYPE;
     }
 
     @Override

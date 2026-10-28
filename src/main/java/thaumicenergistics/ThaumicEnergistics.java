@@ -28,7 +28,10 @@ import org.slf4j.LoggerFactory;
 import thaumicenergistics.common.container.*;
 import thaumicenergistics.common.features.RecipeRegistration;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
-import thaumicenergistics.common.integration.appeng.ThEAppliedEnergistics;
+import thaumicenergistics.common.integration.ae2wt.AE2WTCompat;
+import thaumicenergistics.common.integration.ae2lt.AE2LTCompat;
+import thaumicenergistics.common.integration.advancedae.AdvancedAECompat;
+import thaumicenergistics.common.integration.extendedae.ThEExtendedAE;
 import thaumicenergistics.common.integration.tc.ThEThaumcraft;
 import thaumicenergistics.common.items.ItemGolemWirelessBackpack;
 import thaumicenergistics.common.items.WirelessArcaneCraftingTerminalMenuHost;
@@ -61,6 +64,7 @@ public final class ThaumicEnergistics {
         ModMenuTypes.REGISTRY.register(modBus);
         ModCreativeTab.REGISTRY.register(modBus);
         ModComponents.REGISTRY.register(modBus);
+        ModRecipeSerializers.REGISTRY.register(modBus);
         modBus.addListener(this::registerScreens);
         modBus.addListener(this::commonSetup);
         modBus.addListener(this::registerKeyTypes);
@@ -69,7 +73,13 @@ public final class ThaumicEnergistics {
         if (FMLLoader.getDist().isClient()) {
             modBus.addListener(ClientInit::onClientSetup);
         }
-        ThEAppliedEnergistics.init();
+
+        // COMPAT-PLAN：AE2WT 通用终端奥术功能注册——必须在此（模组构造阶段）登记，
+        // AddTerminalEvent 的一次性回调在 RegisterEvent(ITEM) 由 API 统一执行；
+        // ae2wtlib 缺席时兼容类不加载，独立无线奥术终端照常运行。
+        if (ModList.get().isLoaded("ae2wtlib")) {
+            AE2WTCompat.registerArcaneTerminal();
+        }
 
         GridServices.register(
                 IEssentiaGrid.class,
@@ -108,6 +118,11 @@ public final class ThaumicEnergistics {
 
         event.enqueueWork(() -> {
             RecipeRegistration.registerAll();
+            appeng.api.crafting.PatternDetailsHelper.registerDecoder(
+                    new thaumicenergistics.common.crafting.ArcanePatternDecoder());
+            appeng.api.behaviors.ContainerItemStrategy.register(AEssentiaKeyType.INSTANCE,
+                    thaumicenergistics.common.integration.appeng.AEssentiaKey.class,
+                    new thaumicenergistics.common.integration.appeng.EssentiaContainerItemStrategy());
             ThEThaumcraft.init();
             P2PTunnelAttunement.registerAttunementTag(ModItems.VIS_INTERFACE.get());
             GridLinkables.register(ModItems.GOLEM_WIFI_BACKPACK.get(), ItemGolemWirelessBackpack.LINKABLE_HANDLER);
@@ -148,13 +163,19 @@ public final class ThaumicEnergistics {
             Upgrades.add(essentiaCard, AEParts.PATTERN_PROVIDER, 1, patternProviderGroup);
             Upgrades.add(essentiaCard, AEBlocks.PATTERN_PROVIDER, 1, patternProviderGroup);
 
-            // T-M3-VISCARD-REV：vis 连接卡（升级卡）仅关联无线奥术合成终端——
-            // 允许插入其升级槽（2 槽，AE2 无线终端白送），并在 tooltip「Supported By」行显示宿主。
+            // EAE-COMPAT：Extended AE 扩展样板供应器/超大接口准入（可选软依赖）——
+            // 两类宿主复用 AE2 PatternProviderLogic / InterfaceLogic，本项目的卡槽与源质
+            // Mixin 对其自动生效，此处只补 Upgrades.add 准入；缺席时整体跳过。
+            ThEExtendedAE.registerEssentiaUpgrades();
+            // COMPAT-PLAN：AdvancedAE / AE2 Lightning Tech 源质访问卡准入（可选软依赖，
+            // ID 软查注册；其独立逻辑层的卡槽与源质 Mixin 由各自兼容配置另行挂载）。
+            AdvancedAECompat.registerEssentiaUpgrades();
+            AE2LTCompat.registerEssentiaUpgrades();
+
+            // 独立终端的 vis 卡准入；AE2WT 体系另由 UpgradeHelper 注册所有终端。
             Upgrades.add(ModItems.VIS_CONNECTOR_CARD.get(), ModItems.WIRELESS_ARCANE_CRAFTING_TERMINAL.get(), 1);
 
-            // WTBRIDGE：量子桥卡准入适配（软依赖）——ae2wtlib 的 UpgradeHelper 只对注册进其
-            // AddTerminalEvent 体系的终端映射卡表，我方 WACT 未注册（ItemWT 类层级硬绑死、单继承无解），
-            // 故自行补一条 Upgrades.add 映射放行插入（AE2 升级槽准入 = Upgrades.getMaxInstallable）。
+            // 保留桥卡显式准入，与 AE2WT 全终端注册使用相同上限，兼容历史独立宿主。
             if (ModList.get().isLoaded(WirelessArcaneCraftingTerminalMenuHost.AE2WTLIB_MODID)) {
                 var bridgeCard = BuiltInRegistries.ITEM
                         .getOptional(WirelessArcaneCraftingTerminalMenuHost.AE2WTLIB_QUANTUM_BRIDGE_CARD).orElse(null);
@@ -181,11 +202,15 @@ public final class ThaumicEnergistics {
                         -> new GuiArcaneCraftingTerminal(menu, inv, title,
                         StyleManager.loadStyleDoc("/screens/arcane_crafting_terminal.json")));
 
-        // 无线奥术合成终端：复用同一屏幕类与样式（共用菜单类）
-        event.register(ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL.get(),
-                (ContainerArcaneCraftingTerminal menu, Inventory inv, Component title)
-                        -> new GuiArcaneCraftingTerminal(menu, inv, title,
-                        StyleManager.loadStyleDoc("/screens/arcane_crafting_terminal.json")));
+        // AE2WT 宿主使用可切换的屏幕；独立终端保持原屏幕。
+        if (ModList.get().isLoaded("ae2wtlib")) {
+            thaumicenergistics.client.integration.ae2wt.AE2WTClientCompat.registerScreen(event);
+        } else {
+            event.register(ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL.get(),
+                    (ContainerArcaneCraftingTerminal menu, Inventory inv, Component title)
+                            -> new GuiArcaneCraftingTerminal(menu, inv, title,
+                            StyleManager.loadStyleDoc("/screens/arcane_crafting_terminal.json")));
+        }
 
         event.register(ModMenuTypes.ESSENTIA_LEVEL_EMITTER.get(),
                 (ContainerEssentiaLevelEmitter menu, Inventory inv, Component title)
@@ -202,6 +227,11 @@ public final class ThaumicEnergistics {
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
+        event.registerBlockEntity(
+                thaumcraft.api.aspects.EssentiaCapabilities.TRANSPORT,
+                appeng.core.definitions.AEBlockEntities.CABLE_BUS.get(),
+                (be, side) -> side == null || !(be.getPart(side) instanceof appeng.parts.automation.ExportBusPart) ? null
+                        : new thaumicenergistics.common.essentia.capability.ExportBusEssentiaTransport(be, side));
         LOG.info("Registering AE2 grid node capabilities...");
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,

@@ -18,9 +18,21 @@ public final class ModCreativeTab {
             .displayItems((params, output) -> {
                 output.accept(ModItems.ESSENTIA_CELL_1K.get()); output.accept(ModItems.ESSENTIA_CELL_4K.get());
                 output.accept(ModItems.ESSENTIA_CELL_16K.get()); output.accept(ModItems.ESSENTIA_CELL_64K.get());
+                output.accept(ModItems.ESSENTIA_CELL_256K.get());
+                output.accept(ModItems.ESSENTIA_CELL_1M.get());
+                output.accept(ModItems.ESSENTIA_CELL_4M.get());
+                output.accept(ModItems.ESSENTIA_CELL_16M.get());
+                output.accept(ModItems.ESSENTIA_CELL_64M.get());
+                output.accept(ModItems.ESSENTIA_CELL_256M.get());
                 output.accept(ModItems.ESSENTIA_CELL_CREATIVE.get());
                 output.accept(ModItems.STORAGE_COMPONENT_1K.get()); output.accept(ModItems.STORAGE_COMPONENT_4K.get());
                 output.accept(ModItems.STORAGE_COMPONENT_16K.get()); output.accept(ModItems.STORAGE_COMPONENT_64K.get());
+                output.accept(ModItems.STORAGE_COMPONENT_256K.get());
+                output.accept(ModItems.STORAGE_COMPONENT_1M.get());
+                output.accept(ModItems.STORAGE_COMPONENT_4M.get());
+                output.accept(ModItems.STORAGE_COMPONENT_16M.get());
+                output.accept(ModItems.STORAGE_COMPONENT_64M.get());
+                output.accept(ModItems.STORAGE_COMPONENT_256M.get());
                 output.accept(ModItems.STORAGE_CASING.get());
                 output.accept(ModItems.COALESCENCE_CORE.get()); output.accept(ModItems.DIFFUSION_CORE.get());
                 output.accept(ModItems.KNOWLEDGE_CORE.get());
@@ -38,7 +50,7 @@ public final class ModCreativeTab {
                 output.accept(ModItems.ESSENTIA_UPGRADE_CARD.get());
                 output.accept(ModItems.PROBABILITY_ACCELERATOR_CARD.get());
                 output.accept(ModItems.BRAIN_OF_PROBABILITY_ITEM.get());
-                // 玩偶不进创造物品栏：需 /give @p thaumicenergistics:alkusure86fumo 手动获取
+                // 玩偶不进创造物品栏：使用切石机切割任意颜色羊毛获取
                 // output.accept(ModItems.ALKUSURE86_FUMO_ITEM.get());
 
                 // 源质虚拟物品不再在创造标签页中注册（避免玩家拿到物品栏）

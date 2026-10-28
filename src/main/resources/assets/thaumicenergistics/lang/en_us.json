@@ -1,4 +1,17 @@
 {
+  "thaumicenergistics.gui.knowledge_inscriber.clear_grid": "Clear current recipe",
+  "item.thaumicenergistics.essentia_cell_256k": "256K ME Essentia Storage Cell",
+  "item.thaumicenergistics.storage_component_256k": "256K ME Essentia Storage Component",
+  "item.thaumicenergistics.essentia_cell_1m": "1M ME Essentia Storage Cell",
+  "item.thaumicenergistics.storage_component_1m": "1M ME Essentia Storage Component",
+  "item.thaumicenergistics.essentia_cell_4m": "4M ME Essentia Storage Cell",
+  "item.thaumicenergistics.storage_component_4m": "4M ME Essentia Storage Component",
+  "item.thaumicenergistics.essentia_cell_16m": "16M ME Essentia Storage Cell",
+  "item.thaumicenergistics.storage_component_16m": "16M ME Essentia Storage Component",
+  "item.thaumicenergistics.essentia_cell_64m": "64M ME Essentia Storage Cell",
+  "item.thaumicenergistics.storage_component_64m": "64M ME Essentia Storage Component",
+  "item.thaumicenergistics.essentia_cell_256m": "256M ME Essentia Storage Cell",
+  "item.thaumicenergistics.storage_component_256m": "256M ME Essentia Storage Component",
   "itemGroup.thaumicenergistics": "Thaumic Energistics",
   "block.thaumicenergistics.essentia_provider": "Essentia Provider",
   "block.thaumicenergistics.infusion_provider": "Infusion Provider",
@@ -41,7 +54,7 @@
   "tc.research_text.DIGISENTIA.stage.1": "Though essentia is a mystical substance, you have discovered it can be processed using AE's digital technology. The key lies in two cores: a Diffusion Core to decompose essentia into digital signals, and a Coalescence Core to reassemble digital signals back into essentia.",
   "tc.research_text.DIGISENTIA.stage.2": "You have successfully crafted the Diffusion Core and Coalescence Core. They will serve as the foundation of your entire Thaumic Energistics system.",
   "tc.research_name.ESSENTIASTORAGE": "Essentia Storage",
-  "tc.research_text.ESSENTIASTORAGE": "Using Coalescence Cores and wisp essences, you can create ME storage cells capable of storing essentia. Available in 1k, 4k, 16k, and 64k variants.",
+  "tc.research_text.ESSENTIASTORAGE": "Using Coalescence Cores and wisp essences, you can create ME storage cells capable of storing essentia. Available in 1k, 4k, 16k, 64k, 256k, 1M, 4M, 16M, 64M, and 256M variants.",
   "tc.research_name.ARCANECRAFTINGTERMINAL": "Arcane Crafting Terminal",
   "tc.research_text.ARCANECRAFTINGTERMINAL.stage.1": "By combining an ME Terminal with an Arcane Worktable, you can perform arcane crafting directly within the ME network.",
   "tc.research_text.ARCANECRAFTINGTERMINAL.stage.2": "The Arcane Crafting Terminal requires vis from a wand or wand focus. Ensure your wand has sufficient vis to complete the crafting.",
@@ -64,16 +77,13 @@
   "tc.research_text.VISINTERFACE": "The Vis Relay Interface allows you to transport vis (magical energy) through the ME network, enabling long-distance vis supply. It uses P2P tunnel technology to relay vis from one node to another.",
   "tc.research_name.GOLEMWIFI": "Wireless Golem Backpack",
   "tc.research_text.GOLEMWIFI": "The Wireless Golem Backpack allows a golem to directly access items in the ME network. A golem equipped with this backpack acts as a mobile AE interface, enabling remote item access.",
-
   "tc.research_name.CERTUS_DUPE": "Certus Quartz Duplication",
   "tc.research_text.CERTUS_DUPE": "Using alchemical duplication, you can duplicate certus quartz crystals. This provides a renewable source of certus quartz for your AE network.",
-
   "tc.research_text.ARCANEASSEMBLER": "The arcane version of the ME Molecular Assembler, capable of automated arcane crafting.",
   "tc.research_text.ARCANECRAFTINGTERMINAL": "Combine an ME Terminal with an Arcane Worktable for direct arcane crafting in the ME network.",
   "tc.research_text.INFUSIONPROVIDER": "Automatically supplies essentia from the ME network to an Infusion Altar.",
   "tc.research_text.ESSENTIAPROVIDER": "Automatically extracts essentia from the ME network and supplies adjacent containers.",
   "tc.research_text.DIGISENTIA": "Digitize essentia using Diffusion and Coalescence Cores for processing by the ME network.",
-
   "tc.research_name.PSEUDO_DISTILESSENTIA": "Essentia Distillation",
   "tc.research_name.PSEUDO_TUBEFILTER": "Advanced Essentia Tubes",
   "tc.research_name.PSEUDO_ALCHEMICALDUPLICATION": "Alchemical Duplication",
@@ -84,7 +94,6 @@
   "tc.research_name.PSEUDO_VISPOWER": "Harnessing Vis",
   "tc.research_name.PSEUDO_SCEPTRE": "Crafting Scepters",
   "tc.research_name.PSEUDO_COREGATHER": "Golem Core: Gather",
-
   "gui.thaumicenergistics.ArcaneCraftingTerminal": "Arcane Crafting Terminal",
   "thaumicenergistics.jade.current_aspect": "Fuel: %s",
   "thaumicenergistics.jade.suction_type": "Suction: %s",
@@ -129,7 +138,6 @@
   "block.thaumicenergistics.alkusure86fumo": "Alkusure86 Fumo",
   "tc.research_text.INFUSIONMONITOR.stage.1": "To observe is to command. You place the Thaumonomicon beside the altar, an observer peering into each pulse of the infusion — the stirring of aura, the opening of rifts, the first whisper of flux. Bound to an ME network, the observer truly opens its eyes.",
   "tc.research_text.INFUSIONMONITOR.stage.2": "The Infusion Monitor takes the Thaumonomicon as its key and the network as its sight. Place the tome and connect to the network, and it shall hover above the void, truthfully telling the risk of the ritual — and on right-click, it whispers its deeper warnings.",
-
   "tc.research_name.INFUSIONMONITOR": "Infusion Monitor",
   "tc.research_name.GOLEMWIFIBACKPACK": "Golem WiFi Backpack",
   "block.thaumicenergistics.essentia_provider_connection": "Wireless Essentia Receiver",
@@ -168,6 +176,8 @@
   "tc.research_name.ESSENTIAACCESSCARD": "Essentia Access Card",
   "tc.research_text.ESSENTIAACCESSCARD": "Insert into AE2 import/export/storage buses and ME interfaces to grant them essentia capability - essentia flows to and from the ME network through them. Obtained by infusion.",
   "tc.research_name.GACHABOX": "Brain of Probability",
-  "tc.research_text.GACHABOX.stage.1": "A probability device built around a Brain in a Jar: a two-block machine that draws cognitio and energy from the ME network, rolling dice to credit random aspect pool points to the player who inserted the brain. Accelerator cards shorten each turn.",
-  "tc.research_text.GACHABOX.stage.2": "Probability Accelerator Cards have no recipe yet and can be obtained from the creative tab; all output values are adjustable constants in the source."
+  "tc.research_text.GACHABOX.stage.1": "A probability device built around a Brain in a Jar: a two-block machine that draws cognitio from the ME network, rolling dice to credit random aspect pool points to the player who inserted the brain. Accelerator cards shorten each turn.",
+  "tc.research_text.GACHABOX.stage.2": "Probability Accelerator Cards have no recipe yet and can be obtained from the creative tab; all output values are adjustable constants in the source.",
+  "block.thaumicenergistics.maiqilinfumo": "Maiqilin Fumo",
+  "block.thaumicenergistics.beiwucnfumo": "Beiwu_CN Fumo"
 }

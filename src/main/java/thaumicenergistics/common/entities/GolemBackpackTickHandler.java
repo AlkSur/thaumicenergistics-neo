@@ -56,8 +56,18 @@ public final class GolemBackpackTickHandler {
         }
 
         if (!GolemBackpackHandler.hasBackpack(golem)) {
+            // 无背包：状态置位后补发一次 STATUS_NO_BACKPACK，清除客户端残留渲染
+            var pd = golem.getPersistentData();
+            if (!pd.getBoolean("ThEWifiNoBackpackSynced")) {
+                pd.putBoolean("ThEWifiNoBackpackSynced", true);
+                PacketDistributor.sendToPlayersTrackingEntity(golem,
+                        new GolemBackpackSyncPacket(golem.getId(),
+                                GolemBackpackSyncPacket.STATUS_NO_BACKPACK, 0));
+            }
             return;
         }
+        // 有背包：清除无背包标记，允许下次卸载后再同步
+        golem.getPersistentData().remove("ThEWifiNoBackpackSynced");
 
         GlobalPos linkTarget = GolemBackpackHandler.getBackpackLink(golem);
         if (linkTarget == null) {

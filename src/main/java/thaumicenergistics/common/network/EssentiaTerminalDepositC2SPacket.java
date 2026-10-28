@@ -9,7 +9,7 @@ import thaumicenergistics.ThaumicEnergistics;
 import appeng.menu.me.common.MEStorageMenu;
 import net.minecraft.world.item.ItemStack;
 import thaumicenergistics.common.container.EssentiaFillHelper;
-import thaumicenergistics.common.container.ThEEssentiaMenuAccess;
+import thaumicenergistics.common.container.MenuResources;
 
 /**
  * 客户端→服务端：源质容器存入 ME 网络。
@@ -52,27 +52,39 @@ public record EssentiaTerminalDepositC2SPacket(int containerId, int slotIndex,
             // 任意 ME 终端菜单都支持：源质容器右键 → 源质存入网络
             if (ctx.player().containerMenu.containerId == this.containerId
                     && ctx.player().containerMenu instanceof MEStorageMenu menu
-                    && menu instanceof ThEEssentiaMenuAccess acc) {
+                    && menu.getLinkStatus().connected()) {
                 var player = menu.getPlayerInventory().player;
-                // 源质物品：优先包携带的 sourceStack（客户端真实来源）；否则回退菜单 carried/主手
-                var source = !this.sourceStack.isEmpty() ? this.sourceStack
-                        : (!menu.getCarried().isEmpty() ? menu.getCarried()
-                           : player.getMainHandItem());
+                if (slotIndex < -1 || slotIndex >= player.getInventory().items.size()) {
+                    return;
+                }
+                if (slotIndex >= 0 && menu.slots.stream().noneMatch(slot ->
+                        menu.isPlayerSideSlot(slot) && slot.getSlotIndex() == slotIndex)) {
+                    return;
+                }
+                boolean carried = slotIndex < 0 && !menu.getCarried().isEmpty();
+                var source = slotIndex >= 0 ? player.getInventory().getItem(slotIndex)
+                        : carried ? menu.getCarried() : player.getMainHandItem();
+                // 客户端副本仅用于拒绝过时操作，不能作为源质来源。
+                if (!ItemStack.isSameItemSameComponents(source, sourceStack)
+                        || source.getCount() != sourceStack.getCount()) {
+                    menu.broadcastChanges();
+                    return;
+                }
                 if (!source.isEmpty()) {
-                    var result = EssentiaFillHelper.extractContainerContent(
-                            acc.thE_getStorage(), acc.thE_getEnergySource(),
-                            menu.getActionSource(), source);
+                    var result = EssentiaFillHelper.depositContainerContent(
+                            MenuResources.getStorage(menu),
+                            MenuResources.getEnergySource(menu),
+                            menu.getActionSource(), player, source);
                     if (result != null) {
                         if (this.slotIndex >= 0) {
                             // Shift+右键背包格：空容器留在原背包格
                             player.getInventory().setItem(this.slotIndex, result);
                         } else {
-                            // 手持：清空 carried，空容器放回玩家背包（不留 carried，防被 AE2 自动放入网络）
-                            menu.setCarried(ItemStack.EMPTY);
-                            if (!result.isEmpty()) {
-                                if (!player.getInventory().add(result)) {
-                                    player.drop(result, false);
-                                }
+                            // 更新实际来源；部分成功时留下包含余量的容器。
+                            if (carried) {
+                                menu.setCarried(result);
+                            } else {
+                                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, result);
                             }
                         }
                     }

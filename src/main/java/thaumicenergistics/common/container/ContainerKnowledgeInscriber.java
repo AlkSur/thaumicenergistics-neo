@@ -44,14 +44,17 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         Enabled_Delete
     }
 
+    public static final int BUTTON_SAVE_DELETE = 0;
+    public static final int BUTTON_CLEAR_GRID = 1;
+
     private static final int MAXIMUM_PATTERNS = HandlerKnowledgeCore.MAXIMUM_STORED_PATTERNS;
 
     private static final int PLAYER_INV_Y = 160;
     private static final int HOTBAR_Y = 218;
     private static final int PLAYER_INV_X = 8;
 
-    private static final int KCORE_SLOT_X = 186;
-    private static final int KCORE_SLOT_Y = 8;
+    private static final int KCORE_SLOT_X = 145;
+    private static final int KCORE_SLOT_Y = 121;
 
     private static final int PATTERN_SLOT_X = 26;
     private static final int PATTERN_SLOT_Y = 18;
@@ -59,14 +62,14 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     private static final int PATTERN_COLS = 7;
     private static final int PATTERN_SPACING = 18;
 
-    private static final int CRAFTING_SLOT_X = 26;
+    private static final int CRAFTING_SLOT_X = 16;
     private static final int CRAFTING_SLOT_Y = 90;
     private static final int CRAFTING_ROWS = 3;
     private static final int CRAFTING_COLS = 3;
     private static final int CRAFTING_GRID_SIZE = 9;
     private static final int CRAFTING_SPACING = 18;
 
-    private static final int RESULT_SLOT_X = 116;
+    private static final int RESULT_SLOT_X = 105;
     private static final int RESULT_SLOT_Y = 108;
 
     private final HandlerKnowledgeCore kCoreHandler = new HandlerKnowledgeCore();
@@ -415,7 +418,8 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         }
         activeRecipe = null;
         resultInventory.setStackInSlot(0, ItemStack.EMPTY);
-        sendSaveState();
+        // Clearing the ghost recipe has the same predictable button state on both sides.
+        saveStateSlot.set(getSaveState().ordinal());
     }
 
     public CoreSaveState getCurrentSaveState() {
@@ -517,11 +521,13 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
-        if (id == 0) {
+        if (!stillValid(player)) return false;
+        if (id == BUTTON_SAVE_DELETE) {
             onSaveDelete();
             return true;
-        } else if (id == 1) {
+        } else if (id == BUTTON_CLEAR_GRID) {
             onClearGrid();
+            broadcastChanges();
             return true;
         }
         return false;
@@ -555,7 +561,11 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return true;
+        if (tile == null) return true; // Client menus do not carry the server block entity.
+        return !tile.isRemoved() && tile.getLevel() == player.level()
+                && player.level().getBlockEntity(tile.getBlockPos()) == tile
+                && player.distanceToSqr(tile.getBlockPos().getX() + 0.5,
+                        tile.getBlockPos().getY() + 0.5, tile.getBlockPos().getZ() + 0.5) <= 64;
     }
 
     @Override

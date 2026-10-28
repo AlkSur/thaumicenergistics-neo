@@ -3,6 +3,8 @@ plugins {
     id 'maven-publish'
 }
 
+apply from: file('../../versioning.gradle')
+
 repositories {
     mavenCentral()
     def localRepository = mavenLocal()
@@ -19,6 +21,14 @@ repositories {
     maven {
         url "https://api.modrinth.com/maven"
     }
+    // COMPAT-PLAN：ae2wtlib_api 独立坐标（完整 ae2wtlib jar 的 API 在内嵌 jar，
+    // 外层 compileOnly files 看不到 API 类，必须用 modmaven 的独立 API 构件）
+    maven {
+        url "https://modmaven.dev"
+        content {
+            includeGroup "de.mari_023"
+        }
+    }
 }
 
 group = mod_group
@@ -27,21 +37,69 @@ var modName = mod_name
 var mcVersion = minecraft_version
 base { archivesName = "${modName}-${mcVersion}-neoforge" }
 
+def compatBaseRun = ['compatSmokeTest', 'compatWT', 'compatAAE', 'compatAE2LT', 'enableExtendedAeCompatTest']
+        .any { key -> providers.gradleProperty(key).map { it.toBoolean() }.getOrElse(false) }
+
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
 }
 
+sourceSets {
+    gameTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+configurations {
+    gameTestImplementation.extendsFrom implementation
+    gameTestCompileOnly.extendsFrom compileOnly
+    gameTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
 neoForge {
     version = neoforge_version
+    addModdingDependenciesTo(sourceSets.gameTest)
     runs {
         client { client() }
         server { server() }
+        smokeServer {
+            server()
+            gameDirectory = file('build/smoke-server')
+            programArgument '--nogui'
+        }
+        smokeGameTests {
+            type = 'gameTestServer'
+            sourceSet = sourceSets.gameTest
+            gameDirectory = file('build/smoke-gametests')
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'thaumicenergistics_tests'
+        }
     }
     mods { "${mod_id}" { sourceSet sourceSets.main } }
+    if (providers.gradleProperty('compatSmokeTest').map { it.toBoolean() }.getOrElse(false)) {
+        mods { thaumicenergistics_tests { sourceSet sourceSets.gameTest } }
+    }
 }
 
 dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
+    // 兼容联调开关自动补齐基础运行前置；普通生产构建仍仅 compileOnly。
+    if (compatBaseRun) {
+        runtimeOnly('org.appliedenergistics:appliedenergistics2:19.2.17') {
+            exclude group: 'org.appliedenergistics', module: 'guideme'
+        }
+        def localGuide = file('build/smoke-deps/guideme-21.1.1.jar')
+        if (localGuide.exists()) runtimeOnly files(localGuide)
+        else runtimeOnly 'maven.modrinth:guideme:PALpfSdf'
+        runtimeOnly files('library/thaumcraft-0.2.2.95-port.261.jar')
+        def localCurios = file('build/smoke-deps/curios-neoforge-9.5.1+1.21.1.jar')
+        if (localCurios.exists()) runtimeOnly files(localCurios)
+        else runtimeOnly 'maven.modrinth:curios:yohfFbgD'
+    }
+    if (providers.gradleProperty('compatWT').map { it.toBoolean() }.getOrElse(false)) {
+        runtimeOnly files('library/ae2wtlib-19.5.1.jar')
+    }
     compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17:api"
     compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17"   // 加这行保留！！让AE2内部类可编译
     compileOnly files('library/thaumcraft-0.2.2.95-port.261.jar')   // 必须与整合包运行版本一致（0.2.2.95）；.34 缺少 getRemainingItems/findMatchingArcaneRecipeEntry 等 API
@@ -50,6 +108,54 @@ dependencies {
     compileOnly files('library/InventoryProfilesNext-neoforge-1.21.1-2.2.5.jar')
     compileOnly files('library/extendedae_plus-1.6.1.jar')   // eap mixin target（InputEvents.toGenericStack）
     compileOnly "maven.modrinth:jade:${jade_version}"
+
+    // COMPAT-PLAN 编译依赖：全部可选集成，零运行时强依赖（普通代码仅 ModList 守护 +
+    // 注册表软查；Mixin 目标类引用仅出现在各自独立 mixins.json 的兼容配置内）。
+    // ae2wtlib_api：ItemWT/WTMenuHost/AddTerminalEvent 正式接入奥术终端功能。
+    compileOnly("de.mari_023:ae2wtlib_api:19.5.1") {
+        transitive = false
+    }
+    // AdvancedAE：AdvPatternProviderLogic 独立卡槽组与源质能力组 Mixin 编译。
+    compileOnly("maven.modrinth:advancedae:ablTMAjP") {
+        transitive = false
+    }
+    // AE2 Lightning Tech：过载样板供应器独立派发路径源质门控 Mixin 编译。
+    compileOnly("maven.modrinth:ae2-lightning-tech:AosdXlfS") {
+        transitive = false
+    }
+
+    // EAE-COMPAT 联调开关：仅指定 -PenableExtendedAeCompatTest=true 时加载 Extended AE
+    // （1.21-2.2.35-neoforge，Modrinth bC302UUP）作运行时依赖；兼容代码零 EAE 编译引用，
+    // API 由本体内嵌，基础前置由 compatBaseRun 提供，Glodium 在此补齐。
+    if (providers.gradleProperty('enableExtendedAeCompatTest')
+            .map { it.toBoolean() }
+            .getOrElse(false)) {
+        runtimeOnly("maven.modrinth:extended-ae:bC302UUP") {
+            transitive = false
+        }
+        runtimeOnly("maven.modrinth:glodium:pfbmdJ3b") { transitive = false }
+    }
+    // COMPAT-PLAN 联调开关：同上，仅运行环境加载，生产构建不受影响。
+    // AAE 内嵌 AE2AddonLib/API，外部前置 GeckoLib 在此补齐。
+    if (providers.gradleProperty('compatAAE')
+            .map { it.toBoolean() }
+            .getOrElse(false)) {
+        runtimeOnly("maven.modrinth:advancedae:ablTMAjP") {
+            transitive = false
+        }
+        runtimeOnly("maven.modrinth:geckolib:RVIo5f6E") { transitive = false }
+    }
+    // AE2LT 必需前置 Thunderbolt Core（2.0.3-beta2，Modrinth oyVnlG5A），随开关一起加载。
+    if (providers.gradleProperty('compatAE2LT')
+            .map { it.toBoolean() }
+            .getOrElse(false)) {
+        runtimeOnly("maven.modrinth:ae2-lightning-tech:AosdXlfS") {
+            transitive = false
+        }
+        runtimeOnly("maven.modrinth:thunderbolt-core:oyVnlG5A") {
+            transitive = false
+        }
+    }
 }
 
 
@@ -58,8 +164,12 @@ tasks.withType(JavaCompile).configureEach {
     it.options.release = 21
 }
 
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}
+
 // mods.toml 的 version 也用 git 实时版本（与 jar 版本一致，不依赖写死的 mod_version）
-var modVersion = gitVersion()
+var modVersion = version.toString()
 def loaderRange = project.findProperty('loader_version_range') ?: '[4,)'
 def neoforgeRange = project.findProperty('neoforge_version_range') ?: '[21,)'
 def mcRange = project.findProperty('minecraft_version_range') ?: '[1.21.1,1.22)'
@@ -86,34 +196,3 @@ jar {
         include 'pack.png'
     }
 }
-
-
-//// 获取git提交总数
-//def gitCommitCount = providers.exec {
-//    commandLine 'git', 'rev-list', '--count', 'HEAD'
-//}.standardOutput.asText.map { it.trim() }
-//
-//// 最终完整版本 = 主版本+构建号
-//version = "${mod_version}.${gitCommitCount.get()}-alpha"
-// build.gradle 替换现有 version 逻辑
-def gitVersion() {
-    def describe = providers.exec {
-        commandLine 'git', 'describe', '--tags', '--always'
-    }.standardOutput.asText.map { it.trim() }.get()
-    // 支持 "2.2" / "v2.2.0" / "2.2-3-gabc1234" / "abc1234"(无tag时)
-    // 版本 = tag 的 X.Y + 提交数：tag 2.2 + 2 提交 → 2.2.2
-    // find() 只匹配开头，忽略尾部 commit hash（-gabc1234）
-    // [vV] 兼容大小写标签前缀（V2.5 / v2.4）
-    def m = describe =~ /^[vV]?(\d+\.\d+)(?:\.\d+)?(?:-(\d+))?/
-    if (m.find()) {
-        def xy = m.group(1)                          // 2.2
-        def count = m.group(2) ? m.group(2) : '0'    // tag 后提交数
-        return "${xy}.${count}-alpha"                // 2.2.2-alpha
-    }
-    // 兜底（从未打 tag）：0.0.<提交总数>-alpha，不依赖写死的 mod_version
-    def count = providers.exec {
-        commandLine 'git', 'rev-list', '--count', 'HEAD'
-    }.standardOutput.asText.map { it.trim() }.get()
-    return "0.0.${count}-alpha"
-}
-version = modVersion

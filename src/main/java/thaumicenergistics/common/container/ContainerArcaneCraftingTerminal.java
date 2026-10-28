@@ -1,9 +1,7 @@
 package thaumicenergistics.common.container;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,8 +11,6 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingInput;
-import net.minecraft.world.item.crafting.RecipeType;
 
 import appeng.api.inventories.ISegmentedInventory;
 import appeng.api.inventories.InternalInventory;
@@ -36,16 +32,13 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
 import thaumicenergistics.common.network.ArcaneTerminalClearC2SPacket;
-import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import net.minecraft.world.item.crafting.Ingredient;
 import thaumcraft.common.items.TCFunctionalItems;
 import thaumcraft.common.lib.crafting.ThaumcraftCraftingManager;
 import thaumicenergistics.common.container.slot.ArcaneCraftingResultSlot;
-import thaumicenergistics.common.items.VisConnectorCardItem;
-import thaumicenergistics.common.items.WirelessArcaneCraftingTerminalMenuHost;
+import thaumicenergistics.common.integration.ae2wt.AE2WTCompat;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
-import thaumicenergistics.common.parts.ArcaneVisReplenish;
 import thaumicenergistics.init.ModMenuTypes;
 
 public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements ICraftingGridMenu {
@@ -69,28 +62,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
     @Override
     public void broadcastChanges() {
         super.broadcastChanges();
-        // 无线奥术合成终端（T-M3-VISCARD-REV）：终端升级槽装有 vis 连接卡时自动充能——
-        // 遍历所在网络全部要素中继接口（replenishAuto），无需频率/绑定；仅菜单打开期间驱动（D1）。
-        if (!isClientSide()
-                && this.craftingInventoryHost instanceof WirelessArcaneCraftingTerminalMenuHost wirelessHost) {
-            var upgrades = wirelessHost.getUpgrades();
-            boolean hasVisCard = false;
-            for (int i = 0; i < upgrades.size(); i++) {
-                if (upgrades.getStackInSlot(i).getItem() instanceof VisConnectorCardItem) {
-                    hasVisCard = true;
-                    break;
-                }
-            }
-            if (hasVisCard) {
-                var node = wirelessHost.getActionableNode();
-                var wandInv = wirelessHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
-                var wandStack = wandInv != null ? wandInv.getStackInSlot(0) : ItemStack.EMPTY;
-                if (ArcaneVisReplenish.replenishAuto(
-                        node != null ? node.getGrid() : null, wandStack)) {
-                    wirelessHost.saveWandInv();
-                }
-            }
-        }
+        // Wireless wand charging has one owner: the server player tick, including this live menu host.
         // vis 充能恢复后自动重算结果槽：结果槽空 + 奥术配方有效 + vis 已足够 → 重新显示产物。
         // 节流：仅"待恢复"状态每 10 tick 检查一次（findMatchingArcaneRecipe 只在满足时执行）
         var player = getPlayerInventory().player;
@@ -155,21 +127,23 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
             public void setChanged() {
                 super.setChanged();
                 // 法杖槽变化时立即重检配方，更新 resultSlot 的 wandStack
-                updateCurrentRecipeAndOutput(false);
+                updateCurrentRecipeAndOutput();
             }
         }, SlotSemantics.STORAGE);
 
-        // WTBRIDGE-SLOT：无线终端专属——量子缠绕奇点安装槽（桥卡链路第三环：奇点写入 UI）。
-        // 有线部件宿主无此槽（instanceof 守卫）；客户端/服务端 host 类型一致故槽集一致。
+        // WTBRIDGE-SLOT：无线终端（独立 / AE2WT 通用奥术模式）专属——量子缠绕奇点安装槽。
+        // 有线部件宿主无此槽（契约 getSingularityInvId 返回 null 守卫）；客户端/服务端 host
+        // 类型一致故槽集一致。
         // ae2wtlib 缺席时准入拦截（组件无处写回，防放入即丢）；ae2 原生缠绕奇点直接编译引用。
-        // 语义挂 AE2 原生 UPGRADE 组（注册顺序在基类 setupUpgrades 的升级卡槽之后）——右侧
-        // 升级卡槽面板按 getSlots(UPGRADE) 挂单一 UpgradesPanel，奇点槽自动成为同面板第三格
-        // （2 升级卡 + 1 奇点，一个整体）。注意：WACT host 非 IViewCellStorage，VIEW_CELL 组
-        // 为空、其面板不挂载，槽挂该组将无人摆位；奇点槽仅语义归类，仍绑自有 singularityInv，
-        // 升级库存读写（isInstalled 等）不受影响。
-        if (this.craftingInventoryHost instanceof WirelessArcaneCraftingTerminalMenuHost wirelessHost) {
-            var singularityInv = wirelessHost.getSubInventory(WirelessArcaneCraftingTerminalMenuHost.INV_SINGULARITY);
-            this.addSlot(new AppEngSlot(singularityInv, 0) {
+        // 语义分支：AE2WT 宿主挂官方 SINGULARITY 组——AE2WT 滚动升级面板取槽 =
+        // SINGULARITY + UPGRADE 两组拼接且要求奇点居首（slots.getFirst()），面板还自带
+        // 量子桥卡门控显隐；独立无线（无 ae2wtlib）保持 UPGRADE 组并入普通升级面板。
+        // AE2wtlibSlotSemantics 仅 ae2wtlib 在场时存在，经 AE2WTCompat.singularitySemantic
+        // 隔离解析；分支条件为契约虚调用，无需菜单侧加载 ae2wtlib 类型。
+        if (this.craftingInventoryHost instanceof IArcaneTerminalInventoryHost wirelessHost
+                && wirelessHost.getSingularityInvId() != null) {
+            var singularityInv = wirelessHost.getSubInventory(wirelessHost.getSingularityInvId());
+            var singularitySlot = new AppEngSlot(singularityInv, 0) {
                 @Override
                 public int getMaxStackSize() {
                     return 1;
@@ -177,13 +151,18 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
 
                 @Override
                 public boolean mayPlace(ItemStack stack) {
-                    return ModList.get().isLoaded(WirelessArcaneCraftingTerminalMenuHost.AE2WTLIB_MODID)
+                    return ModList.get().isLoaded(IArcaneTerminalInventoryHost.AE2WTLIB_MODID)
                             && stack.is(AEItems.QUANTUM_ENTANGLED_SINGULARITY.asItem());
                 }
-            }, SlotSemantics.UPGRADE);
+            };
+            if (wirelessHost.useAE2WTSingularitySemantics()) {
+                this.addSlot(singularitySlot, AE2WTCompat.singularitySemantic());
+            } else {
+                this.addSlot(singularitySlot, SlotSemantics.UPGRADE);
+            }
         }
 
-        updateCurrentRecipeAndOutput(true);
+        updateCurrentRecipeAndOutput();
 
         registerClientAction(ACTION_CLEAR_TO_PLAYER, this::clearToPlayerInventory);
     }
@@ -311,7 +290,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
     @Override
     public void slotsChanged(Container inventory) {
         if (!isCraftingResultBeingTaken) {
-            updateCurrentRecipeAndOutput(false);
+            updateCurrentRecipeAndOutput();
         }
     }
 
@@ -319,136 +298,30 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         this.isCraftingResultBeingTaken = beingTaken;
     }
 
-    private static final int CENTIVIS = 100;
-
-    /**
-     * 复刻 TC port {@code WandCastingItem.consumptionModifier}：法杖 cap 折扣 − 玩家装备/饰品折扣 − 法杖折扣。
-     * 仅用于显示（GUI 所需 vis），实际扣费由 consumeVisCost 内部同公式处理。
-     */
-    private float getConsumptionModifier(Aspect aspect, boolean crafting) {
-        var wandInv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
-        var wandStack = wandInv.getStackInSlot(0);
-        if (wandStack.isEmpty() || !(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) {
-            return 1.0f;
-        }
-        float modifier = wand.consumptionModifier(wandStack, getPlayerInventory().player, aspect, crafting);
-        return modifier;
-    }
-
-    /** 折扣后的 vis 成本（GUI 显示用）。 */
-    private int getDiscountedVisCost(Aspect aspect, int rawCost) {
-        if (rawCost <= 0 || aspect == null) return 0;
-        return Math.max(0, Math.round(rawCost * getConsumptionModifier(aspect, true)));
-    }
-
     private boolean hasEnoughVis(AspectList cost) {
-        if (cost == null || cost.isEmpty()) {
-            return true;
-        }
-        var wandInv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
-        var wandStack = wandInv.getStackInSlot(0);
-        if (wandStack.isEmpty()) {
-            return false;
-        }
-        if (!(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) {
-            return false;
-        }
-        var centivisCost = new AspectList();
-        for (var aspect : cost.aspects()) {
-            centivisCost.add(aspect, cost.amount(aspect) * CENTIVIS);
-        }
-        return wand.consumeVisCost(wandStack, getPlayerInventory().player, centivisCost, false, true);
+        var wand = craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND).getStackInSlot(0);
+        return ArcaneTerminalRecipeState.hasEnoughVis(wand, cost, getPlayerInventory().player);
     }
 
-    private void updateCurrentRecipeAndOutput(boolean forceUpdate) {
+    private void updateCurrentRecipeAndOutput() {
         var player = getPlayerInventory().player;
-        var level = player.level();
-
-        boolean foundArcane = false;
-        AspectList requiredAspects = null;
-
-        if (level.getServer() != null) {
-            var craftContainer = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING).toContainer();
-
-            ItemStack arcaneResult = ThaumcraftCraftingManager.findMatchingArcaneRecipe(craftContainer, player);
-
-            if (!arcaneResult.isEmpty()) {
-                requiredAspects = ThaumcraftCraftingManager.findMatchingArcaneRecipeAspects(craftContainer, player);
-                foundArcane = true;
-
-                if (hasEnoughVis(requiredAspects)) {
-                    resultSlot.setDisplayedCraftingOutput(arcaneResult);
-                } else {
-                    resultSlot.setDisplayedCraftingOutput(ItemStack.EMPTY);
-                }
-            }
+        var grid = craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING);
+        var wand = craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND).getStackInSlot(0);
+        var match = ArcaneTerminalRecipeState.resolve(grid, wand, player);
+        // 客户端不清空服务端同步的奥术结果。
+        if (!player.level().isClientSide() || !match.output().isEmpty()) {
+            resultSlot.setDisplayedCraftingOutput(match.output());
         }
-
-        if (!foundArcane) {
-            var testItems = new ArrayList<ItemStack>(this.craftingSlots.length);
-            for (var craftingSlot : this.craftingSlots) {
-                testItems.add(craftingSlot.getItem().copy());
-            }
-            var testInput = CraftingInput.of(3, 3, testItems);
-            var recipeHolder = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, testInput, level);
-            if (recipeHolder.isPresent()) {
-                ItemStack result = recipeHolder.get().value().assemble(testInput, level.registryAccess());
-                resultSlot.setDisplayedCraftingOutput(result);
-            } else {
-                // 客户端不清空产物槽，@GuiSync 会同步服务端的正确状态
-                if (!level.isClientSide()) {
-                    resultSlot.setDisplayedCraftingOutput(ItemStack.EMPTY);
-                }
-            }
-        }
-
-        if (foundArcane) {
-            // 服务端设置 @GuiSync 字段；客户端不应覆盖来自服务端的同步值
-            if (level.isClientSide()) {
-                return;
-            }
-            this.hasValidRecipe = true;
-            resultSlot.setRequiredAspects(requiredAspects);
-            var wandInv = this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND);
-            var ws = wandInv.getStackInSlot(0);
-            resultSlot.setWandStack(ws);
-
-            if (requiredAspects != null && requiredAspects.size() > 0) {
-                StringBuilder sb = new StringBuilder();
-                for (Map.Entry<Aspect, Integer> entry : requiredAspects.aspects.entrySet()) {
-                    if (!sb.isEmpty()) sb.append(",");
-                    // 存折扣后数值（GUI 显示实际所需 vis，含法杖 + 装备 + 饰品减免）
-                    sb.append(entry.getKey().getTag()).append("=")
-                            .append(getDiscountedVisCost(entry.getKey(), entry.getValue()));
-                }
-                this.requiredAspectsData = sb.toString();
-            } else {
-                this.requiredAspectsData = "";
-            }
-        } else {
-            if (level.isClientSide()) {
-                return;
-            }
-            this.requiredAspectsData = "";
-            this.hasValidRecipe = false;
-            resultSlot.setRequiredAspects(null);
-            resultSlot.setWandStack(ItemStack.EMPTY);
-        }
+        if (player.level().isClientSide()) return;
+        hasValidRecipe = match.arcane();
+        resultSlot.setRequiredAspects(match.cost());
+        resultSlot.setWandStack(match.arcane() ? wand : ItemStack.EMPTY);
+        requiredAspectsData = match.arcane()
+                ? ArcaneTerminalRecipeState.displayedCosts(wand, match.cost(), player) : "";
     }
 
     public Map<String, Integer> getParsedAspects() {
-        Map<String, Integer> map = new LinkedHashMap<>();
-        if (requiredAspectsData.isEmpty()) return map;
-        for (String part : requiredAspectsData.split(",")) {
-            String[] kv = part.split("=");
-            if (kv.length == 2) {
-                try {
-                    map.put(kv[0], Integer.parseInt(kv[1]));
-                } catch (NumberFormatException ignored) {
-                }
-            }
-        }
-        return map;
+        return ArcaneTerminalRecipeState.parseCosts(requiredAspectsData);
     }
 
     // ========== JEI 配方转移支持 ==========

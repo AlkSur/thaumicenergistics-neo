@@ -1,0 +1,13 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+[[mods]]
+modId="thaumicenergistics_tests"
+version="1.0"
+displayName="ThaumicEnergistics regression tests"
+[[dependencies.thaumicenergistics_tests]]
+modId="thaumicenergistics"
+type="required"
+versionRange="*"
+ordering="AFTER"
+side="BOTH"

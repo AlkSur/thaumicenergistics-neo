@@ -34,6 +34,12 @@ public final class RecipeRegistration {
     public static ShapedArcaneRecipe STORAGE_COMPONENT_4K;
     public static ShapedArcaneRecipe STORAGE_COMPONENT_16K;
     public static ShapedArcaneRecipe STORAGE_COMPONENT_64K;
+    public static ShapedArcaneRecipe STORAGE_COMPONENT_256K;
+    public static ShapedArcaneRecipe STORAGE_COMPONENT_1M;
+    public static ShapedArcaneRecipe STORAGE_COMPONENT_4M;
+    public static ShapedArcaneRecipe STORAGE_COMPONENT_16M;
+    public static ShapedArcaneRecipe STORAGE_COMPONENT_64M;
+    public static ShapedArcaneRecipe STORAGE_COMPONENT_256M;
     public static ShapedArcaneRecipe KNOWLEDGE_CORE_ITEM;
     public static ShapedArcaneRecipe FOCUS_AEWRENCH_RECIPE;
     public static ShapedArcaneRecipe GOLEM_WIFI_BACKPACK_RECIPE;
@@ -64,6 +70,8 @@ public final class RecipeRegistration {
     private static final TagKey<Item> WISP_ESSENCES = tag("thaumicenergistics", "wisp_essences");
     /** AE2 三种显示器（普通/暗/半暗）任一可用。 */
     private static final TagKey<Item> MONITORS = tag("thaumicenergistics", "monitors");
+    /** Optional exact-item ingredient: an empty tag keeps these recipes unavailable without Thaumic Tinkerer. */
+    private static final TagKey<Item> ICHOR = tag("thaumicenergistics", "ichor");
 
     @SuppressWarnings("SameParameterValue")
     private static TagKey<Item> tag(String ns, String path) {
@@ -130,6 +138,54 @@ public final class RecipeRegistration {
                 'P', ae("engineering_processor"),
                 '6', stack(ModItems.STORAGE_COMPONENT_16K),
                 'G', ae("quartz_glass"));
+
+        STORAGE_COMPONENT_256K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_256K),
+                new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 8),
+                "SPS", "CGC", "SCS",
+                'S', tc("salis_mundus"),
+                'P', ae("engineering_processor"),
+                'C', stack(ModItems.STORAGE_COMPONENT_64K),
+                'G', tc("warded_glass"));
+
+        STORAGE_COMPONENT_1M = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_1M),
+                new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
+                "SPS", "CGC", "SCS",
+                'S', tc("salis_mundus"),
+                'P', ae("engineering_processor"),
+                'C', stack(ModItems.STORAGE_COMPONENT_256K),
+                'G', tc("warded_glass"));
+
+        STORAGE_COMPONENT_4M = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_4M),
+                new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
+                "SPS", "CGC", "SCS",
+                'S', tc("salis_mundus"),
+                'P', ae("engineering_processor"),
+                'C', stack(ModItems.STORAGE_COMPONENT_1M),
+                'G', tc("warded_glass"));
+
+        STORAGE_COMPONENT_16M = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_16M),
+                new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
+                "SPS", "CGC", "SCS",
+                'S', tc("salis_mundus"),
+                'P', ae("engineering_processor"),
+                'C', stack(ModItems.STORAGE_COMPONENT_4M),
+                'G', tc("warded_glass"));
+
+        STORAGE_COMPONENT_64M = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_64M),
+                new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
+                "SPS", "CGC", "SCS",
+                'S', ICHOR,
+                'P', ae("engineering_processor"),
+                'C', stack(ModItems.STORAGE_COMPONENT_16M),
+                'G', tc("warded_glass"));
+
+        STORAGE_COMPONENT_256M = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_256M),
+                new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
+                "SPS", "CGC", "SCS",
+                'S', ICHOR,
+                'P', ae("engineering_processor"),
+                'C', stack(ModItems.STORAGE_COMPONENT_64M),
+                'G', tc("warded_glass"));
 
         KNOWLEDGE_CORE_ITEM = ThaumcraftApi.addArcaneCraftingRecipe("KNOWLEDGEINSCRIBER", stack(ModItems.KNOWLEDGE_CORE),
                 new AspectList().add(Aspect.WATER, 3).add(Aspect.ORDER, 3).add(Aspect.EARTH, 1),

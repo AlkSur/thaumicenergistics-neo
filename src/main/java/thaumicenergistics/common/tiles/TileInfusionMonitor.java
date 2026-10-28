@@ -1,6 +1,9 @@
 package thaumicenergistics.common.tiles;
 
 import net.minecraft.core.BlockPos;
+import thaumicenergistics.common.monitor.InfusionMonitorDisplay;
+import thaumicenergistics.common.monitor.InfusionMonitorText;
+import static thaumicenergistics.common.monitor.InfusionMonitorText.*;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -8,17 +11,13 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 
 import java.util.EnumSet;
-import java.util.List;
 
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
@@ -27,12 +26,10 @@ import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.util.AECableType;
-import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModBlocks;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import thaumcraft.common.blockentities.InfusionMatrixBlockEntity;
 import thaumicenergistics.init.ModItems;
 
@@ -85,22 +82,8 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     /** 区块卸载/方块移除中：禁止 setBlock / markForUpdate（卸载时改方块状态会触发区块重载，停服保存死循环）。 */
     private boolean unloading = false;
 
-    /** 上一次写入气泡的文本（内容未变则跳过反射/NBT 重建，避免每 tick 开销）。 */
-    private net.minecraft.network.chat.Component lastBubbleText = null;
-
-    /** 缓存的注魔风险数据（弹窗显示）。 */
     private RiskData cachedRisk = RiskData.NONE;
-
-    /** 悬浮气泡实体（text_display，服务端引用）。 */
-    private net.minecraft.world.entity.Display.TextDisplay bubble;
-
-    /** 气泡实体 Tag（用于坐标匹配查找）。 */
-    private static final String BUBBLE_TAG = "thaumicenergistics:monitor_bubble";
-    /** 气泡背景：半透明深灰（ARGB，Alpha=176）。 */
-    private static final int BUBBLE_BG_COLOR = 0xB0333333;
-    /** 气泡行宽（换行宽度）。中文全角字符约 12px，最长行"不稳定度: 9 (基础 5 + 祭坛 4)"约 240px——
-     *  必须大于最长行，否则行尾空格被换行逻辑丢弃、背景只包住分段 → 右侧看似截断。 */
-    private static final int BUBBLE_LINE_WIDTH = 320;
+    private final InfusionMonitorDisplay display = new InfusionMonitorDisplay(this::getLevel, worldPosition);
 
     private final IGridNodeListener<TileInfusionMonitor> nodeListener = new IGridNodeListener<>() {
         @Override
@@ -144,7 +127,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         unloading = true; // 先置标志再销毁网格节点：节点销毁回调会触发 updateNetworkState
         super.setRemoved();
         if (level != null && !level.isClientSide()) {
-            discardBubble();
+            display.discard();
         }
         if (mainNode != null) {
             mainNode.destroy();
@@ -164,7 +147,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     public void onBreakBlock() {
         super.onBreakBlock();
         if (level != null && !level.isClientSide) {
-            discardBubble();
+            display.discard();
             Containers.dropContents(level, worldPosition, inventory);
         }
     }
@@ -311,155 +294,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         boolean shouldShow = getBlockState().getValue(ModBlocks.BOOK)
                 && getBlockState().getValue(ModBlocks.NETWORK)
                 && cachedRisk.found();
-        if (shouldShow) {
-            ensureBubble();
-            if (bubble != null) {
-                // 文本未变则跳过反射/NBT 重建（原实现每 tick 都重建，是 mspt 开销之一）
-                net.minecraft.network.chat.Component text = buildBubbleText(cachedRisk);
-                if (!text.equals(lastBubbleText)) {
-                    lastBubbleText = text;
-                    applyBubbleNbt(text);
-                }
-            }
-        } else {
-            discardBubble();
-            lastBubbleText = null;
-        }
-    }
-
-    /** 确保气泡实体存在（不存在则生成；区块重载后按 Tag 找回旧实体）。 */
-    private void ensureBubble() {
-        if (bubble != null && bubble.isAlive()) return;
-        bubble = findBubble();
-        if (bubble != null) return;
-        bubble = EntityType.TEXT_DISPLAY.create(level);
-        if (bubble == null) return;
-        bubble.setPos(worldPosition.getX() + 0.5, worldPosition.getY() + 1.2, worldPosition.getZ() + 0.5);
-        // 1.21.1 TextDisplay 配置 API 均为 private/protected：反射调用 readAdditionalSaveData
-        // 用 summon 命令同款 NBT 一次配置全部字段（text/background/billboard/shadow/see_through 等）。
-        applyBubbleNbt(buildBubbleText(cachedRisk));
-        bubble.addTag(BUBBLE_TAG);
-        level.addFreshEntity(bubble);
-    }
-
-    /** 反射调用 readAdditionalSaveData(CompoundTag) 配置气泡（缓存 Method）。 */
-    private static java.lang.reflect.Method READ_NBT_METHOD;
-
-    private void applyBubbleNbt(Component text) {
-        if (bubble == null || level == null) return;
-        try {
-            if (READ_NBT_METHOD == null) {
-                READ_NBT_METHOD = Entity.class
-                        .getDeclaredMethod("readAdditionalSaveData", CompoundTag.class);
-                READ_NBT_METHOD.setAccessible(true);
-            }
-            CompoundTag nbt = new CompoundTag();
-            nbt.putString("text", Component.Serializer.toJson(text, level.registryAccess()));
-            nbt.putBoolean("default_background", false);
-            nbt.putInt("background", BUBBLE_BG_COLOR);
-            nbt.putString("billboard", "vertical");
-            nbt.putInt("line_width", BUBBLE_LINE_WIDTH);
-            nbt.putBoolean("shadow", true);
-            nbt.putBoolean("see_through", false);
-            // 必须写 alignment：TextDisplay.readAdditionalSaveData 无条件 decode "alignment"，
-            // 缺失时 tag.get 返回 null → Align.CODEC(字符串) decode 失败 → 服务端疯狂刷 "Display entityNot a string"。
-            nbt.putString("alignment", "center");
-            // 文字调小：transformation.scale 整体缩到 0.5（text_display 无字号参数，靠实体缩放）
-            CompoundTag transform = new CompoundTag();
-            transform.put("scale", floatList(0.5F, 0.5F, 0.5F));
-            transform.put("translation", floatList(0F, 0F, 0F));
-            transform.put("left_rotation", floatList(0F, 0F, 0F, 1F));
-            transform.put("right_rotation", floatList(0F, 0F, 0F, 1F));
-            nbt.put("transformation", transform);
-            READ_NBT_METHOD.invoke(bubble, nbt);
-        } catch (Exception e) {
-            ThaumicEnergistics.LOG.warn("[Monitor] 气泡配置失败: {}", e.toString());
-        }
-    }
-
-    /** 构造 FloatTag 列表（1.21.1 CompoundTag 无 putFloatArray，需 ListTag）。 */
-    private static net.minecraft.nbt.ListTag floatList(float... values) {
-        net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
-        for (float v : values) {
-            list.add(net.minecraft.nbt.FloatTag.valueOf(v));
-        }
-        return list;
-    }
-
-    /** 按 Tag + 方块附近 AABB 查找已存在的气泡。 */
-    private net.minecraft.world.entity.Display.TextDisplay findBubble() {
-        if (level == null) return null;
-        AABB aabb = new AABB(worldPosition).inflate(0.15, 2.0, 0.15);
-        List<net.minecraft.world.entity.Display.TextDisplay> list = level.getEntitiesOfClass(
-                net.minecraft.world.entity.Display.TextDisplay.class, aabb,
-                e -> e.getTags().contains(BUBBLE_TAG));
-        return list.isEmpty() ? null : list.get(0);
-    }
-
-    /** 销毁气泡（方块拆除/条件不满足时）。 */
-    private void discardBubble() {
-        if (bubble != null && bubble.isAlive()) {
-            bubble.discard();
-        } else {
-            net.minecraft.world.entity.Display.TextDisplay found = findBubble();
-            if (found != null) {
-                found.discard();
-            }
-        }
-        bubble = null;
-    }
-
-    /** 风险数据 → 气泡多行文本（2 行：注魔风险/不稳定度；不显示基础+祭坛细分，细分在聊天栏）。 */
-    private static Component buildBubbleText(RiskData risk) {
-        // 内边距必须用不间断空格（\u00A0）：普通空格在行尾会被字体布局裁剪，
-        // 导致背景只包住左侧、右侧贴边。NBSP 有真实字形，两侧都保留。
-        String pad = "\u00A0\u00A0"; // 左右内边距（NBSP）
-        String tierWord = tierWord(risk.tier());
-
-        Component line1 = Component.literal(pad + "注魔风险: " + tierWord + pad)
-                .withStyle(style -> style.withColor(tierColor(risk.tier())));
-        Component line2 = Component.literal(pad + "不稳定度: " + risk.instability() + pad)
-                .withStyle(style -> style.withColor(0xFFFFFFFF));
-
-        // 上下各留一个空行（垂直内边距）
-        return Component.literal("\n")
-                .append(line1).append("\n")
-                .append(line2).append("\n");
-    }
-
-    /** 5 档文字（无星星）。 */
-    private static String tierWord(int tier) {
-        return switch (tier) {
-            case 1 -> "极低";
-            case 2 -> "低";
-            case 3 -> "中";
-            case 4 -> "高";
-            case 5 -> "极高";
-            default -> "?";
-        };
-    }
-
-    /** 5 档描述（神秘时代风）。 */
-    private static String tierDesc(int tier) {
-        return switch (tier) {
-            case 1 -> "灵光如镜，仪式安然";
-            case 2 -> "灵光微澜，无碍仪式";
-            case 3 -> "符文低鸣，灵光流转不宁";
-            case 4 -> "裂隙于虚空中睁开，注视着祭坛";
-            case 5 -> "咒波翻涌，裂隙将吞没一切";
-            default -> "";
-        };
-    }
-
-    /** 档位颜色：1 绿 → 5 红。 */
-    private static int tierColor(int tier) {
-        return switch (tier) {
-            case 1 -> 0xFF55FF55;
-            case 2 -> 0xFFAAFF55;
-            case 3 -> 0xFFFFFF55;
-            case 4 -> 0xFFFFAA55;
-            default -> 0xFFFF5555;
-        };
+        display.update(shouldShow, shouldShow ? InfusionMonitorText.bubble(cachedRisk) : Component.empty());
     }
 
     /** 放入魔导手册（方块右键拦截后调用，防止书自身 use 打开界面）。 */
@@ -585,9 +420,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider reg) {
         super.handleUpdateTag(tag, reg);
         loadRiskFromTag(tag);
-        if (tag.contains("Book")) {
-            inventory.setItem(BOOK_SLOT, ItemStack.parseOptional(reg, tag.getCompound("Book")));
-        }
+        inventory.setItem(BOOK_SLOT, ItemStack.parseOptional(reg, tag.getCompound("Book")));
     }
 
     private void saveRiskToTag(CompoundTag tag) {

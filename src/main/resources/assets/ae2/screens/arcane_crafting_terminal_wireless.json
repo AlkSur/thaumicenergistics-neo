@@ -1,0 +1,18 @@
+{
+  "$schema": "../schema.json",
+  "includes": ["arcane_crafting_terminal.json"],
+  "widgets": {
+    "scrollingUpgrades": {
+      "left": 192,
+      "top": 0
+    },
+    "upgradeScrollbar": {
+      "left": 211,
+      "top": 6
+    },
+    "upgrades": {
+      "left": -9999,
+      "top": -9999
+    }
+  }
+}

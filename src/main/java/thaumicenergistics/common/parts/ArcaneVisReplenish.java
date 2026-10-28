@@ -23,6 +23,16 @@ public final class ArcaneVisReplenish {
 
     private ArcaneVisReplenish() {}
 
+    /** Avoid ticking a passive connection when the wand is absent, unsupported, or already full. */
+    public static boolean needsCharge(ItemStack stack) {
+        if (stack.isEmpty() || !(stack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) return false;
+        int capacity = wand.getMaxVis(stack);
+        for (Aspect primal : Aspect.getPrimalAspects()) {
+            if (wand.getVis(stack, primal) < capacity) return true;
+        }
+        return false;
+    }
+
     /**
      * 有线路径：按 P2P 频率定位要素中继接口后充能。
      *

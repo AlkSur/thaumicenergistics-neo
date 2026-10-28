@@ -1,0 +1,171 @@
+{
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "0": "thaumicenergistics:entity/golem_backpack/antenna_on",
+    "particle": "thaumicenergistics:entity/golem_backpack/antenna_on"
+  },
+  "elements": [
+    {
+      "from": [
+        14.9,
+        12.9,
+        14.9
+      ],
+      "to": [
+        17.1,
+        15.1,
+        17.1
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            8.0,
+            4.0,
+            12.0,
+            8.0
+          ],
+          "texture": "#0"
+        },
+        "east": {
+          "uv": [
+            8.0,
+            4.0,
+            12.0,
+            8.0
+          ],
+          "texture": "#0"
+        },
+        "south": {
+          "uv": [
+            8.0,
+            4.0,
+            12.0,
+            8.0
+          ],
+          "texture": "#0"
+        },
+        "west": {
+          "uv": [
+            8.0,
+            4.0,
+            12.0,
+            8.0
+          ],
+          "texture": "#0"
+        },
+        "up": {
+          "uv": [
+            12.0,
+            8.0,
+            8.0,
+            4.0
+          ],
+          "texture": "#0"
+        },
+        "down": {
+          "uv": [
+            12.0,
+            4.0,
+            8.0,
+            8.0
+          ],
+          "texture": "#0"
+        }
+      }
+    },
+    {
+      "from": [
+        15,
+        13,
+        15
+      ],
+      "to": [
+        17,
+        15,
+        17
+      ],
+      "shade": true,
+      "faces": {
+        "north": {
+          "uv": [
+            0.0,
+            0.0,
+            4.0,
+            4.0
+          ],
+          "texture": "#0"
+        },
+        "east": {
+          "uv": [
+            0.0,
+            4.0,
+            4.0,
+            8.0
+          ],
+          "texture": "#0"
+        },
+        "south": {
+          "uv": [
+            4.0,
+            0.0,
+            8.0,
+            4.0
+          ],
+          "texture": "#0"
+        },
+        "west": {
+          "uv": [
+            2.0,
+            0.0,
+            6.0,
+            4.0
+          ],
+          "texture": "#0"
+        },
+        "up": {
+          "uv": [
+            4.0,
+            12.0,
+            0.0,
+            8.0
+          ],
+          "texture": "#0"
+        },
+        "down": {
+          "uv": [
+            12.0,
+            0.0,
+            8.0,
+            4.0
+          ],
+          "texture": "#0"
+        }
+      }
+    },
+    {
+      "from": [
+        14.495,
+        8.005,
+        15
+      ],
+      "to": [
+        14.504999999999999,
+        9.005,
+        17
+      ],
+      "shade": true,
+      "faces": {
+        "west": {
+          "uv": [
+            2.0,
+            0.0,
+            6.0,
+            2.0
+          ],
+          "texture": "#0"
+        }
+      }
+    }
+  ]
+}

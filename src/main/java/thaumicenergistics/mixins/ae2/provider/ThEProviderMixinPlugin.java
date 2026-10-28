@@ -72,7 +72,8 @@ public class ThEProviderMixinPlugin implements IMixinConfigPlugin {
     private static boolean isModLoaded(String modId) {
         var modList = ModList.get();
         if (modList == null) {
-            return LoadingModList.get().getMods().stream()
+            var loadingMods = LoadingModList.get();
+            return loadingMods != null && loadingMods.getMods().stream()
                     .map(ModInfo::getModId)
                     .anyMatch(modId::equals);
         }

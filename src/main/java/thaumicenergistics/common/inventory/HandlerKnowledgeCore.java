@@ -86,8 +86,10 @@ public class HandlerKnowledgeCore {
         if (pattern == null || !pattern.isPatternValid()) return;
         if (!hasRoomToStorePattern()) return;
 
-        ArcaneCraftingPattern existing = getPatternForItem(pattern.getResult());
-        if (existing == null) {
+        var definition = pattern.writeToNBT(new CompoundTag());
+        boolean exists = this.patterns.stream().anyMatch(existing ->
+                existing.writeToNBT(new CompoundTag()).equals(definition));
+        if (!exists) {
             this.patterns.add(pattern);
             saveKCoreData();
         }

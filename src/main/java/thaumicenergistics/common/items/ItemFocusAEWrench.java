@@ -24,6 +24,7 @@ import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.common.items.TCFunctionalItems;
 import thaumcraft.common.vis.TCVisHelper;
+import thaumicenergistics.common.blocks.ThEWrenchHandler;
 
 import java.util.List;
 import net.minecraft.sounds.SoundEvents;
@@ -121,6 +122,12 @@ public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
             return false;
         }
 
+        BlockPos pos = hit.getBlockPos();
+        // 拆卸资格预检（AE2 方块实体或 ThE 方块）先于扣 vis——对不可拆目标施法失败不耗能
+        if (!canDisassembleTarget(level, pos)) {
+            return false;
+        }
+
         AspectList cost = this.visCost(focusStack);
         if (!wand.consumeVisCost(wandStack, player, cost, false)) {
             player.displayClientMessage(
@@ -131,7 +138,6 @@ public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
             return false;
         }
 
-        BlockPos pos = hit.getBlockPos();
         boolean handled = handleWrenchAction(level, player, hit, wandStack);
 
         if (handled) {
@@ -142,6 +148,12 @@ public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
         return false;
     }
 
+    /** 拆卸资格预检：AE2 原生方块实体（disassembleWithWrench 路径）或 ThE 方块（公共拆卸路径）。 */
+    private static boolean canDisassembleTarget(Level level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof AEBaseBlockEntity
+                || ThEWrenchHandler.isDisassemblyTarget(level, pos);
+    }
+
     private boolean handleWrenchAction(Level level, Player player, BlockHitResult hit, ItemStack wandStack) {
         BlockPos pos = hit.getBlockPos();
         var blockEntity = level.getBlockEntity(pos);
@@ -149,6 +161,12 @@ public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
         if (blockEntity instanceof AEBaseBlockEntity aeBlockEntity) {
             InteractionResult result = aeBlockEntity.disassembleWithWrench(player, level, hit, wandStack);
             return result.consumesAction();
+        }
+
+        // ThE 方块：AE2 的 WrenchHook 只处理 AEBaseBlockEntity，ThETileBase 等不走该路径，
+        // 经 ThEWrenchHandler 公共拆卸入口（与普通 AE2 扳手事件同一条逻辑）。
+        if (ThEWrenchHandler.disassembleThEBlock(player, level, pos)) {
+            return true;
         }
 
         return false;

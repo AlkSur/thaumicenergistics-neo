@@ -1,6 +1,7 @@
 {
   "required": false,
   "package": "thaumicenergistics.mixins",
+  "plugin": "thaumicenergistics.mixins.ThEOptionalMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "thaumicenergistics.refmap.json",
   "mixins": [
@@ -11,19 +12,17 @@
     "ae2.interfaces.MixinInterfaceLogic",
     "ae2.interfaces.MixinInterfaceBlockEntity",
     "ae2.interfaces.MixinConfigMenuInventory",
-    "ae2.interfaces.MixinMEStorageMenuAccessors",
     "ae2.crafting.MixinCraftingService",
-    "ae2.crafting.MixinCraftingTreeProcess",
-    "tc.MixinAspect",
-    "tc.MixinVisRelayBlock"
+    "tc.MixinVisRelayBlock",
+    "tc.MixinGolemItems",
+    "tc.MixinThaumcraftGolemEntity"
   ],
   "client": [
     "ae2.screen.MixinCraftConfirmScreen",
-    "ae2.screen.MixinMEStorageScreen",
-    "ae2.screen.MixinWCWTScreen",
     "eap.MixinEAPInputEvents",
     "tc.ResearchPageIndexMixin",
-    "tc.MixinThaumonomiconScreen"
+    "tc.MixinThaumonomiconScreen",
+    "tc.AccessorLegacyGolemModel"
   ],
   "server": []
 }

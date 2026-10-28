@@ -1,6 +1,8 @@
 package thaumicenergistics.common.tiles;
 
 import java.util.ArrayList;
+import thaumicenergistics.common.crafting.ArcaneAssemblerPattern;
+import thaumicenergistics.common.crafting.ArcaneCraftJob;
 import java.util.EnumSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -9,7 +11,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
@@ -37,12 +38,10 @@ import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
-import appeng.api.networking.storage.IStorageService;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.util.AECableType;
@@ -51,7 +50,6 @@ import thaumcraft.api.IVisDiscountGear;
 import thaumcraft.api.IWarpingGear;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
-import thaumcraft.api.crafting.IArcaneRecipe;
 
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.tc.ArcaneCraftingPattern;
@@ -91,7 +89,7 @@ public class TileArcaneAssembler extends ThETileBase
     private static final int VIS_REPLENISH_INTERVAL = 5;
     /** 每次充能上限（cvis/次，每 VIS_REPLENISH_INTERVAL tick 一次 ≈ 20 cVis/tick）。 */
     private static final int MAX_CVIS_PER_REPLENISH = 100;
-    /** 每次实际 vis 变化累计达到该值才调用一次 setChanged（约 4×5=20 tick），避免合成期间 chunk 持续处于 unsaved 状态。 */
+    /** vis 变化累计达到该值才同步客户端（约 4×5=20 tick）；存档变化即时标记。 */
     private static final int SET_CHANGED_INTERVAL = 4;
     /** 元始珍珠：TC 奥术配方中唯一 retainIngredient 原料（ShapedArcaneRecipe.retainIngredient），合成不消耗。 */
     private static final ResourceLocation PRIMORDIAL_PEARL_ID =
@@ -129,15 +127,10 @@ public class TileArcaneAssembler extends ThETileBase
     private boolean isCrafting = false;
     private int craftTickCounter = 0;
     private int speedUpgrades = 0;
-    /** 当前合成配方的 3×3 材料网格（GUI 右下配方预览用，随合成开始填充、结束清空）。 */
-    private ItemStack[] previewGrid = emptyPreviewGrid();
+    private final ArcaneCraftJob job = new ArcaneCraftJob();
+    /** 旧存档缺少订单定义时保留忙碌状态，等待核心提供唯一配方。 */
+    private boolean legacyCraftBlocked;
 
-    /** 全 EMPTY 的 9 格预览数组（避免 null 元素导致网络包编码崩溃）。 */
-    private static ItemStack[] emptyPreviewGrid() {
-        ItemStack[] grid = new ItemStack[9];
-        java.util.Arrays.fill(grid, ItemStack.EMPTY);
-        return grid;
-    }
     /**
      * 从内存卡粘贴的 vis_interface P2P 频率；装配器优先从该频率的 vis_interface P2P 端抽 vis。
      * 0 = 未设置，走 essentia 网络。对应 1.7.10 的 visSourceInfo，但用 P2P 频率替代位置（适配 neo P2P 设计）。
@@ -146,9 +139,6 @@ public class TileArcaneAssembler extends ThETileBase
     private AspectList storedVis = new AspectList();
     private Hashtable<Aspect, Float> visDiscount = new Hashtable<>();
     private float warpPowerMultiplier = 1.0F;
-    private IArcaneRecipe currentRecipe = null;
-    private AspectList currentRecipeAspects = new AspectList();
-    private ItemStack currentResult = ItemStack.EMPTY;
     private int visTickCounter = 0;
     /** replenishVis 的 setChanged 节流计数。 */
     private int visSetChangedCounter = 0;
@@ -204,6 +194,15 @@ public class TileArcaneAssembler extends ThETileBase
     public void onBreakBlock() {
         super.onBreakBlock();
         if (level != null && !level.isClientSide) {
+            // 制作前退真实材料，制作后只掉落尚未输出的产物和催化剂。
+            var remaining = job.produced() ? job.outputs() : java.util.Arrays.asList(job.inputs());
+            if (isCrafting) {
+                for (ItemStack stack : remaining) {
+                    if (!stack.isEmpty()) Containers.dropItemStack(level,
+                            worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack.copy());
+                }
+                finishCrafting();
+            }
             for (int i = 0; i < SLOT_COUNT; i++) {
                 if (i >= PATTERN_SLOT_START && i <= PATTERN_SLOT_END) continue;
                 if (i == TARGET_SLOT) continue;
@@ -313,10 +312,11 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     /**
-     * replenishVis 抽到 vis 时调用：累计变化次数，每 SET_CHANGED_INTERVAL 次才 markForUpdate 一次。
+     * replenishVis 抽到 vis 时调用：累计变化次数，每次保存变化，SET_CHANGED_INTERVAL 次才同步客户端一次。
      * markForUpdate = setChanged + sendBlockUpdated（同步 storedVis 到客户端 BE，GUI 进度条依赖客户端 storedVis）。
      */
     private void maybeMarkVisDirty() {
+        setChanged();
         if (++visSetChangedCounter >= SET_CHANGED_INTERVAL) {
             visSetChangedCounter = 0;
             markForUpdate();
@@ -324,11 +324,10 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     private TickRateModulation craftingTick(IGrid grid, int ticksSinceLast) {
-        if (currentResult.isEmpty()) {
-            isCrafting = false;
-            previewGrid = emptyPreviewGrid();
-            AssemblerPreviewSyncPacket.send(this, false);
-            return TickRateModulation.IDLE;
+        if (job.produced()) return flushCraftOutputs(grid);
+        if (job.result().isEmpty()) {
+            if (!legacyCraftBlocked) restoreLegacyCraft();
+            if (job.result().isEmpty()) return TickRateModulation.IDLE;
         }
 
         boolean enoughVis = hasEnoughVisForCraft();
@@ -339,55 +338,10 @@ public class TileArcaneAssembler extends ThETileBase
         int ticksPerCraft = ticksPerCraft();
 
         if (craftTickCounter >= ticksPerCraft) {
-            IStorageService storage = grid.getService(IStorageService.class);
-            if (storage == null) return TickRateModulation.IDLE;
-
-            ItemStack output = currentResult.copy();
-            AEItemKey outputKey = AEItemKey.of(output);
-            if (outputKey == null) return TickRateModulation.IDLE;
-
-            // 元始珍珠保留：TC 唯一 retainIngredient 原料，合成后珍珠退回网络（与奥术合成终端一致）。
-            // CPU 已按配方从网络扣除珍珠，这里补回 → 净零不消耗。
-            var retainedPearls = retainedPearlStacks();
-
-            long inserted = storage.getInventory().insert(
-                    outputKey, output.getCount(), Actionable.SIMULATE, actionSource);
-            if (inserted < output.getCount()) {
-                return TickRateModulation.SAME;
-            }
-            // 预检：珍珠类型塞满放不回网络则等待，避免合成完成却丢珍珠
-            for (ItemStack pearl : retainedPearls) {
-                AEItemKey pearlKey = AEItemKey.of(pearl);
-                if (pearlKey == null) continue;
-                if (storage.getInventory().insert(
-                        pearlKey, pearl.getCount(), Actionable.SIMULATE, actionSource) < pearl.getCount()) {
-                    return TickRateModulation.SAME;
-                }
-            }
-
             consumeVisForCraft();
-
-            storage.getInventory().insert(
-                    outputKey, output.getCount(), Actionable.MODULATE, actionSource);
-            // 退回珍珠（数量 = 3×3 配方网格中珍珠总数，通常 1 颗）
-            for (ItemStack pearl : retainedPearls) {
-                AEItemKey pearlKey = AEItemKey.of(pearl);
-                if (pearlKey != null) {
-                    storage.getInventory().insert(pearlKey, pearl.getCount(), Actionable.MODULATE, actionSource);
-                }
-            }
-
-            isCrafting = false;
-            currentRecipe = null;
-            currentResult = ItemStack.EMPTY;
-            currentRecipeAspects = new AspectList();
-            previewGrid = emptyPreviewGrid();
-            internalInventory.setItem(TARGET_SLOT, ItemStack.EMPTY);
+            job.produce(retainedPearlStacks());
             setChanged();
-            markForUpdate();
-            AssemblerPreviewSyncPacket.send(this, false);
-
-            return TickRateModulation.URGENT;
+            return flushCraftOutputs(grid);
         }
 
         double powerRequired = (ACTIVE_POWER + (ACTIVE_POWER * speedUpgrades) / 2.0) * warpPowerMultiplier;
@@ -405,9 +359,35 @@ public class TileArcaneAssembler extends ThETileBase
         return TickRateModulation.SAME;
     }
 
+    private TickRateModulation flushCraftOutputs(IGrid grid) {
+        var storage = grid.getStorageService().getInventory();
+        for (var output : job.outputs()) {
+            if (output.isEmpty()) continue;
+            long accepted = storage.insert(AEItemKey.of(output), output.getCount(), Actionable.MODULATE, actionSource);
+            if (accepted > 0) {
+                output.shrink((int) Math.min(accepted, output.getCount()));
+                setChanged();
+            }
+        }
+        job.outputs().removeIf(ItemStack::isEmpty);
+        if (!job.outputs().isEmpty()) return TickRateModulation.SAME;
+        finishCrafting();
+        return TickRateModulation.URGENT;
+    }
+
+    private void finishCrafting() {
+        isCrafting = false;
+        legacyCraftBlocked = false;
+        job.clear();
+        internalInventory.setItem(TARGET_SLOT, ItemStack.EMPTY);
+        mainNode.setIdlePowerUsage(IDLE_POWER);
+        markForUpdate();
+        AssemblerPreviewSyncPacket.send(this, false);
+    }
+
     private void consumeVisForCraft() {
-        if (currentRecipeAspects == null || currentRecipeAspects.isEmpty()) return;
-        for (Aspect aspect : currentRecipeAspects.getAspects()) {
+        if (job.aspects() == null || job.aspects().isEmpty()) return;
+        for (Aspect aspect : job.aspects().getAspects()) {
             int requiredCvis = getRequiredCvisForAspect(aspect);
             int current = storedVis.getAmount(aspect);
             storedVis.reduce(aspect, Math.min(requiredCvis, current));
@@ -416,8 +396,8 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     private boolean hasEnoughVisForCraft() {
-        if (currentRecipeAspects == null || currentRecipeAspects.isEmpty()) return true;
-        for (Aspect aspect : currentRecipeAspects.getAspects()) {
+        if (job.aspects() == null || job.aspects().isEmpty()) return true;
+        for (Aspect aspect : job.aspects().getAspects()) {
             int requiredCvis = getRequiredCvisForAspect(aspect);
             if (storedVis.getAmount(aspect) < requiredCvis) return false;
         }
@@ -425,8 +405,8 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     private int getRequiredCvisForAspect(Aspect aspect) {
-        if (currentRecipeAspects == null) return 0;
-        int baseCost = currentRecipeAspects.getAmount(aspect) * CVIS_MULTIPLIER;
+        if (job.aspects() == null) return 0;
+        int baseCost = job.aspects().getAmount(aspect) * CVIS_MULTIPLIER;
         float discount = visDiscount.getOrDefault(aspect, BASE_VIS_DISCOUNT);
         return Math.max(0, Math.round(baseCost * discount));
     }
@@ -437,8 +417,8 @@ public class TileArcaneAssembler extends ThETileBase
      */
     private List<ItemStack> retainedPearlStacks() {
         List<ItemStack> pearls = new ArrayList<>();
-        if (previewGrid == null) return pearls;
-        for (ItemStack stack : previewGrid) {
+        if (job.inputs() == null) return pearls;
+        for (ItemStack stack : job.inputs()) {
             if (!stack.isEmpty() && stack.getItem() == BuiltInRegistries.ITEM.get(PRIMORDIAL_PEARL_ID)) {
                 pearls.add(stack.copy());
             }
@@ -504,12 +484,12 @@ public class TileArcaneAssembler extends ThETileBase
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
         if (patternDetails instanceof ArcaneAssemblerPattern arcanePattern) {
-            return beginCrafting(arcanePattern);
+            return beginCrafting(arcanePattern, inputHolder);
         }
         return false;
     }
 
-    private ArcaneAssemblerPattern buildArcanePattern(ArcaneCraftingPattern acp) {
+    public static ArcaneAssemblerPattern buildArcanePattern(ArcaneCraftingPattern acp) {
         ItemStack result = acp.getResult();
         if (result == null || result.isEmpty()) return null;
 
@@ -529,50 +509,63 @@ public class TileArcaneAssembler extends ThETileBase
             }
         }
 
-        return new ArcaneAssemblerPattern(AEItemKey.of(result), null, aspects, result, inputs,
+        return new ArcaneAssemblerPattern(thaumicenergistics.common.crafting.ArcanePatternDecoder.definition(acp), null, aspects, result, inputs,
                 acp.getResearch(), acp.getIngredients(), alternatives);
     }
 
     /**
-     * 样板编码把通配具象化成了编码时的单一变体（如 wisp_essence_ordo），AE2 自动合成时网络里
-     * 若是另一变体（wisp_essence_aer）即报材料不足——手工奥术合成走 tag 匹配没这问题。
-     * 此处把属于本模组自定义通配 tag（wisp_essences/monitors 等）的格子展开为 tag 全部物品，
-     * 作为样板输入的备选变体；只认本模组命名空间，避免把 forge 等通用 tag 成员全卷进来。
+     * Keep the encoded stack as the primary input shown by the crafting planner.
+     * Explicit component patches are part of its identity and must never be
+     * replaced with bare items from a tag. Component-free tag recipes can still
+     * substitute other valid variants, after the originally selected item.
      */
     private static GenericStack[] expandTagAlternates(ItemStack ing) {
+        GenericStack encoded = new GenericStack(AEItemKey.of(ing), ing.getCount());
+        if (!ing.getComponentsPatch().isEmpty()) {
+            return new GenericStack[]{encoded};
+        }
         for (TagKey<Item> tag : ing.getItemHolder().tags().toList()) {
             if (!tag.location().getNamespace().equals(ThaumicEnergistics.MODID)) continue;
             var named = BuiltInRegistries.ITEM.getTag(tag);
             if (named.isEmpty()) continue;
             List<GenericStack> alts = new ArrayList<>();
+            alts.add(encoded);
             for (Holder<Item> holder : named.get()) {
-                AEItemKey key = AEItemKey.of(holder.value());
-                if (key != null) alts.add(new GenericStack(key, ing.getCount()));
+                ItemStack candidate = holder.value().getDefaultInstance();
+                // The generic wisp essence has no aspect without its component.
+                // Tag membership alone does not make it a usable alternative.
+                if (tag.location().getPath().equals("wisp_essences")
+                        && !hasWispAspect(candidate)) continue;
+                AEItemKey key = AEItemKey.of(candidate);
+                if (key != null && alts.stream().noneMatch(alt -> alt.what().equals(key))) {
+                    alts.add(new GenericStack(key, ing.getCount()));
+                }
             }
             if (alts.size() > 1) return alts.toArray(new GenericStack[0]);
         }
-        return new GenericStack[]{new GenericStack(AEItemKey.of(ing), ing.getCount())};
+        return new GenericStack[]{encoded};
     }
 
-    private boolean beginCrafting(ArcaneAssemblerPattern arcanePattern) {
+    private static boolean hasWispAspect(ItemStack stack) {
+        if (!(stack.getItem() instanceof thaumcraft.api.aspects.IEssentiaContainerItem container)) {
+            return false;
+        }
+        AspectList contents = container.getAspects(stack);
+        return contents != null && !contents.isEmpty();
+    }
+
+    private boolean beginCrafting(ArcaneAssemblerPattern arcanePattern, KeyCounter[] inputHolder) {
         AspectList aspects = arcanePattern.getAspects();
         ItemStack result = arcanePattern.getResultStack();
         if (isCrafting || !mainNode.isActive()) return false;
         if (aspects == null || aspects.isEmpty() || result.isEmpty()) return false;
+        var actualGrid = arcanePattern.materializeInputs(inputHolder, level);
+        if (actualGrid == null) return false;
 
         this.isCrafting = true;
         this.craftTickCounter = 0;
-        this.currentRecipe = arcanePattern.getRecipe();
-        this.currentRecipeAspects = aspects.copy();
-        this.currentResult = result.copy();
-        // 配方预览：复制 3×3 材料网格（不足 9 格补空）
-        this.previewGrid = emptyPreviewGrid();
-        ItemStack[] grid = arcanePattern.getGrid();
-        if (grid != null) {
-            for (int i = 0; i < 9 && i < grid.length; i++) {
-                this.previewGrid[i] = grid[i] != null ? grid[i].copy() : ItemStack.EMPTY;
-            }
-        }
+        job.start(aspects, result, actualGrid);
+        for (var holder : inputHolder) holder.reset();
         this.internalInventory.setItem(TARGET_SLOT, result.copy());
         setChanged();
         markForUpdate();
@@ -598,7 +591,7 @@ public class TileArcaneAssembler extends ThETileBase
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputs, Direction ejectionDirection) {
         if (patternDetails instanceof ArcaneAssemblerPattern arcanePattern) {
-            return beginCrafting(arcanePattern);
+            return beginCrafting(arcanePattern, inputs);
         }
         return false;
     }
@@ -613,9 +606,9 @@ public class TileArcaneAssembler extends ThETileBase
     public int getCraftTickCounter() { return craftTickCounter; }
     public int getTicksPerCraft() { return ticksPerCraft(); }
     /** 当前合成配方的 3×3 材料网格（GUI 右下配方预览；未合成时为空数组）。 */
-    public ItemStack[] getPreviewGrid() { return previewGrid; }
+    public ItemStack[] getPreviewGrid() { return job.inputs(); }
     /** 当前合成产物（GUI 预产物显示；未合成为空）。 */
-    public ItemStack getCurrentResult() { return currentResult; }
+    public ItemStack getCurrentResult() { return job.result(); }
     public float getCraftProgress() {
         if (!isCrafting || ticksPerCraft() <= 0) return 0f;
         return Math.min(1f, (float) craftTickCounter / ticksPerCraft());
@@ -663,6 +656,7 @@ public class TileArcaneAssembler extends ThETileBase
 
     public void onInventoryChanged(int slot) {
         if (slot == KCORE_SLOT) {
+            legacyCraftBlocked = false;
             stalePatterns = true;
             updatePatternSlots();
             // 直接通知 AE2 合成服务重新拉取 getAvailablePatterns()。
@@ -738,7 +732,7 @@ public class TileArcaneAssembler extends ThETileBase
         // 配方预览 3×3 材料（GUI 右下角显示）
         CompoundTag gridTag = new CompoundTag();
         for (int i = 0; i < 9; i++) {
-            ItemStack stack = previewGrid[i];
+            ItemStack stack = job.inputs()[i];
             if (stack != null && !stack.isEmpty()) {
                 gridTag.put("g" + i, stack.save(reg));
             }
@@ -749,9 +743,9 @@ public class TileArcaneAssembler extends ThETileBase
 
     @Override
     public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider reg) {
-        super.handleUpdateTag(tag, reg);
         loadingFromClientTag = true;
         try {
+            super.handleUpdateTag(tag, reg);
             for (int i = 0; i < SLOT_COUNT; i++) {
                 if (tag.contains("Slot" + i)) {
                     ItemStack stack = ItemStack.parseOptional(reg, tag.getCompound("Slot" + i));
@@ -760,12 +754,12 @@ public class TileArcaneAssembler extends ThETileBase
                     internalInventory.setItem(i, ItemStack.EMPTY);
                 }
             }
-            previewGrid = emptyPreviewGrid();
+            job.clearPreview();
             if (tag.contains("PreviewGrid")) {
                 CompoundTag gridTag = tag.getCompound("PreviewGrid");
                 for (int i = 0; i < 9; i++) {
                     if (gridTag.contains("g" + i)) {
-                        previewGrid[i] = ItemStack.parseOptional(reg, gridTag.getCompound("g" + i));
+                        job.inputs()[i] = ItemStack.parseOptional(reg, gridTag.getCompound("g" + i));
                     }
                 }
             }
@@ -778,7 +772,6 @@ public class TileArcaneAssembler extends ThETileBase
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider reg) {
         super.loadAdditional(tag, reg);
         mainNode.loadFromNBT(tag);
-        mainNode.setIdlePowerUsage(isCrafting ? ACTIVE_POWER : IDLE_POWER);
 
         if (tag.contains("AttachSide")) attachmentSide = Direction.from3DDataValue(tag.getInt("AttachSide"));
         isCrafting = tag.getBoolean("IsCrafting");
@@ -806,10 +799,35 @@ public class TileArcaneAssembler extends ThETileBase
             }
         }
 
+        job.load(tag, reg);
+        legacyCraftBlocked = false;
+        if (isCrafting && job.result().isEmpty()) restoreLegacyCraft();
+        // 制作电力由 craftingTick 实扣，重载不能额外叠加节点闲置耗电。
+        mainNode.setIdlePowerUsage(IDLE_POWER);
+
         updatePatternSlots();
         stalePatterns = true;
         calculateVisDiscounts();
         recountSpeedUpgrades();
+    }
+
+    /** 老存档只保存目标槽：仅在知识核心能唯一确定配方时恢复，避免猜错配方。 */
+    private void restoreLegacyCraft() {
+        var target = internalInventory.getItem(TARGET_SLOT);
+        var core = internalInventory.getItem(KCORE_SLOT);
+        if (!target.isEmpty() && core.is(ModItems.KNOWLEDGE_CORE.get())) {
+            var matches = new HandlerKnowledgeCore(core).getPatterns().stream()
+                    .filter(pattern -> pattern != null && pattern.isPatternValid()
+                            && ItemStack.matches(pattern.getResult(), target)).toList();
+            if (matches.size() == 1) {
+                var pattern = matches.getFirst();
+                job.start(pattern.getAspects(), target, pattern.getIngredients());
+                legacyCraftBlocked = false;
+                return;
+            }
+        }
+        ThaumicEnergistics.LOG.warn("Pausing legacy arcane craft at {}: missing or ambiguous pattern; restore a unique knowledge-core recipe to resume", worldPosition);
+        legacyCraftBlocked = true;
     }
 
     @Override
@@ -820,6 +838,7 @@ public class TileArcaneAssembler extends ThETileBase
         tag.putBoolean("IsCrafting", isCrafting);
         tag.putInt("CraftTick", craftTickCounter);
         tag.putInt("SpeedUpgrades", speedUpgrades);
+        job.save(tag, reg);
         if (visSourceFreq != 0) tag.putShort("VisSourceFreq", visSourceFreq);
 
         CompoundTag visTag = new CompoundTag();
@@ -839,126 +858,4 @@ public class TileArcaneAssembler extends ThETileBase
         }
     }
 
-    public static class ArcaneAssemblerPattern implements IPatternDetails {
-        private final AEItemKey definition;
-        private final IArcaneRecipe recipe;
-        private final AspectList aspects;
-        private final ItemStack resultStack;
-        private final IInput[] inputs;
-        private final String research;
-        /** 3×3 配方网格（知识核心存储的 9 格材料，GUI 配方预览用）。 */
-        private final ItemStack[] grid;
-
-        public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
-                                      AspectList aspects, ItemStack resultStack,
-                                      List<GenericStack> inputStacks) {
-            this(definition, recipe, aspects, resultStack, inputStacks, null, null, null);
-        }
-
-        public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
-                                      AspectList aspects, ItemStack resultStack,
-                                      List<GenericStack> inputStacks, String research) {
-            this(definition, recipe, aspects, resultStack, inputStacks, research, null, null);
-        }
-
-        public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
-                                      AspectList aspects, ItemStack resultStack,
-                                      List<GenericStack> inputStacks, String research, ItemStack[] grid) {
-            this(definition, recipe, aspects, resultStack, inputStacks, research, grid, null);
-        }
-
-        public ArcaneAssemblerPattern(AEItemKey definition, IArcaneRecipe recipe,
-                                      AspectList aspects, ItemStack resultStack,
-                                      List<GenericStack> inputStacks, String research, ItemStack[] grid,
-                                      List<GenericStack[]> inputAlternatives) {
-            this.definition = definition;
-            this.recipe = recipe;
-            this.aspects = aspects;
-            this.resultStack = resultStack;
-            this.research = research;
-            this.grid = grid;
-            this.inputs = new IInput[inputStacks.size()];
-            for (int i = 0; i < inputStacks.size(); i++) {
-                GenericStack stack = inputStacks.get(i);
-                // 通配变体组（tag 展开结果）；null/单元素退化为精确匹配（与旧行为一致）
-                GenericStack[] alts = (inputAlternatives != null && i < inputAlternatives.size()
-                        && inputAlternatives.get(i) != null)
-                        ? inputAlternatives.get(i)
-                        : new GenericStack[]{stack};
-                this.inputs[i] = new IInput() {
-                    @Override
-                    public GenericStack[] getPossibleInputs() {
-                        return alts;
-                    }
-
-                    @Override
-                    public long getMultiplier() {
-                        return 1;
-                    }
-
-                    @Override
-                    public boolean isValid(AEKey input, Level level) {
-                        if (!(input instanceof AEItemKey itemKey)) return false;
-                        for (GenericStack alt : alts) {
-                            if (alt.what() instanceof AEItemKey altKey && altKey.equals(itemKey)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    }
-
-                    @Nullable
-                    @Override
-                    public AEKey getRemainingKey(AEKey what) {
-                        // 元始珍珠作为"催化"原料：声明合成后它会返回网络（AE2 原生容器机制）。
-                        // 规划端据此按"每次 1 单"顺序模拟、执行端把珍珠计入 CPU waitingFor，
-                        // 机器合成完成把珍珠退回网络后 CPU 自动捕获续下一单——1 颗珍珠可连续多单。
-                        if (what instanceof AEItemKey itemKey
-                                && itemKey.getItem() == BuiltInRegistries.ITEM.get(PRIMORDIAL_PEARL_ID)) {
-                            return what;
-                        }
-                        return null;
-                    }
-                };
-            }
-        }
-
-        @Override
-        public AEItemKey getDefinition() { return definition; }
-
-        @Override
-        public IInput[] getInputs() { return inputs; }
-
-        @Override
-        public List<GenericStack> getOutputs() {
-            return List.of(new GenericStack(AEItemKey.of(resultStack), resultStack.getCount()));
-        }
-
-        @Override
-        public boolean supportsPushInputsToExternalInventory() {
-            return false;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof ArcaneAssemblerPattern other)) return false;
-            return definition != null && definition.equals(other.definition);
-        }
-
-        @Override
-        public int hashCode() {
-            return definition != null ? definition.hashCode() : 0;
-        }
-
-        public IArcaneRecipe getRecipe() { return recipe; }
-        public AspectList getAspects() { return aspects; }
-        public ItemStack getResultStack() { return resultStack; }
-        /** 3×3 配方网格（可能为 null/短数组，GUI 预览用）。 */
-        @Nullable
-        public ItemStack[] getGrid() { return grid; }
-        /** 对应 TC 奥术配方的研究键；无研究要求/老数据时可能为 null。 */
-        @Nullable
-        public String getResearch() { return research; }
-    }
 }

@@ -45,7 +45,7 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
     public ItemEssentiaCell(Item.Properties props, String tier, int kilobytes, int bytesPerType, int totalTypes, double idleDrain) {
         super(props.stacksTo(1));
         this.tier = tier;
-        this.totalBytes = kilobytes * 1024;
+        this.totalBytes = Math.multiplyExact(kilobytes, 1024);
         this.bytesPerType = bytesPerType;
         this.totalTypes = totalTypes;
         this.idleDrain = idleDrain;
@@ -213,35 +213,43 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
         }
     }
 
-    //shift+右键 返回 对应等级存储组件+源质存储外壳
+    // Only empty cells may be disassembled; return upgrades without losing them.
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
 
+        if (!player.isShiftKeyDown()) return InteractionResultHolder.pass(held);
+        Item componentItem = switch (tier) {
+            case "1k" -> ModItems.STORAGE_COMPONENT_1K.get();
+            case "4k" -> ModItems.STORAGE_COMPONENT_4K.get();
+            case "16k" -> ModItems.STORAGE_COMPONENT_16K.get();
+            case "64k" -> ModItems.STORAGE_COMPONENT_64K.get();
+            case "256k" -> ModItems.STORAGE_COMPONENT_256K.get();
+            case "1m" -> ModItems.STORAGE_COMPONENT_1M.get();
+            case "4m" -> ModItems.STORAGE_COMPONENT_4M.get();
+            case "16m" -> ModItems.STORAGE_COMPONENT_16M.get();
+            case "64m" -> ModItems.STORAGE_COMPONENT_64M.get();
+            case "256m" -> ModItems.STORAGE_COMPONENT_256M.get();
+            default -> null;
+        };
+        if (componentItem == null) return InteractionResultHolder.pass(held);
         if (!level.isClientSide) {
-            if (player.isShiftKeyDown()) {
-                if (held.getItem() instanceof ItemEssentiaCell cellItem) {
-                    String tier = cellItem.getTier();
-                    Item componentItem = switch (tier) {
-                        case "1k" -> ModItems.STORAGE_COMPONENT_1K.get();
-                        case "4k" -> ModItems.STORAGE_COMPONENT_4K.get();
-                        case "16k" -> ModItems.STORAGE_COMPONENT_16K.get();
-                        case "64k" -> ModItems.STORAGE_COMPONENT_64K.get();
-                        default -> null;
-                    };
-                    if(componentItem != null){
-                        player.addItem(new ItemStack(componentItem,1));
-                        player.addItem(new ItemStack(ModItems.STORAGE_CASING.get(),1));
-                    }
-                }
+            BasicCellInventory inventory = BasicCellInventory.createInventory(held, null);
+            // Fail closed if the storage handler could not read the cell.
+            if (inventory == null || inventory.getStoredItemCount() != 0) {
+                player.displayClientMessage(appeng.core.localization.PlayerMessages.OnlyEmptyCellsCanBeDisassembled.text(), true);
+                return InteractionResultHolder.fail(held);
             }
+            List<ItemStack> returned = new ArrayList<>();
+            returned.add(new ItemStack(componentItem));
+            returned.add(new ItemStack(ModItems.STORAGE_CASING.get()));
+            getUpgrades(held).forEach(upgrade -> {
+                if (!upgrade.isEmpty()) returned.add(upgrade.copy());
+            });
+            player.setItemInHand(hand, ItemStack.EMPTY);
+            returned.forEach(player.getInventory()::placeItemBackInInventory);
         }
-
-        if(player.isShiftKeyDown()){
-            return InteractionResultHolder.success(ItemStack.EMPTY);
-        }else{
-            return InteractionResultHolder.pass(held);
-        }
+        return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
     }
 
 
@@ -257,6 +265,24 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
     }
     public static ItemEssentiaCell create64k(Item.Properties props) {
         return new ItemEssentiaCell(props, "64k", 64, 8, ThEConfig.CELL_MAX_TYPES, 2.0);
+    }
+    public static ItemEssentiaCell create256k(Item.Properties props) {
+        return new ItemEssentiaCell(props, "256k", 256, 8, ThEConfig.CELL_MAX_TYPES, 2.5);
+    }
+    public static ItemEssentiaCell create1m(Item.Properties props) {
+        return new ItemEssentiaCell(props, "1m", 1024, 8, ThEConfig.CELL_MAX_TYPES, 3.0);
+    }
+    public static ItemEssentiaCell create4m(Item.Properties props) {
+        return new ItemEssentiaCell(props, "4m", 4096, 8, ThEConfig.CELL_MAX_TYPES, 3.5);
+    }
+    public static ItemEssentiaCell create16m(Item.Properties props) {
+        return new ItemEssentiaCell(props, "16m", 16384, 8, ThEConfig.CELL_MAX_TYPES, 4.0);
+    }
+    public static ItemEssentiaCell create64m(Item.Properties props) {
+        return new ItemEssentiaCell(props, "64m", 65536, 8, ThEConfig.CELL_MAX_TYPES, 4.5);
+    }
+    public static ItemEssentiaCell create256m(Item.Properties props) {
+        return new ItemEssentiaCell(props, "256m", 262144, 8, ThEConfig.CELL_MAX_TYPES, 5.0);
     }
     public static ItemEssentiaCell createCreative(Item.Properties props) {
         return new ItemEssentiaCell(props, "creative", Integer.MAX_VALUE / 1024, 8, 63, 0.0);

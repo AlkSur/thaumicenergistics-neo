@@ -7,13 +7,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import org.jetbrains.annotations.Nullable;
-import thaumicenergistics.common.tiles.TileArcaneAssembler;
 
 /**
  * 从 AE2 {@link IPatternDetails} 中提取 TC 研究键的辅助类。
  *
  * 两种样板携带研究键的方式：
- *  - 奥术装配器样板 {@link TileArcaneAssembler.ArcaneAssemblerPattern}：直接持 research 字段
+ *  - 奥术装配器样板 {@link thaumicenergistics.common.crafting.ArcaneAssemblerPattern}：直接持 research 字段
  *  - 蒸馏处理样板（AE2 标准 processing pattern）：通过样板上 DataComponents.CUSTOM_DATA 的 research 字段标记
  */
 public final class PatternResearchHelper {
@@ -27,7 +26,7 @@ public final class PatternResearchHelper {
      */
     @Nullable
     public static String getResearch(IPatternDetails pattern) {
-        if (pattern instanceof TileArcaneAssembler.ArcaneAssemblerPattern arcanePattern) {
+        if (pattern instanceof thaumicenergistics.common.crafting.ArcaneAssemblerPattern arcanePattern) {
             return arcanePattern.getResearch();
         }
 

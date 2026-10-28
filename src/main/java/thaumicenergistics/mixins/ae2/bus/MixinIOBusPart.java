@@ -2,10 +2,12 @@ package thaumicenergistics.mixins.ae2.bus;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -17,42 +19,44 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import appeng.api.stacks.AEKeyType;
 import appeng.parts.AEBasePart;
 import appeng.parts.automation.IOBusPart;
+import appeng.parts.automation.UpgradeablePart;
+import appeng.api.parts.IPartItem;
+import appeng.api.stacks.GenericStack;
+import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 
 /**
- * 给 AE2 <b>原版</b>输入/输出总线提供两件事（导入/导出总线共用父类 {@code IOBusPart}，一处覆盖两条总线）：
- * <ul>
- *   <li><b>源质键类型支持</b>（T-M1-011，P2）：{@code @ModifyArg} 把宿主 config 的键类型集合扩入源质键类型，
- *       使 IO 总线的<b>原生过滤槽</b>可容纳源质键（物品/流体/源质共存一格），JEI 拖拽由此天然可用；</li>
- *   <li><b>抽取缓冲</b>（T-M1-007-⑦a）：在父类 {@code readFromNBT}/{@code writeToNBT} 末尾追加缓冲 NBT 键
- *       （{@link EssentiaTransferBuffer#NBT_KEY_ASPECT}），承载「已从容器抽出但未入网」的残留源质。</li>
- * </ul>
- * <p>
- * <b>非纯 additive 说明</b>：{@code @ModifyArg} 修改的是原版构造器传给
- * {@code ConfigInventory.Builder.supportedTypes(Collection)} 的键类型集合——<b>只增不减</b>
- * （在原有集合上追加源质键类型；已含则原样返回）。这是 T-M1-011 唯一的非纯 additive 注入；
- * 其目标 {@code IOBusPart} 构造器是本模组三总线与两条原版总线的共同父类，故会同时惠及它们（可接受）。
- * <p>
- * <b>T-M1-011 退役项</b>：原「源质过滤 NBT」（{@code ThEEssentiaFilterAspects}）与鸭子接口
- * {@code EssentiaFilterHolder} 已随本任务删除——过滤数据改由宿主<b>原生 config inventory</b> 持久化，
- * 本节不再承载过滤，只保留抽取缓冲。
- * <p>
- * 抽取缓冲必须落在 {@code IOBusPart} 层（而非子类的 Mixin）：{@code ImportBusPart} /
- * {@code ExportBusPart} 都不覆写 {@code readFromNBT}/{@code writeToNBT}，若在子类 Mixin 里注入会解析到
- * 父类方法，从而在本模组三总线实例上执行（字段却只并入子类）→ 运行期 {@code NoSuchFieldError}。
- * <p>
- * 说明：本模组自有源质三总线亦继承 {@code IOBusPart}，同样会获得该实现——但从不产生缓冲，
- * 键恒空（写入时会被移除），行为与改动前一致；且二者的键与本模组三总线自身的缓冲键
- * （{@code ThEBufferAspect}/{@code ThEBufferAmount}）不同，互不干扰。
+ * 在导入/导出总线共用父类追加源质过滤类型和持久化余量缓冲。
+ * 余量由宿主拥有，拆除时保存为可回收物品；原版升级卡和 NBT 保持不变。
  */
 @Mixin(IOBusPart.class)
-public abstract class MixinIOBusPart implements EssentiaTransferBuffer {
+public abstract class MixinIOBusPart extends UpgradeablePart implements EssentiaTransferBuffer {
+
+    protected MixinIOBusPart(IPartItem<?> partItem) {
+        super(partItem);
+    }
 
     @Unique
     private AspectStack thE$transferBuffer = AspectStack.EMPTY;
+
+    // IOBusPart 未声明这两个方法，覆写并调用父类，避免向继承方法注入导致字段作用域错误。
+    @Override
+    public void addAdditionalDrops(List<ItemStack> drops, boolean wrenched) {
+        super.addAdditionalDrops(drops, wrenched);
+        if (!thE$transferBuffer.isEmpty()) {
+            drops.add(GenericStack.wrapInItemStack(AEssentiaKey.of(thE$transferBuffer.aspectId()),
+                    thE$transferBuffer.amount()));
+        }
+    }
+
+    @Override
+    public void clearContent() {
+        super.clearContent();
+        thE$transferBuffer = AspectStack.EMPTY;
+    }
 
     /**
      * 把源质键类型补进原版 IO 总线 config 的支持类型集合（只增不减）。

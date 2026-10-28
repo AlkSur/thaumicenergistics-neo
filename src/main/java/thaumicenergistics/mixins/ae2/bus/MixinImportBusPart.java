@@ -16,7 +16,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import appeng.api.config.Actionable;
-import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
@@ -34,35 +33,11 @@ import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.common.essentia.capability.EssentiaTransfer;
 import thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
-import thaumicenergistics.common.integration.tc.EssentiaConversionHelper;
-import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModItems;
 
 /**
- * 让 AE2 <b>原版输入总线</b>在插入「源质访问卡」后额外具备「相邻容器 → ME 网络」的源质搬运能力
- * （T-M1-007-⑦a）。
- * <p>
- * <b>additive</b>：只在 {@code ImportBusPart.doBusWork} 末尾（{@code @At("TAIL")}）追加源质搬运，
- * 原版物品/流体搬运逻辑一行不改。装卡后两种能力<b>并存</b>（同一个 tick 内先由原版逻辑搬物品，
- * 末尾再搬源质）；不装卡则完全不干预。
- * <p>
- * 挂载点说明：{@code IOBusPart.doBusWork} 是 {@code protected abstract}（无方法体，无法注入），
- * 其实现分别在 {@code ImportBusPart} / {@code ExportBusPart} 中，故需两处独立注入（本类负责导入侧）。
- * <p>
- * 行为沿用 T-M1 批次对齐的原 ThE 导入总线（T-M2-REMOVE 已删）：抽取顺序、速率（{@code 8 × getOperationsPerTick()}）、
- * 残留缓冲重试、能量按实际入网量实扣（{@code AE_PER_ESSENTIA}）全部一致。
- * <p>
- * 卡路径特性：读取宿主<b>原生 config 槽</b>里配置的源质键（T-M1-011，物品/流体/源质共存一格）——
- * <b>未配置源质 = 全搬</b>（抽到什么都行），<b>配置了源质 = 只搬选中的要素</b>。
- * <p>
- * <b>T-M1-010 根因修正（去 @Shadow）</b>：{@code IOBusPart.source}（:84）与
- * {@code IOBusPart.getOperationsPerTick()}（:194-202）均声明在<b>父类</b>，{@code ImportBusPart} 未覆写；
- * Mixin {@code @Shadow} 只解析<b>目标类自身</b>声明的成员、不沿父类查找 → 原实现整类被拒绝应用
- * （{@code InvalidMixinException: @Shadow method getOperationsPerTick ... was not located}）。
- * 改为经父类公开接口等价重建（见 {@code thE$source()} / {@code thE$operationsPerTick()}）。
- * <p>
- * <b>T-M1-011</b>：过滤来源由退役的鸭子接口 {@code EssentiaFilterHolder}（NBT）改为宿主原生 config；
- * config 经公开 getter {@code IOBusPart.getConfig()} 读取（字段声明在父类，禁 {@code @Shadow}）。
+ * 原版导入总线插入源质访问卡后，追加相邻容器的源质导入。
+ * 优先清空已持有的余量；外部抽取受过滤、容量和能量预算限制。
  */
 @Mixin(ImportBusPart.class)
 public abstract class MixinImportBusPart {
@@ -152,31 +127,12 @@ public abstract class MixinImportBusPart {
 
         // 卡路径过滤（T-M1-011）：宿主 config 配置了源质键 → 只搬选中的要素（配置外要素本轮跳过，留在容器里）
         List<AEssentiaKey> configured = thE$configuredEssentia();
-        if (!configured.isEmpty()) {
-            AspectStack offered = TCReflection.peekEssentia(adjacentBE, rate);
-            if (offered == null || offered.isEmpty()) {
-                thE$reportWork(worked, cir);
-                return;
-            }
-            AEssentiaKey offeredKey = AEssentiaKey.of(offered.aspectId());
-            if (offeredKey == null || !configured.contains(offeredKey)) {
-                thE$reportWork(worked, cir);
-                return;
-            }
-        }
-
-        // 容器 → 网络（能力模块：窥视 → 模拟测容量 → 定向抽取 → 实插）
-        EssentiaTransfer.Pull pull = EssentiaTransfer.pull(adjacentBE, grid, thE$source(), rate);
+        EssentiaTransfer.Pull pull = EssentiaTransfer.pull(adjacentBE, grid, thE$source(), rate,
+                side.getOpposite(), id -> configured.isEmpty() || configured.contains(AEssentiaKey.of(id)));
 
         if (!pull.leftover().isEmpty()) {
             // 模拟与实插不一致 → 剩余留在缓冲里重试，绝不归还 / 丢弃
             buffer.thE$setTransferBuffer(pull.leftover());
-        }
-        if (pull.moved() > 0 || !pull.leftover().isEmpty()) {
-            // 能量按实际入网量结算（与三总线一致：抽到但一分为入网时也为 0 消耗）
-            grid.getEnergyService().extractAEPower(
-                    pull.moved() * EssentiaConversionHelper.AE_PER_ESSENTIA,
-                    Actionable.MODULATE, PowerMultiplier.CONFIG);
         }
 
         thE$reportWork(worked || pull.moved() > 0, cir);
@@ -216,16 +172,13 @@ public abstract class MixinImportBusPart {
             buffer.thE$setTransferBuffer(AspectStack.EMPTY);
             return false;
         }
-        long injected = grid.getStorageService().getInventory().insert(
-                key, pending.amount(), Actionable.MODULATE, thE$source());
+        long injected = thaumicenergistics.common.essentia.capability.EssentiaEnergy.transfer(grid, pending.amount(),
+                allowed -> grid.getStorageService().getInventory().insert(key, allowed, Actionable.MODULATE, thE$source()));
         if (injected <= 0) {
             return false;
         }
         long left = pending.amount() - injected;
         buffer.thE$setTransferBuffer(left > 0 ? new AspectStack(pending.aspectId(), left) : AspectStack.EMPTY);
-        grid.getEnergyService().extractAEPower(
-                injected * EssentiaConversionHelper.AE_PER_ESSENTIA,
-                Actionable.MODULATE, PowerMultiplier.CONFIG);
         return true;
     }
 

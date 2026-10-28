@@ -34,11 +34,23 @@ public final class ModMenuTypes {
             REGISTRY.register("arcane_crafting_terminal", () ->
                     MenuTypeBuilder.create(ContainerArcaneCraftingTerminal::new, ITerminalHost.class)
                             .buildUnregistered(ThaumicEnergistics.id("arcane_crafting_terminal")));
-    /** 无线奥术合成终端菜单：复用有线菜单类，仅换 host 类型（手持无线终端，同 wireless_essentia_terminal 先例）。 */
+    /**
+     * 无线奥术合成终端菜单：复用有线菜单类，仅换 host 类型（手持无线终端，同 wireless_essentia_terminal 先例）。
+     * <p>
+     * COMPAT-PLAN：菜单类型对象提前构造（AE2WT 官方 WCTMenu.TYPE 同范式——类加载期
+     * buildUnregistered），WTDefinition 与注册表引用同一实例，避免通用终端注册回调
+     * （RegisterEvent(ITEM) 时 MENU 注册表尚未注册）拿到 null。
+     * 工厂显式传入无线菜单类型：客户端按 menu.getType() 选屏，若沿用三参构造会落回
+     * 有线类型，打开无通用终端切换按钮的有线屏幕。
+     */
+    public static final MenuType<ContainerArcaneCraftingTerminal> WIRELESS_ARCANE_CRAFTING_TERMINAL_TYPE =
+            MenuTypeBuilder.create(
+                    (id, inventory, host) -> new ContainerArcaneCraftingTerminal(
+                            ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL.get(), id, inventory, host, true),
+                    IPortableTerminal.class)
+                    .buildUnregistered(ThaumicEnergistics.id("wireless_arcane_crafting_terminal"));
     public static final Supplier<MenuType<ContainerArcaneCraftingTerminal>> WIRELESS_ARCANE_CRAFTING_TERMINAL =
-            REGISTRY.register("wireless_arcane_crafting_terminal", () ->
-                    MenuTypeBuilder.create(ContainerArcaneCraftingTerminal::new, IPortableTerminal.class)
-                            .buildUnregistered(ThaumicEnergistics.id("wireless_arcane_crafting_terminal")));
+            REGISTRY.register("wireless_arcane_crafting_terminal", () -> WIRELESS_ARCANE_CRAFTING_TERMINAL_TYPE);
 
     public static final Supplier<MenuType<ContainerEssentiaLevelEmitter>> ESSENTIA_LEVEL_EMITTER =
             REGISTRY.register("essentia_level_emitter", () ->

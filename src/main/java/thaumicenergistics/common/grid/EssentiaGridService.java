@@ -57,7 +57,7 @@ public class EssentiaGridService implements IEssentiaGrid, IGridServiceProvider 
         if (key == null) return 0;
         return StorageHelper.poweredExtraction(
                 grid.getEnergyService(), storage, key, amount,
-                IActionSource.empty());
+                IActionSource.empty(), simulate ? Actionable.SIMULATE : Actionable.MODULATE);
     }
 
     private MEStorage getNativeStorage() {
@@ -74,6 +74,7 @@ public class EssentiaGridService implements IEssentiaGrid, IGridServiceProvider 
 
     @Override
     public long extractEssentia(ResourceLocation aspectId, long amount, boolean simulate) {
+        if (amount <= 0) return 0;
         // 优先从 monitor 提取
         long monitorAmt = monitor.get(aspectId);
         if (monitorAmt >= amount) {

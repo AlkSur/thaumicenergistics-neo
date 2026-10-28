@@ -37,6 +37,21 @@ public class VisProviderProxy extends TileVisNode {
     }
 
     /**
+     * This node is never installed in a chunk. Its location may be air or any adjacent block,
+     * so the real-block whitelist of BlockEntityType does not apply. The superclass constructor
+     * calls this method before our fields are initialized; it must not depend on owner or level.
+     */
+    @Override
+    public boolean isValidBlockState(BlockState state) {
+        return true;
+    }
+
+    @Override
+    public void setChanged() {
+        // Entirely transient: graph changes must not dirty a real chunk or notify its neighbours.
+    }
+
+    /**
      * 构造后绑定所属部件与世界（BlockEntityType supplier 无法传入 owner，故在此注入）。
      */
     public void bind(VisInterfacePart part, Level level) {
@@ -62,7 +77,8 @@ public class VisProviderProxy extends TileVisNode {
     @Override
     public int consumeVis(Aspect aspect, int centivis) {
         VisInterfacePart part = this.owner.get();
-        if (part == null || !part.isActive()) {
+        if (isRemoved() || part == null || !part.isActive() || centivis <= 0
+                || getLevel() == null || getLevel().isClientSide()) {
             return 0;
         }
         ResourceLocation aspectId = ResourceLocation.fromNamespaceAndPath("thaumcraft", aspect.tag());
@@ -80,6 +96,14 @@ public class VisProviderProxy extends TileVisNode {
 
     @Override
     public void invalidate() {
-        VisNetHandler.removeNode(this);
+        setRemoved();
+    }
+
+    @Override
+    public void setRemoved() {
+        if (isRemoved()) return;
+        this.owner.clear();
+        // TileVisNode removes its graph, clears parent/children, and delegates to BlockEntity.
+        super.setRemoved();
     }
 }

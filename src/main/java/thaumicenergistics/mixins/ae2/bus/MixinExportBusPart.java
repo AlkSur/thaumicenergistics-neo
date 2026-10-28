@@ -29,40 +29,11 @@ import appeng.util.ConfigInventory;
 
 import thaumicenergistics.common.essentia.capability.EssentiaTransfer;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
-import thaumicenergistics.common.integration.tc.EssentiaConversionHelper;
 import thaumicenergistics.init.ModItems;
 
 /**
- * 让 AE2 <b>原版输出总线</b>在插入「源质访问卡」后额外具备「ME 网络 → 相邻容器」的源质搬运能力
- * （T-M1-007-⑦a）。
- * <p>
- * <b>additive</b>：只在 {@code ExportBusPart.doBusWork} 末尾（{@code @At("TAIL")}）追加源质搬运，
- * 原版物品/流体导出逻辑一行不改。装卡后两种能力<b>并存</b>；不装卡则完全不干预。
- * <p>
- * <b>要导出哪些要素（卡路径独有）</b>：T-M1-011 起，源质过滤改由宿主<b>原生 config 槽</b>承载
- * （物品/流体/源质共存一格；由 {@code MixinIOBusPart} 的 {@code @ModifyArg} 使 config 接受源质键）：
- * <ul>
- *   <li><b>配置了源质 = 只搬选中的要素</b>——遍历配置的源质键轮询（round-robin），逐个尝试，搬成功即停；</li>
- *   <li><b>未配置源质 = 不搬</b>（R-2 口径）——必须显式配置源质才导出；对齐 AE2 原版输出总线
- *       「空配置不导出」语义，避免插卡未配置就把网络内全部源质倒向相邻容器。</li>
- * </ul>
- * 轮询游标跨 tick 保留（不持久化），避免每次只搬列表首项造成饥饿。
- * <p>
- * 速率（{@code 8 × getOperationsPerTick()}）与能量口径沿用 T-M1 批次对齐的原 ThE 导出总线（T-M2-REMOVE 已删）：
- * 导出侧<b>不做</b>能量实扣，只把折算值记进 {@link #thE$storedEnergy}。
- * <p>
- * 已知既有瑕疵被照搬：原实现记录的是 {@code injected * (int) AE_PER_ESSENTIA}，
- * {@code injected * (int) AE_PER_ESSENTIA}，而 {@code AE_PER_ESSENTIA = 0.3}，{@code (int) 0.3 == 0}，
- * 故该字段恒为 0。本类照搬该表达式以保持行为等价，并原样保留该既有瑕疵（不在本任务内修正）。
- * <p>
- * <b>T-M1-010 根因修正（去 @Shadow）</b>：{@code IOBusPart.source}（:84）与
- * {@code IOBusPart.getOperationsPerTick()}（:194-202）均声明在<b>父类</b>，{@code ExportBusPart} 未覆写；
- * Mixin {@code @Shadow} 只解析<b>目标类自身</b>声明的成员、不沿父类查找 → 原实现整类被拒绝应用
- * （{@code InvalidMixinException: @Shadow method getOperationsPerTick ... was not located}）。
- * 改为经父类公开接口等价重建（见 {@code thE$source()} / {@code thE$operationsPerTick()}）。
- * <p>
- * <b>T-M1-011</b>：过滤来源由退役的鸭子接口 {@code EssentiaFilterHolder}（NBT）改为宿主原生 config；
- * config 经公开 getter {@code IOBusPart.getConfig()} 读取（字段声明在父类，禁 {@code @Shadow}）。
+ * 原版导出总线插入源质访问卡后，追加显式配置要素的轮询输出。
+ * 模拟不扣料；实际转移由统一服务结算，退回失败的余量持久化并优先重试。
  */
 @Mixin(ExportBusPart.class)
 public abstract class MixinExportBusPart {
@@ -103,10 +74,6 @@ public abstract class MixinExportBusPart {
     @Unique
     private int thE$roundRobinIndex = 0;
 
-    /** 已折算的能量记账（照搬三总线：只记不扣）。无 GUI 展示位，不持久化。 */
-    @Unique
-    private long thE$storedEnergy = 0;
-
     @Inject(method = "doBusWork", at = @At("TAIL"), cancellable = true)
     private void thE$essentiaExport(IGrid grid, CallbackInfoReturnable<Boolean> cir) {
         if (!thE$hasEssentiaCard()) {
@@ -131,6 +98,19 @@ public abstract class MixinExportBusPart {
             return;
         }
 
+        if ((Object) this instanceof thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer buffer
+                && !buffer.thE$getTransferBuffer().isEmpty()) {
+            var pending = buffer.thE$getTransferBuffer();
+            long delivered = thaumicenergistics.common.essentia.capability.EssentiaEnergy.transfer(
+                    grid, pending.amount(), allowed -> EssentiaTransfer.insertOwned(
+                            AEssentiaKey.of(pending.aspectId()), allowed, adjacentBE, side.getOpposite()));
+            buffer.thE$setTransferBuffer(delivered == pending.amount()
+                    ? thaumicenergistics.api.storage.AspectStack.EMPTY
+                    : new thaumicenergistics.api.storage.AspectStack(pending.aspectId(), pending.amount() - delivered));
+            if (delivered > 0) cir.setReturnValue(true);
+            return;
+        }
+
         int rate = 8 * Math.max(1, thE$operationsPerTick());
         if (rate <= 0) {
             return;
@@ -146,14 +126,25 @@ public abstract class MixinExportBusPart {
         for (int i = 0; i < count; i++) {
             int index = (this.thE$roundRobinIndex + i) % count;
             AEssentiaKey key = candidates.get(index);
-            long injected = EssentiaTransfer.push(
+            var transfer = EssentiaTransfer.push(
                     grid, thE$source(), key, rate, adjacentBE, side.getOpposite());
+            if (!transfer.leftover().isEmpty()
+                    && (Object) this instanceof thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer buffer) {
+                buffer.thE$setTransferBuffer(transfer.leftover());
+            }
+            long injected = transfer.moved();
             if (injected > 0) {
                 this.thE$roundRobinIndex = (index + 1) % count;
-                this.thE$storedEnergy = injected * (int) EssentiaConversionHelper.AE_PER_ESSENTIA;
                 if (!Boolean.TRUE.equals(cir.getReturnValue())) {
                     cir.setReturnValue(true); // 见 MixinImportBusPart#thE$reportWork 的同类说明
                 }
+                return;
+            }
+            if (transfer.leftover().isEmpty()
+                    && thaumicenergistics.common.essentia.capability.ExportBusEssentiaTransport.reserveForConsumer(
+                            (ExportBusPart) (Object) this, key, rate, adjacentBE, side.getOpposite(), grid, thE$source())) {
+                this.thE$roundRobinIndex = (index + 1) % count;
+                cir.setReturnValue(true);
                 return;
             }
         }

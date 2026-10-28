@@ -1,4 +1,17 @@
 {
+  "thaumicenergistics.gui.knowledge_inscriber.clear_grid": "清空当前配方",
+  "item.thaumicenergistics.essentia_cell_256k": "256k ME 源质存储元件",
+  "item.thaumicenergistics.storage_component_256k": "256k ME 源质存储组件",
+  "item.thaumicenergistics.essentia_cell_1m": "1m ME 源质存储元件",
+  "item.thaumicenergistics.storage_component_1m": "1m ME 源质存储组件",
+  "item.thaumicenergistics.essentia_cell_4m": "4m ME 源质存储元件",
+  "item.thaumicenergistics.storage_component_4m": "4m ME 源质存储组件",
+  "item.thaumicenergistics.essentia_cell_16m": "16m ME 源质存储元件",
+  "item.thaumicenergistics.storage_component_16m": "16m ME 源质存储组件",
+  "item.thaumicenergistics.essentia_cell_64m": "64m ME 源质存储元件",
+  "item.thaumicenergistics.storage_component_64m": "64m ME 源质存储组件",
+  "item.thaumicenergistics.essentia_cell_256m": "256m ME 源质存储元件",
+  "item.thaumicenergistics.storage_component_256m": "256m ME 源质存储组件",
   "itemGroup.thaumicenergistics": "神秘能源",
   "block.thaumicenergistics.essentia_provider": "源质供应器",
   "block.thaumicenergistics.infusion_provider": "注魔供应器",
@@ -33,66 +46,45 @@
   "tooltip.thaumicenergistics.essentia_level_emitter.desc": "根据网络中源质数量输出红石信号",
   "tooltip.thaumicenergistics.vis_interface.desc": "将TC要素网络与ME网络桥接，可抽取/供给要素",
   "ae2.keytype.thaumicenergistics.essentia": "源质",
-
-
   "tc.research_category.THAUMICENERGISTICS": "神秘能源",
-
   "tc.research_name.BASEENERGISTICS": "基础能源学",
   "tc.research_text.BASEENERGISTICS": "你发现AE2的机械网络与神秘学之间存在奇妙的共鸣。精密的AE设备似乎能够感知并操控源质这种神秘的物质形态。高版本材质由§b§l麦淇淋§r制作。",
-
   "tc.research_name.FOCUS_AEWRENCH": "法杖核心：AE扳手",
   "tc.research_text.FOCUS_AEWRENCH": "将AE扳手的功能凝聚到法杖核心中，让你无需切换工具即可操控AE网络设备。",
-
   "tc.research_name.DIGISENTIA": "数字化源质",
   "tc.research_text.DIGISENTIA.stage.1": "源质虽然是一种神秘物质，但你发现它可以用AE的数字化技术进行处理。关键在于制造两种核心：扩散核心用于将源质分解为数字信号，凝聚核心用于将数字信号重组为源质。",
   "tc.research_text.DIGISENTIA.stage.2": "你成功制作了扩散核心和凝聚核心。它们将是你构建整个神秘能源系统的基石。",
-  
   "tc.research_name.ESSENTIASTORAGE": "源质存储",
-  "tc.research_text.ESSENTIASTORAGE": "利用凝聚核心和天域之华制造ME源质存储元件，有1k、4k、16k、64k四种容量。",
-
-
-
+  "tc.research_text.ESSENTIASTORAGE": "利用凝聚核心和天域之华制造ME源质存储元件，有1k、4k、16k、64k、256k、1m、4m、16m、64m、256m十种容量。",
   "tc.research_name.ARCANECRAFTINGTERMINAL": "奥术合成终端",
   "tc.research_text.ARCANECRAFTINGTERMINAL.stage.1": "将ME终端与奥术工作台结合，你可以在ME网络中直接进行奥术合成。",
   "tc.research_text.ARCANECRAFTINGTERMINAL.stage.2": "奥术合成终端需要消耗法杖或法杖核心中的魔力。确保你的法杖有足够的vis来完成合成。",
-
   "tc.research_name.ESSENTIAPROVIDER": "源质供应器",
   "tc.research_text.ESSENTIAPROVIDER.stage.1": "源质供应器能够自动从ME网络中抽取源质，供应给相邻的源质容器。这对于需要大量源质的设备（如蒸馏器）非常有用。",
   "tc.research_text.ESSENTIAPROVIDER.stage.2": "将源质供应器贴在源质容器旁边，它就会自动补充容器中的源质，直到达到设定值。",
-
   "tc.research_name.INFUSIONPROVIDER": "注魔供应器",
   "tc.research_text.INFUSIONPROVIDER.stage.1": "注魔供应器是源质供应器的升级版。它可以直接将ME网络中的源质注入到注魔祭坛中，完全自动化注魔过程。",
   "tc.research_text.INFUSIONPROVIDER.stage.2": "将注魔供应器放置在注魔祭坛下方，它会在注魔过程中自动提供所需的源质。你不再需要手动摆放源质罐子。",
-
   "tc.research_name.ARCANEASSEMBLER": "奥术装配器",
   "tc.research_text.ARCANEASSEMBLER.stage.1": "奥术装配器是ME分子装配室的奥术版本。它能够自动执行奥术合成配方，将魔法与自动化完美结合。",
   "tc.research_text.ARCANEASSEMBLER.stage.2": "连接到ME网络后，奥术装配器可以自动处理奥术合成任务。它需要消耗法杖中的vis来驱动合成过程。",
-
   "tc.research_name.ESSENTIAVIBRATIONCHAMBER": "源质谐振仓",
-  "tc.research_text.ESSENTIAVIBRATIONCHAMBER": "源质谐振仓可以将源质转化为AE能量。不同的源质具有不同的能量值，源质越复杂，产生的能量越多。它提供了一种将多余的源质转化为可用能源的方式。",
-
+  "tc.research_text.ESSENTIAVIBRATIONCHAMBER": "源质谐振仓可将任意源质转化为 AE 能量。各类源质转换产出有所差异，能源类源质能够生成尤为可观的能量，以此提供将富余源质转化为可用能源的途径。",
   "tc.research_name.KNOWLEDGEINSCRIBER": "知识记录仪",
   "tc.research_text.KNOWLEDGEINSCRIBER": "知识记录仪能够将神秘学研究笔记转化为AE网络可识别的知识核心。它桥接了神秘学知识与数字存储之间的鸿沟。",
-
   "tc.research_name.DISTILLATIONENCODER": "蒸馏编码台",
   "tc.research_text.DISTILLATIONENCODER": "蒸馏编码台可以自动将物品中的源质蒸馏出来并导入ME网络。它结合了源质蒸馏器和AE网络的优势。",
-
   "tc.research_name.VISINTERFACE": "要素中继接口",
   "tc.research_text.VISINTERFACE": "要素中继接口允许你通过ME网络传输vis（魔力），实现远距离的vis供应。它使用P2P通道技术，将vis从一个节点传输到另一个节点。",
-
   "tc.research_name.GOLEMWIFI": "无线傀儡背包",
   "tc.research_text.GOLEMWIFI": "无线傀儡背包让傀儡能够直接访问ME网络中的物品。装备此背包的傀儡可以作为移动的AE接口，实现远程物品存取。",
-
-
   "tc.research_name.CERTUS_DUPE": "赛特斯石英复制",
   "tc.research_text.CERTUS_DUPE": "利用炼金复制技术，你可以复制赛特斯石英水晶。这为你的AE网络提供了可再生的赛特斯石英来源。",
-
   "tc.research_text.ARCANEASSEMBLER": "ME分子装配室的神秘版本，能够自动执行奥术合成。",
   "tc.research_text.ARCANECRAFTINGTERMINAL": "将ME终端与奥术工作台结合，在ME网络中直接进行奥术合成。",
   "tc.research_text.INFUSIONPROVIDER": "自动从ME网络向注魔祭坛提供源质。",
   "tc.research_text.ESSENTIAPROVIDER": "自动从ME网络提取源质供给相邻容器。",
   "tc.research_text.DIGISENTIA": "利用扩散核心和会聚核心将源质数字化，交由ME网络处理。",
-
   "tc.research_name.PSEUDO_DISTILESSENTIA": "要素蒸馏",
   "tc.research_name.PSEUDO_TUBEFILTER": "高级源质管道",
   "tc.research_name.PSEUDO_ALCHEMICALDUPLICATION": "炼金复制",
@@ -103,7 +95,6 @@
   "tc.research_name.PSEUDO_VISPOWER": "掌控魔力",
   "tc.research_name.PSEUDO_SCEPTRE": "工艺权杖",
   "tc.research_name.PSEUDO_COREGATHER": "傀儡核心：聚集",
-
   "thaumicenergistics.jade.current_aspect": "燃料: %s",
   "thaumicenergistics.jade.essentia_stored": "源质: %d / %d",
   "thaumicenergistics.jade.burning": "燃烧 %d%%, %.1f AE/tick",
@@ -181,9 +172,9 @@
   "tc.research_name.ESSENTIAACCESSCARD": "源质访问卡",
   "tc.research_text.ESSENTIAACCESSCARD": "奥术学者游历旧纪元遗迹，于破碎的源质导管残件中研究，发掘出可连通 AE 网络与魔导体系的秘钥，制成此源质访问卡，令器械得以流转源质。插入 AE2 输入/输出/存储总线与 ME 接口后，使其获得源质能力——源质由此进出 ME 网络。",
   "tc.research_name.GACHABOX": "概率之脑",
-  "tc.research_text.GACHABOX.stage.1": "以罐中之脑为心智核心的概率装置：自AE网络汲取认知、能量源质，供能驱动术式，掷骰把随机要素点数记入归属玩家的要素池；概率加速卡可缩短单轮时限。",
-  "tc.research_text.GACHABOX.stage.2": "概率加速卡暂无合成途径，可经创造栏获取；。",
-  "itemGroup.ThaumicEnergistics": "神秘能源",
+  "tc.research_text.GACHABOX.stage.1": "以罐中之脑为心智核心的概率装置：自AE网络汲取认知源质，供能驱动术式，掷骰把随机要素点数记入归属玩家的要素池；概率加速卡可缩短单轮时限。",
+  "tc.research_text.GACHABOX.stage.2": "概率加速卡暂无合成途径，可经创造栏获取。",
+  "itemGroup.ThaumicEnergistics": "Thaumic Energistics",
   "thaumicenergistics.group.essentia.transport": "ME Essentia Import/Export Bus",
   "thaumicenergistics.fluid.gaseous": "Gas",
   "thaumicenergistics.block.essentia.provider.name": "Essentia Provider",
@@ -327,7 +318,6 @@
   "thaumicenergistics.jade.assembler.vis_source": "Essentia Source: %s",
   "thaumicenergistics.jade.assembler.vis_connected": "Connected",
   "thaumicenergistics.jade.assembler.vis_disconnected": "Not Connected",
-  "itemGroup.ThaumicEnergistics": "Thaumic Energistics",
   "tile.thaumicenergistics.infusion_provider.name": "Essentia Infusion Provider",
   "item.thaumicenergistics.diffusion_core.name": "Diffusion Core",
   "item.thaumicenergistics.coalescence_core.name": "Coalescence Core",
@@ -382,5 +372,7 @@
   "research.arcaneterminal.title": "Arcane Crafting Terminal",
   "research.arcaneterminal.stage.1": "Maybe I can combine a ME Terminal with a Arcane Workbench to get something that will help me with my arcane endeavours",
   "research.arcaneterminal.stage.2": "I can now make Arcane Crafting Terminal",
-  "research.arcaneterminal.addenda.1": "I can upgrade my Arcane Crafting Terminal to increase its vis draw range"
+  "research.arcaneterminal.addenda.1": "I can upgrade my Arcane Crafting Terminal to increase its vis draw range",
+  "block.thaumicenergistics.maiqilinfumo": "麦淇淋玩偶",
+  "block.thaumicenergistics.beiwucnfumo": "北巫_CN玩偶"
 }

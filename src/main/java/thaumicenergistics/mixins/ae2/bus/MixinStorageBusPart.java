@@ -27,30 +27,14 @@ import thaumicenergistics.common.essentia.capability.EssentiaContainerStorage;
 import thaumicenergistics.init.ModItems;
 
 /**
- * 给 AE2 <b>原版</b>存储总线挂载源质支持（T-M1-007-⑦b）：{@code mountInventories} TAIL 插卡后把相邻源质容器
- * 挂载为网络存储。纯 additive，不碰原版挂载存储 / 优先级等既有逻辑。存储总线不继承 {@code IOBusPart}，
- * 故需独立一处注入。
- * <p>
- * <b>T-M1-011 退役项</b>：原「源质过滤 NBT」（{@code ThEEssentiaFilterAspects}）持久化与鸭子接口
- * {@code EssentiaFilterHolder} 已随本任务删除——本宿主的分区/过滤改由<b>原生 config inventory</b> 承载
- * （{@code StorageBusPart.getConfig()}，AE2 自身以其构建 {@code IPartitionList} 施加到挂载句柄），
- * 本节不再承载任何过滤数据。
- * <p>
- * ⑦b 的两条要点：
- * <ul>
- *   <li><b>追加不替换</b>：AE2 自己的 {@code handler}（items/fluids 视图）照旧挂载，本类只往
- *       {@link IStorageMounts} 里<b>再</b>挂一个源质视图（{@link EssentiaContainerStorage}）；</li>
- *   <li><b>避让</b>：相邻方块自身已暴露 {@code AECapabilities.ME_STORAGE}（AE2 原版存储总线会直接挂它）
- *       时不再挂源质视图，避免同一个容器出现两套视图。</li>
- * </ul>
- * 挂载视图与优先级跟随总线自身（{@link IPriorityHost#getPriority()}）；卡插拔时通过
- * {@code upgradesChanged} TAIL 触发一次重新挂载，使存储增删即时生效。
+ * 插卡后追加相邻源质容器视图，经过总线访问模式和分区过滤。
+ * 对已经提供 ME_STORAGE 的目标不重复挂载；卡片变化后请求重新挂载。
  */
 @Mixin(StorageBusPart.class)
 public abstract class MixinStorageBusPart {
 
     @Unique
-    private EssentiaContainerStorage thE$containerStorage;
+    private MEStorage thE$containerStorage;
 
     // ===== T-M1-007-⑦b：插卡后追加源质容器挂载 =====
 
@@ -90,12 +74,15 @@ public abstract class MixinStorageBusPart {
     }
 
     @Unique
-    private EssentiaContainerStorage thE$getContainerStorage() {
+    private MEStorage thE$getContainerStorage() {
         if (this.thE$containerStorage == null) {
-            this.thE$containerStorage = new EssentiaContainerStorage(
+            this.thE$containerStorage = new thaumicenergistics.common.storage.EssentiaStorageBusInventory(
+                    new EssentiaContainerStorage(
                     this::thE$getAdjacentBlockEntity,
                     // T-M2-REMOVE：本模组存储总线已删，描述名改挂 AE2 原版存储总线（宿主本体）
-                    AEParts.STORAGE_BUS.asItem().getDescription());
+                    AEParts.STORAGE_BUS.asItem().getDescription(),
+                    () -> ((AEBasePart) (Object) this).getSide().getOpposite()),
+                    () -> (StorageBusPart) (Object) this);
         }
         return this.thE$containerStorage;
     }

@@ -1,6 +1,7 @@
 package thaumicenergistics.common.tiles;
 
 import java.util.ArrayList;
+import thaumicenergistics.common.crafting.ProbabilityBrainRules;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -27,7 +28,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 import appeng.api.config.Actionable;
-import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGrid;
@@ -35,7 +35,6 @@ import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IInWorldGridNodeHost;
-import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.storage.IStorageService;
@@ -58,7 +57,7 @@ import thaumicenergistics.init.ModItems;
 /**
  * 概率之脑 BE（M6）：网格节点 + 每秒一次的周期 tick。
  * 脑槽、4 张加速卡、绑定宿主、进行中的转动与屏幕闪烁都在此记账；
- * 数值语义照 CE（GachaOdds/GachaTurn），能源直扣 ME 网络（500 AE/周期），
+ * 概率规则参考 CE（GachaOdds/GachaTurn），网络持续耗能 50 AE/t，
  * 燃料 cognitio 从 ME 源质存储扣取（2/周期），产出经 TCResearchManager.addAspectPool 落入宿主认知要素池。
  */
 public class BrainOfProbabilityBlockEntity extends ThETileBase
@@ -66,8 +65,8 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
 
     /** 转动按秒走，每秒醒一次。 */
     private static final int TICKS_PER_SECOND = 20;
-    /** 每周期 ME 能量消耗（CE GachaPower AE_PER_TURN=500 定稿）。 */
-    public static final double AE_PER_TURN = 500.0;
+    /** 网络持续耗能，由 AE2 能量服务统一扣除，不另收每轮启动费用。 */
+    public static final double AE_PER_TICK = 50.0;
     /** 每周期 cognitio 燃料（CE 同值）。 */
     public static final int COGNITIO_PER_TURN = 2;
     /** 加速卡上限（CE 同值）。 */
@@ -75,25 +74,16 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
     /** 结果在屏幕上停留秒数（CE FLASH_SECONDS=2）。 */
     private static final int FLASH_SECONDS = 2;
 
-    // ===== 骰子数值（CE GachaOdds 定稿，用户可调） =====
-    /** 最快的一次转动，也是赔率最好的一次。 */
-    public static final int MIN_SECONDS = 30;
-    /** 无加速卡时最慢的转动。 */
-    public static final int LONGEST_SECONDS = 180;
-    /** 每张加速卡把最长转动缩短的秒数。 */
-    public static final int SECONDS_PER_CARD = 25;
-    /** 加速卡最多把最长转动压到的秒数（第五张起不再变化）。 */
-    public static final int LONGEST_WITH_CARDS = 80;
-    /** 最快转动的给奖赔率。 */
-    public static final double CHANCE_AT_MIN_SECONDS = 0.75;
-    /** 最慢转动的给奖赔率。 */
-    public static final double CHANCE_AT_LONGEST_SECONDS = 0.45;
-    /** 给奖转动抽取次数下限。 */
-    public static final int MIN_DRAWS = 5;
-    /** 给奖转动抽取次数上限。 */
-    public static final int MAX_DRAWS = 7;
-    /** 单次抽取点数上限（1~3）。 */
-    public static final int MAX_POINTS_PER_DRAW = 3;
+    // 公开常量保持兼容，规则集中在 ProbabilityBrainRules。
+    public static final int MIN_SECONDS = ProbabilityBrainRules.MIN_SECONDS;
+    public static final int LONGEST_SECONDS = ProbabilityBrainRules.LONGEST_SECONDS;
+    public static final int SECONDS_PER_CARD = ProbabilityBrainRules.SECONDS_PER_CARD;
+    public static final int LONGEST_WITH_CARDS = ProbabilityBrainRules.LONGEST_WITH_CARDS;
+    public static final double CHANCE_AT_MIN_SECONDS = ProbabilityBrainRules.CHANCE_AT_MIN_SECONDS;
+    public static final double CHANCE_AT_LONGEST_SECONDS = ProbabilityBrainRules.CHANCE_AT_LONGEST_SECONDS;
+    public static final int MIN_DRAWS = ProbabilityBrainRules.MIN_DRAWS;
+    public static final int MAX_DRAWS = ProbabilityBrainRules.MAX_DRAWS;
+    public static final int MAX_POINTS_PER_DRAW = ProbabilityBrainRules.MAX_POINTS_PER_DRAW;
 
     private final IManagedGridNode mainNode;
     private final IActionSource actionSource;
@@ -139,7 +129,7 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
                 .setExposedOnSides(EnumSet.allOf(Direction.class))
                 .addService(IGridTickable.class, this);
-        mainNode.setIdlePowerUsage(0.0);
+        mainNode.setIdlePowerUsage(AE_PER_TICK);
         actionSource = IActionSource.ofMachine(this);
     }
 
@@ -225,9 +215,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         if (turnSeconds > 0) {
             return null;
         }
-        if (!canPayEnergy()) {
-            return WaitReason.NO_POWER;
-        }
         if (!hasCognitioFuel()) {
             return WaitReason.NO_ESSENTIA;
         }
@@ -255,16 +242,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         return null;
     }
 
-    /** 能量直扣 ME 网络：500 AE/周期，SIMULATE 预检。 */
-    private boolean canPayEnergy() {
-        IGrid grid = mainNode.getGrid();
-        if (grid == null) {
-            return false;
-        }
-        IEnergyService energy = grid.getEnergyService();
-        return energy.extractAEPower(AE_PER_TURN, Actionable.SIMULATE, PowerMultiplier.ONE) >= AE_PER_TURN;
-    }
-
     /** cognitio 燃料预检：ME 源质存储须有 2 点可扣。 */
     private boolean hasCognitioFuel() {
         IGrid grid = mainNode.getGrid();
@@ -281,7 +258,7 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
 
     /** 一次抽取同时定下时长和赔率，付过费才开转。 */
     private void beginTurn(ServerLevel server) {
-        Turn drawn = roll(server.getRandom(), cardCount());
+        var drawn = ProbabilityBrainRules.roll(server.getRandom(), cardCount());
         if (!payForTurn()) {
             return;
         }
@@ -290,7 +267,7 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         setChanged();
     }
 
-    /** 扣 2 点 cognitio 加 500 AE 电力；付不出就不开转。 */
+    /** 每轮只扣 2 点 cognitio，电力通过节点的持续耗能结算。 */
     private boolean payForTurn() {
         IGrid grid = mainNode.getGrid();
         AEKey cog = cognitioKey();
@@ -302,11 +279,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
             return false;
         }
         MEStorage inventory = storage.getInventory();
-        IEnergyService energy = grid.getEnergyService();
-        // 能量 SIMULATE（double 记账，禁截断）
-        if (energy.extractAEPower(AE_PER_TURN, Actionable.SIMULATE, PowerMultiplier.ONE) < AE_PER_TURN) {
-            return false;
-        }
         // 燃料 SIMULATE → MODULATE（竞态兜底：不足则退回已扣部分）
         if (inventory.extract(cog, COGNITIO_PER_TURN, Actionable.SIMULATE, actionSource) < COGNITIO_PER_TURN) {
             return false;
@@ -318,7 +290,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
             }
             return false;
         }
-        energy.extractAEPower(AE_PER_TURN, Actionable.MODULATE, PowerMultiplier.ONE);
         return true;
     }
 
@@ -411,29 +382,9 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
 
     // ===== 骰子（CE GachaOdds 同构） =====
 
-    /** 装这么多张卡时可能掷出的最长转动。 */
-    private static int longestSeconds(int cards) {
-        return Math.max(LONGEST_WITH_CARDS, LONGEST_SECONDS - SECONDS_PER_CARD * cards);
-    }
-
-    /** 这个时长的转动给奖的赔率，只看时长。 */
-    private static double payoutChance(int seconds) {
-        double along = (double) (seconds - MIN_SECONDS) / (LONGEST_SECONDS - MIN_SECONDS);
-        return CHANCE_AT_MIN_SECONDS + (CHANCE_AT_LONGEST_SECONDS - CHANCE_AT_MIN_SECONDS) * along;
-    }
-
-    /** 掷出的一次转动：跑多少秒，给不给奖。 */
-    private record Turn(int seconds, boolean pays) {}
-
-    /** 一次抽取定下两半：落到的时长决定这次转动的赔率。 */
-    private Turn roll(RandomSource random, int cards) {
-        int seconds = MIN_SECONDS + random.nextInt(longestSeconds(cards) - MIN_SECONDS + 1);
-        return new Turn(seconds, random.nextDouble() < payoutChance(seconds));
-    }
-
     /** 箱子为什么停着不动：blankScreen = 该修装置（死屏），其余为待机屏。 */
     private enum WaitReason {
-        NO_STRUCTURE, NO_BRAIN, UNBOUND_BRAIN, NO_CHANNEL, OWNER_OFFLINE, NO_POWER, NO_ESSENTIA;
+        NO_STRUCTURE, NO_BRAIN, UNBOUND_BRAIN, NO_CHANNEL, OWNER_OFFLINE, NO_ESSENTIA;
 
         boolean blankScreen() {
             return this == NO_STRUCTURE || this == NO_CHANNEL;

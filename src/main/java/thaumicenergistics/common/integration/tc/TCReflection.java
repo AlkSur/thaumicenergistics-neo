@@ -1,6 +1,5 @@
 package thaumicenergistics.common.integration.tc;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,68 +15,10 @@ import thaumicenergistics.api.storage.AspectStack;
 
 public final class TCReflection {
 
-    /** aspect tag → ResourceLocation 缓存（tag 有界：6 个源质 + 已注册方面）。 */
-    private static final Map<String, ResourceLocation> ASPECT_ID_CACHE = new ConcurrentHashMap<>();
-
     /** 荒古炼金炉类名（TC port；不实现 IAspectContainer，需反射抽内部源质）。 */
     private static final String FURNACE_CLASS_NAME = "thaumcraft.common.blockentities.AlchemicalFurnaceBlockEntity";
-    /** 炼金炉 private aspects 字段（缓存 Field 避免每 tick getDeclaredField）。 */
-    private static volatile java.lang.reflect.Field furnaceAspectsField;
 
     private TCReflection() {}
-
-    /** 读取荒古炼金炉 private aspects 字段（不实现 IAspectContainer；只读，返回活引用用于原地修改）。 */
-    @Nullable
-    private static AspectList getFurnaceAspects(BlockEntity be) {
-        try {
-            if (furnaceAspectsField == null) {
-                furnaceAspectsField = be.getClass().getDeclaredField("aspects");
-                furnaceAspectsField.setAccessible(true);
-            }
-            Object raw = furnaceAspectsField.get(be);
-            return raw instanceof AspectList list ? list : null;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /** 荒古炼金炉写回（aspects 为 private 字段，无公开写入 API）。返回实际写入量。 */
-    private static int addToFurnace(BlockEntity be, Aspect aspect, int amount) {
-        if (amount <= 0) return 0;
-        try {
-            AspectList list = getFurnaceAspects(be);
-            if (list == null) {
-                if (furnaceAspectsField == null) return 0;
-                list = new AspectList();
-                furnaceAspectsField.set(be, list);
-            }
-            list.add(aspect, amount);
-            be.setChanged();
-            return amount;
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    /** 从荒古炼金炉内部源质缓存直接抽取（替代蒸馏釜/罐子中转）。only 非空时只抽指定方面。 */
-    @Nullable
-    private static AspectStack extractFromFurnace(BlockEntity be, @Nullable ResourceLocation only, int maxAmount) {
-        AspectList furnaceAspects = getFurnaceAspects(be);
-        if (furnaceAspects == null || furnaceAspects.size() <= 0) return null;
-        for (Aspect aspect : furnaceAspects.getAspects()) {
-            if (aspect == null) continue;
-            int amt = furnaceAspects.getAmount(aspect);
-            if (amt <= 0) continue;
-            ResourceLocation id = getAspectId(aspect);
-            if (id == null) continue;
-            if (only != null && !only.equals(id)) continue;
-            int toExtract = Math.min(amt, maxAmount);
-            furnaceAspects.remove(aspect, toExtract);
-            be.setChanged();
-            return new AspectStack(id, toExtract);
-        }
-        return null;
-    }
 
     @Nullable
     public static AspectStack extractEssentia(@Nullable BlockEntity be, int maxAmount) {
@@ -95,7 +36,7 @@ public final class TCReflection {
         // ===== 路径0: 荒古炼金炉直连（AlchemicalFurnaceBlockEntity 不实现 IAspectContainer，
         // 源质在 private aspects 缓存——直接抽取，替代"必须经蒸馏釜/罐子"）=====
         if (FURNACE_CLASS_NAME.equals(be.getClass().getName())) {
-            AspectStack fromFurnace = extractFromFurnace(be, only, maxAmount);
+            AspectStack fromFurnace = LegacyFurnaceEssentia.extractFromFurnace(be, only, maxAmount);
             if (fromFurnace != null) return fromFurnace;
         }
         // ===== 路径0b: TC 管道接口（EssentiaTransport——高级荒古炼金炉喷嘴/源质管道）=====
@@ -174,7 +115,7 @@ public final class TCReflection {
         // 荒古炼金炉：不实现 IAspectContainer，源质在 private aspects 字段 → 反射写回。
         // （此前直接 return 导致导入总线"网络已满"时抽出的源质无处归还而消失）
         if (FURNACE_CLASS_NAME.equals(be.getClass().getName())) {
-            addToFurnace(be, aspect, (int) stack.amount());
+            LegacyFurnaceEssentia.addToFurnace(be, aspect, (int) stack.amount());
             return;
         }
         if (!(be instanceof IAspectContainer container)) return;
@@ -188,7 +129,7 @@ public final class TCReflection {
         if (aspect == null) return 0;
         int toInsert = (int) Math.min(stack.amount(), Integer.MAX_VALUE);
         if (FURNACE_CLASS_NAME.equals(be.getClass().getName())) {
-            return addToFurnace(be, aspect, toInsert);
+            return LegacyFurnaceEssentia.addToFurnace(be, aspect, toInsert);
         }
         if (!(be instanceof IAspectContainer container)) return 0;
         int leftover = container.addToContainer(aspect, toInsert);
@@ -205,7 +146,7 @@ public final class TCReflection {
         if (be == null) return result;
         // 荒古炼金炉（不实现 IAspectContainer）
         if (FURNACE_CLASS_NAME.equals(be.getClass().getName())) {
-            AspectList furnaceAspects = getFurnaceAspects(be);
+            AspectList furnaceAspects = LegacyFurnaceEssentia.getFurnaceAspects(be);
             if (furnaceAspects != null) {
                 for (Aspect aspect : furnaceAspects.getAspects()) {
                     if (aspect == null) continue;
@@ -256,37 +197,7 @@ public final class TCReflection {
 
     @Nullable
     public static Aspect findAspectById(ResourceLocation id) {
-        if (id == null) return null;
-        if (Aspect.aspects == null) return null;
-        ensureAspectCache();
-        String lowerTag = id.getPath().toLowerCase(Locale.ROOT);
-        Aspect cached = ASPECT_BY_TAG.get(lowerTag);
-        if (cached != null) return cached;
-        // 缓存 miss：运行期（post-init）可能注册了新 aspect，回退一次实时遍历并补入缓存
-        for (Aspect aspect : Aspect.aspects.values()) {
-            if (aspect != null && aspect.getTag() != null && aspect.getTag().equalsIgnoreCase(id.getPath())) {
-                ASPECT_BY_TAG.putIfAbsent(lowerTag, aspect);
-                return aspect;
-            }
-        }
-        return null;
-    }
-
-    /** tag(小写) → Aspect 反向缓存，避免每次调用 O(n) 遍历 Aspect.aspects。 */
-    private static final Map<String, Aspect> ASPECT_BY_TAG = new ConcurrentHashMap<>();
-    private static volatile boolean aspectCacheBuilt = false;
-
-    private static void ensureAspectCache() {
-        if (aspectCacheBuilt) return;
-        synchronized (ASPECT_BY_TAG) {
-            if (aspectCacheBuilt) return;
-            for (Aspect aspect : Aspect.aspects.values()) {
-                if (aspect != null && aspect.getTag() != null) {
-                    ASPECT_BY_TAG.putIfAbsent(aspect.getTag().toLowerCase(Locale.ROOT), aspect);
-                }
-            }
-            aspectCacheBuilt = true;
-        }
+        return AspectIds.findAspectById(id);
     }
 
     /** 按方块实体类缓存反射方法（getAspect/getAmount），避免每次调用 getMethod。 */
@@ -304,10 +215,7 @@ public final class TCReflection {
 
     @Nullable
     public static ResourceLocation getAspectId(@Nullable Aspect aspect) {
-        if (aspect == null) return null;
-        String tag = aspect.getTag();
-        if (tag == null || tag.isEmpty()) return null;
-        return ASPECT_ID_CACHE.computeIfAbsent(tag.toLowerCase(Locale.ROOT), t ->
-                ResourceLocation.fromNamespaceAndPath("thaumcraft", t));
+        return AspectIds.getAspectId(aspect);
     }
+
 }

@@ -10,7 +10,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import thaumicenergistics.ThaumicEnergistics;
 import appeng.menu.me.common.MEStorageMenu;
 import thaumicenergistics.common.container.EssentiaFillHelper;
-import thaumicenergistics.common.container.ThEEssentiaMenuAccess;
+import thaumicenergistics.common.container.MenuResources;
 
 /**
  * 客户端→服务端：源质终端右键源质条目装罐。
@@ -47,17 +47,20 @@ public record EssentiaTerminalFillC2SPacket(int containerId, ResourceLocation as
             // 通用化：任意 ME 终端菜单都支持右键源质条目装罐（源质终端/奥术合成终端/AE2 ME 终端等）
             if (ctx.player().containerMenu.containerId == this.containerId
                     && ctx.player().containerMenu instanceof MEStorageMenu menu
-                    && menu instanceof ThEEssentiaMenuAccess acc) {
+                    && menu.getLinkStatus().connected()) {
                 var player = menu.getPlayerInventory().player;
                 // ⚠ 必须用玩家真实栈（carried/主手）而非包里的拷贝：装罐会原地消耗空安瓿（shrink）
                 // 或修改罐子内容（setAspects）。若用 sourceStack（拷贝），消耗/修改不落真实物品——
                 // 空安瓿不消耗却能凭空得到满安瓿。
                 // 顺序与客户端一致：优先 carried（拾取），其次主手；sourceStack 仅兜底。
-                var source = !menu.getCarried().isEmpty() ? menu.getCarried()
-                        : (!player.getMainHandItem().isEmpty() ? player.getMainHandItem()
-                           : this.sourceStack);
+                var source = !menu.getCarried().isEmpty() ? menu.getCarried() : player.getMainHandItem();
+                if (!ItemStack.isSameItemSameComponents(source, sourceStack)
+                        || source.getCount() != sourceStack.getCount()) {
+                    return;
+                }
                 EssentiaFillHelper.fillContainerFromGrid(
-                        acc.thE_getStorage(), acc.thE_getEnergySource(),
+                        MenuResources.getStorage(menu),
+                        MenuResources.getEnergySource(menu),
                         menu.getActionSource(), player, source, this.aspectId);
                 menu.broadcastChanges();
             }
