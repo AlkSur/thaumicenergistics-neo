@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    {
+      "id": "thaumic_tinkerer:ichor",
+      "required": false
+    }
+  ]
+}

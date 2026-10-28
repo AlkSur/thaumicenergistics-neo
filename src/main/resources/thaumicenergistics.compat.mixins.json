@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "thaumicenergistics.mixins.compat",
+  "plugin": "thaumicenergistics.mixins.ThEOptionalMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "aae.MixinAdvProviderUpgrades",
+    "aae.MixinAdvProviderHost",
+    "aae.MixinAdvProviderMenu",
+    "aae.MixinAdvProviderEssentia",
+    "ae2lt.MixinOverloadedProviderTarget"
+  ],
+  "client": [
+    "aae.MixinAdvProviderScreen",
+    "aae.MixinSmallAdvProviderScreen"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}
