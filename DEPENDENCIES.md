@@ -4,7 +4,9 @@
 
 ## GitHub 源码下载构建
 
-完整步骤见仓库根目录 [BUILDING.md](../../BUILDING.md)。安装 JDK 21，将 port.261 TC Jar 放入本模块 `library/` 后，在仓库根目录运行：
+独立单模组仓库：安装 JDK 21，将 port.261 TC Jar 放入根目录 `library/`，执行 `./gradlew.bat assemble`（Linux/macOS：`bash ./gradlew assemble`）。独立构建使用 `mod_version`，无需工作区版本脚本，详细说明见 [README.md](README.md)。
+
+多模块工作区：安装 JDK 21，将 port.261 TC Jar 放入本模块 `library/` 后，在工作区根目录运行：
 
 ```powershell
 .\gradlew.bat :thaumicenergistics:assemble -PneoOnly=true
@@ -14,7 +16,7 @@ Linux/macOS 使用 `bash ./gradlew` 替代 `./gradlew.bat`。新补齐的 Wrappe
 
 ## 当前依赖
 
-本模块移除了根工程继承的 Maven Local 仓库，不再优先使用本机手工安装的同坐标构件。Maven Central、根工程的 JEI Maven（本模块限定 `mezz.jei` 组）、CurseMaven、Modrinth Maven 和 ModMaven 提供公开构件。其他子项目的仓库配置保持原样。
+本模块移除了根工程继承的 Maven Local 仓库，不再优先使用本机手工安装的同坐标构件。Maven Central、本模块自行声明的 JEI Maven（限定 `mezz.jei` 组）、CurseMaven、Modrinth Maven 和 ModMaven 提供公开构件，独立导出时也可解析。其他子项目的仓库配置保持原样。
 
 | 依赖 | 固定坐标或本地文件 | 用途 |
 |---|---|---|
@@ -33,6 +35,8 @@ Linux/macOS 使用 `bash ./gradlew` 替代 `./gradlew.bat`。新补齐的 Wrappe
 | AE2LT 2.1.2-beta3 | `maven.modrinth:ae2-lightning-tech:AosdXlfS` | compileOnly；按 compatAE2LT 开关运行 |
 
 新增坐标均固定发布版/文件 ID，未使用 latest 或动态版本。新替换的可选编译依赖关闭传递依赖；可选模组不会因本次修改成为生产必装前置，也不会被打入生产 Jar。
+
+JEI、CurseMaven、Modrinth、AE2WT API 的坐标组使用 `exclusiveContent` 指向各自的发布仓库，避免被全局镜像或 NeoForge 仓库拦截。Gradle JVM 跟随系统代理，项目不固定代理地址；开启系统代理时走代理，关闭时直连。首次缺失依赖仍需要对应仓库可访问，缓存完整时可离线构建。
 
 AE2、JEI 和 TC 版本分别读取现有 `ae2_version`、`jei_version`、`thaumcraft_version` 属性，当前数值保持原样。AE2 的 API 和完整构件都保留，不能因精简依赖误删内部类的编译支持。
 
@@ -95,6 +99,22 @@ AE2、JEI 和 TC 版本分别读取现有 `ae2_version`、`jei_version`、`thaum
 - 改用已下载的公开依赖缓存，在上述源码副本执行 `:thaumicenergistics:assemble -PneoOnly=true --offline --no-build-cache --rerun-tasks`，实际重新编译和打包通过，没有复用项目 Java 编译任务缓存。
 - 配置结果仅含根工程和 `:thaumicenergistics`，模块 Maven Local 仓库列表为空；无 Git 时版本回退为 `2.6.10-alpha`，与生产 Jar 内模组元数据一致。
 - 缺 TC 文件时的单独前置校验按预期失败，并提示完整文件名和放置目录。未运行游戏或测试任务。
+
+## 独立单模组导出验证（2026-10-28）
+
+- 使用更新后的导出脚本，以 `--working-tree` 将 Git 跟踪文件的当前修改导出到全新审查目录；目录内没有 `versioning.gradle`，本地依赖仅 TC port.261。
+- 以 `assemble --offline --no-build-cache --rerun-tasks` 实际重编译、打包通过，使用已下载的公开依赖缓存；未重新进行全空缓存联网验证。
+- 独立工程读取 `mod_version=2.6.10-alpha`，Jar 内版本一致；工作区仍按 Git 计算为 `2.6.11-alpha`。两者版本来源有意分开，独立发布时维护 `mod_version`。
+- 将独立源码复制到另一名称的目录，并初始化其自己的 Git 仓库，确认命令行版本覆盖仍生效；独立项目不会读取父工作区的 Git 历史。
+- 再次导出无源文件变更，Wrapper 时间戳、目标 Git 元数据及构建产物均保留。导出的 Wrapper 可直接启动 Gradle 8.12.1；脚本本身不再调用系统 Gradle。未运行游戏或测试任务。
+
+## 系统代理与直连验证（2026-10-28）
+
+- 撤销本机固定代理主机/端口配置，根 `org.gradle.jvmargs` 增加 `-Djava.net.useSystemProxies=true`；导出脚本会照常将根共享属性并入独立工程。
+- 在新 Gradle 进程中确认无显式 `http.proxyHost`/`https.proxyHost`，系统代理模式选择本机现有系统代理；另在独立检查进程中将 ProxySelector 临时设为 DIRECT，模拟系统代理关闭，未改动系统代理开关。
+- 两条路径都通过 Gradle 的 HTTP 客户端下载加入随机查询参数的 Maven POM，并执行 `:thaumicenergistics:assemble` 成功。生产构建使用现有依赖/编译缓存，不是全空缓存验证。
+- 直连复核发现 JEI 曾被送入本机全局注入的 NeoForge 根地址及插件提供的 releases 仓库，连接异常地址后超时。清理本机错误根地址，并以独占坐标组隔离专用发布仓库后，直连构建通过。
+- 全空缓存首次获取 NeoForge 自身构件的可达性仍未验收；不能用上述结果宣称任何网络环境都能完成首次依赖下载。
 
 ## 资料优先级
 

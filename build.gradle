@@ -3,36 +3,35 @@ plugins {
     id 'maven-publish'
 }
 
-apply from: file('../../versioning.gradle')
+// The workspace uses Git-derived versions. A standalone export owns its release version.
+if (project != rootProject && rootProject.file('versioning.gradle').isFile()) {
+    apply from: rootProject.file('versioning.gradle')
+} else {
+    version = findProperty('mod_version') ?: '0.0.0-alpha'
+}
 
 repositories {
     mavenCentral()
     // The root project adds Maven Local; this module resolves published dependencies from remote repositories.
     removeAll { it.name.startsWith('MavenLocal') }
-    // Keep the inherited JEI repository from handling unrelated AE2/Modrinth lookups.
+    // Declare JEI here too: standalone exports do not inherit the root repositories.
     withType(org.gradle.api.artifacts.repositories.MavenArtifactRepository)
             .findAll { it.url?.host == 'maven.blamejared.com' }
-            .each { repository -> repository.content { includeGroup 'mezz.jei' } }
-    // AE2 JEI Integration is published on CurseForge; pin its exact file through CurseMaven.
-    maven {
-        url "https://cursemaven.com"
-        content {
-            includeGroup "curse.maven"
-        }
-    }
-    // Fixed NeoForge releases for optional integrations and development runtime dependencies.
-    maven {
-        url "https://api.modrinth.com/maven"
-        content {
-            includeGroup "maven.modrinth"
-        }
-    }
-    // COMPAT-PLAN：ae2wtlib_api 独立坐标（完整 ae2wtlib jar 的 API 在内嵌 jar，
-    // 外层 compileOnly files 看不到 API 类，必须用 modmaven 的独立 API 构件）
-    maven {
-        url "https://modmaven.dev"
-        content {
-            includeGroup "de.mari_023"
+            .each { repository -> remove(repository) }
+    // Route publisher-specific coordinates exclusively to their actual repository.
+    // A slow/unreachable NeoForge mirror must not intercept JEI or optional mod lookups.
+    [
+            'mezz.jei': 'https://maven.blamejared.com/',
+            'curse.maven': 'https://cursemaven.com',
+            'maven.modrinth': 'https://api.modrinth.com/maven',
+            // The AE2WT API is a separate artifact; the full mod only embeds its API Jar.
+            'de.mari_023': 'https://modmaven.dev'
+    ].each { artifactGroup, repositoryUrl ->
+        exclusiveContent {
+            forRepository {
+                maven { url repositoryUrl }
+            }
+            filter { includeGroup artifactGroup }
         }
     }
 }
@@ -53,8 +52,8 @@ def verifyLocalThaumcraft = tasks.register('verifyLocalThaumcraft') {
     doLast {
         if (!thaumcraftJar.asFile.isFile()) {
             throw new GradleException("Missing unpublished TC port: ${thaumcraftJar.asFile}\n"
-                    + "Place thaumcraft-${thaumcraft_version}.jar in modules/thaumicenergistics-neo/library/. "
-                    + 'All other dependencies are downloaded automatically. See BUILDING.md at the repository root.')
+                    + "Place thaumcraft-${thaumcraft_version}.jar in ${thaumcraftJar.asFile.parentFile}. "
+                    + 'All other dependencies are downloaded automatically. See README.md.')
         }
     }
 }
@@ -195,26 +194,26 @@ tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }
 
-// mods.toml 的 version 也用 git 实时版本（与 jar 版本一致，不依赖写死的 mod_version）
+// 模组元数据与 Jar 始终使用同一构建版本（工作区 Git 版本或独立项目 mod_version）。
 var modVersion = version.toString()
 def loaderRange = project.findProperty('loader_version_range') ?: '[4,)'
 def neoforgeRange = project.findProperty('neoforge_version_range') ?: '[21,)'
 def mcRange = project.findProperty('minecraft_version_range') ?: '[1.21.1,1.22)'
 
-processResources {
-    // expand 值必须声明为 task 输入，否则 modVersion 变化时 Gradle 判 UP-TO-DATE 跳过，
-    // jar 内 mods.toml 会钉死在旧版本（2.4.32 固化事故根因）。
-    inputs.properties([
+// Generate expanded metadata separately so IDEA does not have to interpret resource matching actions.
+def metadataProperties = [
         'version': modVersion, 'loader_version_range': loaderRange,
         'neoforge_version_range': neoforgeRange, 'minecraft_version_range': mcRange
-    ])
-    filesMatching('META-INF/neoforge.mods.toml') {
-        expand([
-            'version': modVersion, 'loader_version_range': loaderRange,
-            'neoforge_version_range': neoforgeRange, 'minecraft_version_range': mcRange
-        ])
-    }
+]
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    inputs.properties(metadataProperties)
+    filteringCharset = 'UTF-8'
+    expand(metadataProperties)
+    from('src/main/templates')
+    into(layout.buildDirectory.dir('generated/resources/modMetadata'))
 }
+sourceSets.main.resources.srcDir(generateModMetadata)
+neoForge.ideSyncTask(generateModMetadata)
 
 jar { 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
