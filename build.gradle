@@ -7,19 +7,25 @@ apply from: file('../../versioning.gradle')
 
 repositories {
     mavenCentral()
-    def localRepository = mavenLocal()
-    remove(localRepository)
-    add(0, localRepository)
-    // CurseMaven for Jade and other mods
+    // The root project adds Maven Local; this module resolves published dependencies from remote repositories.
+    removeAll { it.name.startsWith('MavenLocal') }
+    // Keep the inherited JEI repository from handling unrelated AE2/Modrinth lookups.
+    withType(org.gradle.api.artifacts.repositories.MavenArtifactRepository)
+            .findAll { it.url?.host == 'maven.blamejared.com' }
+            .each { repository -> repository.content { includeGroup 'mezz.jei' } }
+    // AE2 JEI Integration is published on CurseForge; pin its exact file through CurseMaven.
     maven {
         url "https://cursemaven.com"
         content {
             includeGroup "curse.maven"
         }
     }
-    // Modrinth for Jade
+    // Fixed NeoForge releases for optional integrations and development runtime dependencies.
     maven {
         url "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
     }
     // COMPAT-PLAN：ae2wtlib_api 独立坐标（完整 ae2wtlib jar 的 API 在内嵌 jar，
     // 外层 compileOnly files 看不到 API 类，必须用 modmaven 的独立 API 构件）
@@ -39,6 +45,19 @@ base { archivesName = "${modName}-${mcVersion}-neoforge" }
 
 def compatBaseRun = ['compatSmokeTest', 'compatWT', 'compatAAE', 'compatAE2LT', 'enableExtendedAeCompatTest']
         .any { key -> providers.gradleProperty(key).map { it.toBoolean() }.getOrElse(false) }
+
+def thaumcraftJar = layout.projectDirectory.file("library/thaumcraft-${thaumcraft_version}.jar")
+def verifyLocalThaumcraft = tasks.register('verifyLocalThaumcraft') {
+    group = 'build setup'
+    description = 'Checks that the unpublished Thaumcraft port Jar is present.'
+    doLast {
+        if (!thaumcraftJar.asFile.isFile()) {
+            throw new GradleException("Missing unpublished TC port: ${thaumcraftJar.asFile}\n"
+                    + "Place thaumcraft-${thaumcraft_version}.jar in modules/thaumicenergistics-neo/library/. "
+                    + 'All other dependencies are downloaded automatically. See BUILDING.md at the repository root.')
+        }
+    }
+}
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -81,32 +100,39 @@ neoForge {
     }
 }
 
+// ModDevGradle can add Maven Local again while configuring main/gameTest source sets.
+// Remove those repositories after configuration without touching its generated Minecraft artifact repositories.
+afterEvaluate {
+    repositories.removeAll { it.name.startsWith('MavenLocal') }
+}
+
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
     // 兼容联调开关自动补齐基础运行前置；普通生产构建仍仅 compileOnly。
     if (compatBaseRun) {
-        runtimeOnly('org.appliedenergistics:appliedenergistics2:19.2.17') {
+        runtimeOnly("org.appliedenergistics:appliedenergistics2:${ae2_version}") {
             exclude group: 'org.appliedenergistics', module: 'guideme'
         }
-        def localGuide = file('build/smoke-deps/guideme-21.1.1.jar')
-        if (localGuide.exists()) runtimeOnly files(localGuide)
-        else runtimeOnly 'maven.modrinth:guideme:PALpfSdf'
-        runtimeOnly files('library/thaumcraft-0.2.2.95-port.261.jar')
-        def localCurios = file('build/smoke-deps/curios-neoforge-9.5.1+1.21.1.jar')
-        if (localCurios.exists()) runtimeOnly files(localCurios)
-        else runtimeOnly 'maven.modrinth:curios:yohfFbgD'
+        runtimeOnly("maven.modrinth:guideme:PALpfSdf") { transitive = false } // 21.1.1
+        // The unpublished TC port is intentionally the only local binary dependency.
+        runtimeOnly files(thaumcraftJar)
+        runtimeOnly("maven.modrinth:curios:yohfFbgD") { transitive = false } // 9.5.1+1.21.1
     }
     if (providers.gradleProperty('compatWT').map { it.toBoolean() }.getOrElse(false)) {
-        runtimeOnly files('library/ae2wtlib-19.5.1.jar')
+        // Full AE2WT 19.5.1; its API stays a separate compileOnly dependency below.
+        runtimeOnly("maven.modrinth:applied-energistics-2-wireless-terminals:CxSEpEnO") {
+            transitive = false
+        }
     }
-    compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17:api"
-    compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17"   // 加这行保留！！让AE2内部类可编译
-    compileOnly files('library/thaumcraft-0.2.2.95-port.261.jar')   // 必须与整合包运行版本一致（0.2.2.95）；.34 缺少 getRemainingItems/findMatchingArcaneRecipeEntry 等 API
-    compileOnly files('library/jei-1.21.1-neoforge-19.39.0.368.jar')
-    compileOnly files('library/ae2jeiintegration-1.2.1.jar')
-    compileOnly files('library/InventoryProfilesNext-neoforge-1.21.1-2.2.5.jar')
-    compileOnly files('library/extendedae_plus-1.6.1.jar')   // eap mixin target（InputEvents.toGenericStack）
+    compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}:api"
+    compileOnly "org.appliedenergistics:appliedenergistics2:${ae2_version}"   // 加这行保留！！让AE2内部类可编译
+    compileOnly files(thaumcraftJar) // Keep TC port.261: compile and runtime must agree.
+    // Full JEI artifact preserves the same API/internal compile surface as the former local Jar.
+    compileOnly("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}") { transitive = false }
+    compileOnly("curse.maven:ae2-jei-integration-1074338:7727898") { transitive = false } // 1.2.1
+    compileOnly("maven.modrinth:inventory-profiles-next:vjuNnHLv") { transitive = false } // NeoForge 1.21.1 / 2.2.5
+    compileOnly("maven.modrinth:extendedae-plus:DLFDZIVx") { transitive = false } // 1.6.1, EAP InputEvents mixin target
     compileOnly "maven.modrinth:jade:${jade_version}"
 
     // COMPAT-PLAN 编译依赖：全部可选集成，零运行时强依赖（普通代码仅 ModList 守护 +
@@ -160,6 +186,7 @@ dependencies {
 
 
 tasks.withType(JavaCompile).configureEach {
+    dependsOn verifyLocalThaumcraft
     it.options.encoding = 'UTF-8'
     it.options.release = 21
 }
