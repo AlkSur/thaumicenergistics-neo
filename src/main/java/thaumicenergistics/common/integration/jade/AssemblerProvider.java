@@ -15,7 +15,7 @@ import thaumicenergistics.common.tiles.TileArcaneAssembler;
  * 奥术装配器 Jade 显示：
  * <ul>
  *   <li>网络状态：在线（节点 active）/ 无频道（有能量）/ 离线（无能量）</li>
- *   <li>要素状态：已连接（内存卡配置了 vis 源频率）/ 未连接</li>
+ *   <li>魔力源状态：已连接 / 未设置 / 已设置但不可用，以及彩色 P2P 频率</li>
  * </ul>
  * 服务端把状态写入 NBT，客户端渲染。
  */
@@ -25,13 +25,15 @@ public enum AssemblerProvider implements IBlockComponentProvider, IServerDataPro
     private static final String TAG_ONLINE = "NetworkOnline";
     private static final String TAG_POWERED = "NodePowered";
     private static final String TAG_VIS = "VisConnected";
+    private static final String TAG_FREQUENCY = "VisFrequency";
 
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
         if (accessor.getBlockEntity() instanceof TileArcaneAssembler assembler) {
-            data.putBoolean(TAG_ONLINE, assembler.isActive());
+            data.putBoolean(TAG_ONLINE, assembler.isNodeActive());
             data.putBoolean(TAG_POWERED, assembler.isNodePowered());
-            data.putBoolean(TAG_VIS, assembler.getVisSourceFreq() != 0);
+            data.putBoolean(TAG_VIS, assembler.isVisSourceAvailable());
+            data.putShort(TAG_FREQUENCY, assembler.getVisSourceFreq());
         }
     }
 
@@ -59,11 +61,17 @@ public enum AssemblerProvider implements IBlockComponentProvider, IServerDataPro
         tooltip.add(Component.translatable("thaumicenergistics.jade.provider.network",
                 Component.translatable(statusKey).withStyle(style -> style.withColor(color))));
 
-        // 要素源状态：已连接（绿）/ 未连接（灰）
+        short frequency = accessor.getServerData().getShort(TAG_FREQUENCY);
+        if (frequency != 0) {
+            tooltip.add(Component.translatable("waila.ae2.P2PFrequency",
+                    appeng.util.Platform.p2p().toColoredHexString(frequency)
+                            .withStyle(net.minecraft.ChatFormatting.BOLD)));
+        }
         tooltip.add(Component.translatable("thaumicenergistics.jade.assembler.vis_source",
                 Component.translatable(visConnected
                         ? "thaumicenergistics.jade.assembler.vis_connected"
-                        : "thaumicenergistics.jade.assembler.vis_disconnected")
+                        : frequency == 0 ? "thaumicenergistics.jade.assembler.vis_disconnected"
+                        : "thaumicenergistics.jade.assembler.vis_unavailable")
                         .withStyle(style -> style.withColor(visConnected ? 0xFF55FF55 : 0xFFAAAAAA))));
     }
 

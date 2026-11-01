@@ -59,6 +59,13 @@ public class GuiEssentiaCellWorkbench extends AbstractContainerScreen<ContainerE
         int x = (width - imageWidth) / 2, y = (height - imageHeight) / 2;
         g.blit(TEX, x, y, 0, 0, imageWidth, imageHeight);
 
+        for (int i = 0; i < thaumicenergistics.common.items.ItemEssentiaCell.UPGRADE_SLOTS; i++) {
+            var slot = menu.getUpgradeSlot(i);
+            g.blit(TEX, x + slot.x - 1, y + slot.y - 1, 151, 7, 18, 18);
+            if (!slot.hasItem()) appeng.client.gui.Icon.BACKGROUND_UPGRADE.getBlitter()
+                    .dest(x + slot.x, y + slot.y).blit(g);
+        }
+
         for (int i = 0; i < NUMBER_OF_WIDGETS; i++) {
             ResourceLocation id = partitionSlots.get(i);
             if (id != null) {
@@ -69,6 +76,18 @@ public class GuiEssentiaCellWorkbench extends AbstractContainerScreen<ContainerE
                         AEssentiaKey.of(id));
             }
         }
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        float available = ContainerEssentiaCellWorkbench.UPGRADE_X - titleLabelX - 4;
+        float scale = Math.min(1.0F, available / Math.max(1, font.width(title)));
+        graphics.pose().pushPose();
+        graphics.pose().translate(titleLabelX, titleLabelY + font.lineHeight * (1 - scale) / 2, 0);
+        graphics.pose().scale(scale, scale, 1);
+        graphics.drawString(font, title, 0, 0, 0x404040, false);
+        graphics.pose().popPose();
+        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
     }
 
     @Override

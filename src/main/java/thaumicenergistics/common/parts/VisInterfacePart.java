@@ -160,6 +160,13 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
 
     // ===== Relay 检测与 vis 抽取 =====
 
+    /** Inspect the loaded route without extracting vis, spending power, or loading chunks. */
+    public boolean hasAvailableRelay() {
+        if (!isActive()) return false;
+        VisInterfacePart relayEnd = findRelayEnd();
+        return relayEnd != null && relayEnd.isActive() && relayEnd.getRelay() != null;
+    }
+
     /**
      * 该部件面对的 TC4 vis 中继，无则 null。中继对 vis 传输是全向的，无需朝向检查。
      */

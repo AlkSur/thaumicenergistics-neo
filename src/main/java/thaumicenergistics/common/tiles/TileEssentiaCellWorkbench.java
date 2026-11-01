@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import thaumicenergistics.common.items.ItemEssentiaCell;
@@ -14,7 +13,7 @@ import thaumicenergistics.init.ModBlockEntities;
  * 源质元件工作台方块实体：持久化保存一个源质元件（cell），并提供分区编辑入口。
  * 对应 1.7.10 的 {@code TileEssentiaCellWorkbench}，分区数据存储在 cell 物品的 AE2 CellConfig 上。
  */
-public class TileEssentiaCellWorkbench extends BlockEntity {
+public class TileEssentiaCellWorkbench extends ThETileBase {
 
     public static final int SLOT_CELL = 0;
     private static final String NBT_KEY_CELL_INVENTORY = "CellInventory";
@@ -25,6 +24,8 @@ public class TileEssentiaCellWorkbench extends BlockEntity {
         public boolean isItemValid(int slot, ItemStack stack) {
             return stack.isEmpty() || stack.getItem() instanceof ItemEssentiaCell;
         }
+
+        @Override public int getSlotLimit(int slot) { return 1; }
 
         @Override
         protected void onContentsChanged(int slot) {
@@ -48,6 +49,14 @@ public class TileEssentiaCellWorkbench extends BlockEntity {
 
     public boolean hasCell() {
         return !cellInventory.getStackInSlot(SLOT_CELL).isEmpty();
+    }
+
+    @Override
+    public void onBreakBlock() {
+        if (level == null || level.isClientSide()) return;
+        ItemStack cell = cellInventory.extractItem(SLOT_CELL, Integer.MAX_VALUE, false);
+        if (!cell.isEmpty()) net.minecraft.world.Containers.dropItemStack(level,
+                worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), cell);
     }
 
     @Override

@@ -37,16 +37,21 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
     private static final int PLAYER_INV_END = 28;
     private static final int HOTBAR_START = 28;
     private static final int HOTBAR_END = 37;
-    /** cell 升级卡槽（3 格，容器槽位 37..39，位于玩家槽之后）。 */
-    private static final int UPGRADE_X = 98;
+    /** 四个升级槽（容器槽位 37..40），右侧保留元件槽。 */
+    public static final int UPGRADE_X = 80;
     private static final int UPGRADE_Y = 8;
-    private static final int UPGRADE_COUNT = 3;
+    private static final int UPGRADE_COUNT = ItemEssentiaCell.UPGRADE_SLOTS;
     private static final int UPGRADE_START = HOTBAR_END;
 
     private final TileEssentiaCellWorkbench workbench;
 
     /** 兜底用空库存（workbench 为 null 时）。 */
-    private final IItemHandler fallbackCell = new ItemStackHandler(1);
+    private final IItemHandler fallbackCell = new ItemStackHandler(1) {
+        @Override public boolean isItemValid(int slot, ItemStack stack) {
+            return stack.getItem() instanceof ItemEssentiaCell;
+        }
+        @Override public int getSlotLimit(int slot) { return 1; }
+    };
 
     public ContainerEssentiaCellWorkbench(int id, Inventory inv) {
         this(id, inv, (TileEssentiaCellWorkbench) null);
@@ -61,7 +66,7 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
         for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) addSlot(new Slot(inv, c + r * 9 + 9, 8 + c * 18, 167 + r * 18));
         for (int c = 0; c < 9; c++) addSlot(new Slot(inv, c, 8 + c * 18, 225));
 
-        // ===== cell 升级卡槽（3 格，动态绑定当前 cell 的升级库存，卡片持久化在 cell 物品上） =====
+        // Bind both sides to slot zero, including the client's synchronized cell stack.
         IItemHandler cellUpgrades = new CellUpgradeHandler(this::currentCellUpgrades);
         for (int i = 0; i < UPGRADE_COUNT; i++) {
             addSlot(new SlotItemHandler(cellUpgrades, i, UPGRADE_X + i * 18, UPGRADE_Y) {
@@ -72,8 +77,10 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
 
                 @Override
                 public boolean mayPlace(ItemStack s) {
-                    return AEItems.CAPACITY_CARD.is(s) || AEItems.FUZZY_CARD.is(s);
+                    return hasCell() && isCellUpgrade(s) && cellUpgrades.isItemValid(getSlotIndex(), s);
                 }
+
+                @Override public boolean isActive() { return hasCell(); }
 
                 @Override
                 public void setChanged() {
@@ -88,14 +95,19 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
 
     /** 当前 cell 的升级库存；无 cell 时返回空库存。 */
     private IUpgradeInventory currentCellUpgrades() {
-        if (workbench != null && workbench.hasCell()) {
-            ItemStack cell = workbench.getCell();
-            if (cell.getItem() instanceof ItemEssentiaCell cellItem) {
-                return cellItem.getUpgrades(cell);
-            }
+        ItemStack cell = slots.get(SLOT_CELL).getItem();
+        if (cell.getItem() instanceof ItemEssentiaCell cellItem) {
+            return cellItem.getUpgrades(cell);
         }
         return UpgradeInventories.empty();
     }
+
+    private static boolean isCellUpgrade(ItemStack stack) {
+        return AEItems.INVERTER_CARD.is(stack) || AEItems.VOID_CARD.is(stack)
+                || AEItems.EQUAL_DISTRIBUTION_CARD.is(stack) || AEItems.FUZZY_CARD.is(stack);
+    }
+
+    public Slot getUpgradeSlot(int index) { return slots.get(UPGRADE_START + index); }
 
     /** 把 AE2 InternalInventory（IUpgradeInventory）适配成 NeoForge 可写句柄；SlotItemHandler.set 强转 Modifiable，缺它则客户端开 GUI 同步即 CCE。 */
     private static final class CellUpgradeHandler implements IItemHandlerModifiable {
@@ -112,7 +124,7 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
 
         @Override
         public int getSlots() {
-            return supplier.get().size();
+            return UPGRADE_COUNT;
         }
 
         @Override
@@ -122,7 +134,9 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
 
         @Override
         public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-            return supplier.get().insertItem(slot, stack, simulate);
+            var inventory = supplier.get();
+            return slot >= 0 && slot < inventory.size() && isCellUpgrade(stack)
+                    ? inventory.insertItem(slot, stack, simulate) : stack;
         }
 
         @Override
@@ -132,12 +146,15 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
 
         @Override
         public int getSlotLimit(int slot) {
-            return supplier.get().getSlotLimit(slot);
+            var inventory = supplier.get();
+            return slot >= 0 && slot < inventory.size() ? inventory.getSlotLimit(slot) : 0;
         }
 
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return supplier.get().isItemValid(slot, stack);
+            var inventory = supplier.get();
+            return slot >= 0 && slot < inventory.size() && isCellUpgrade(stack)
+                    && inventory.isItemValid(slot, stack);
         }
     }
 
@@ -149,7 +166,7 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
     // ===== 分区操作（由 GUI / 网络调用，服务端执行） =====
 
     public boolean hasCell() {
-        return workbench != null && workbench.hasCell();
+        return slots.get(SLOT_CELL).getItem().getItem() instanceof ItemEssentiaCell;
     }
 
     public List<ResourceLocation> getPartitionAspects() {
@@ -223,8 +240,8 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
             // 玩家背包 → cell 槽（仅当 cell 槽空且物品是源质元件）
             if (stack.getItem() instanceof ItemEssentiaCell && workbench.getCell().isEmpty()) {
                 if (!moveItemStackTo(stack, SLOT_CELL, SLOT_CELL + 1, false)) return ItemStack.EMPTY;
-            } else if (AEItems.CAPACITY_CARD.is(stack) || AEItems.FUZZY_CARD.is(stack)) {
-                // 容量/模糊卡 → cell 升级槽
+            } else if (isCellUpgrade(stack)) {
+                // Supported cards -> the current cell's persistent upgrade inventory.
                 if (!moveItemStackTo(stack, UPGRADE_START, UPGRADE_START + UPGRADE_COUNT, false)) return ItemStack.EMPTY;
             } else {
                 // 含源质物品 → 尝试添加分区（物品不消费，仅添加分区）

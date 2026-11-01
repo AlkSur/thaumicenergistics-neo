@@ -64,6 +64,11 @@ public final class SafeTerminalMergeRecipe extends CustomRecipe {
     }
 
     @Override
+    public boolean isSpecial() {
+        return false;
+    }
+
+    @Override
     public RecipeSerializer<?> getSerializer() {
         return ModRecipeSerializers.SAFE_TERMINAL_MERGE.get();
     }

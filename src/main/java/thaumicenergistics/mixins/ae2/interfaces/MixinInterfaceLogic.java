@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,6 +29,7 @@ import thaumcraft.api.aspects.Aspect;
 
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.appeng.IEssentiaInterfaceLogic;
+import thaumicenergistics.common.integration.appeng.InterfaceEssentiaInventory;
 import thaumicenergistics.init.ModItems;
 
 /**
@@ -48,9 +50,15 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
     @Final
     private GenericStack[] plannedWork;
 
-    /** 接口本体存储槽（@see InterfaceLogic.java:97）。 */
     @Shadow
     @Final
+    @Mutable
+    private ConfigInventory config;
+
+    /** 接口本体存储槽；附属可能在原版构造完成后替换整个库存。 */
+    @Shadow
+    @Final
+    @Mutable
     private ConfigInventory storage;
 
     /** 网络存储视图（@see InterfaceLogic.java:73-74，gridChanged() 时赋值，可空）。 */
@@ -61,6 +69,37 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
     @Shadow
     @Final
     protected IActionSource actionSource;
+
+    @Unique
+    private void thE$ensureBoundedInventories() {
+        if (config != null && !(config instanceof InterfaceEssentiaInventory)) {
+            config = new InterfaceEssentiaInventory(config);
+        }
+        if (storage != null && !(storage instanceof InterfaceEssentiaInventory)) {
+            storage = new InterfaceEssentiaInventory(storage);
+        }
+    }
+
+    @Inject(method = {"getConfig", "getStorage"}, at = @At("HEAD"))
+    private void thE$boundCurrentInventories(CallbackInfoReturnable<ConfigInventory> cir) {
+        thE$ensureBoundedInventories();
+    }
+
+    @Inject(method = "readFromNBT", at = @At("HEAD"))
+    private void thE$boundBeforeLoad(CallbackInfo ci) {
+        thE$ensureBoundedInventories();
+    }
+
+    @Inject(method = "updatePlan(I)V", at = @At("HEAD"))
+    private void thE$normalizeOldEssentiaRequest(int slot, CallbackInfo ci) {
+        thE$ensureBoundedInventories();
+        var request = config.getStack(slot);
+        if (request != null && request.what() instanceof AEssentiaKey
+                && request.amount() > InterfaceEssentiaInventory.MAX_ESSENTIA_PER_SLOT) {
+            // Native scheduling returns actual excess stock; never truncate it here.
+            config.setStack(slot, new GenericStack(request.what(), InterfaceEssentiaInventory.MAX_ESSENTIA_PER_SLOT));
+        }
+    }
 
     // ------------------------------------------------------------------
     // ⑦c（路径 A）：卡门控——无卡时只抑制「写入/计划」路径，不动取出

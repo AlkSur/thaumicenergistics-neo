@@ -3,7 +3,6 @@ package thaumicenergistics.common.integration.ae2wt;
 import java.util.Objects;
 import com.mojang.datafixers.util.Unit;
 import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemContainerContents;
 import appeng.api.config.Actionable;
@@ -25,12 +24,14 @@ public final class SafeTerminalMerge {
                 || !(arcane.getItem() instanceof ItemWT arcaneItem)) {
             return ItemStack.EMPTY;
         }
-        var otherDefinition = WTDefinition.ofOrNull(other);
-        if (otherDefinition == null || !(other.getItem() instanceof ItemWT otherItem)) {
+        if (!(other.getItem() instanceof ItemWT otherItem)) {
             return ItemStack.EMPTY;
         }
         boolean universal = AE2wtlibAPI.isUniversalTerminal(other);
-        if (partner.isEmpty() ? !universal : universal || !partner.equals(otherDefinition.terminalName())) {
+        // A blank WUT has no current definition, but is a valid destination.
+        var otherDefinition = universal ? null : WTDefinition.ofOrNull(other);
+        if (partner.isEmpty() ? !universal : universal || otherDefinition == null
+                || !partner.equals(otherDefinition.terminalName())) {
             return ItemStack.EMPTY;
         }
         if (universal && other.has(definition.componentType())) {
@@ -49,6 +50,9 @@ public final class SafeTerminalMerge {
         result.set(definition.componentType(), Unit.INSTANCE);
         if (!universal) {
             result.set(otherDefinition.componentType(), Unit.INSTANCE);
+        }
+        if (!result.has(AE2wtlibComponents.CURRENT_TERMINAL)) {
+            result.set(AE2wtlibComponents.CURRENT_TERMINAL, universal ? definition : otherDefinition);
         }
         result.remove(AEComponents.UPGRADES);
         result.remove(AEComponents.STORED_ENERGY);
@@ -83,9 +87,13 @@ public final class SafeTerminalMerge {
                 continue;
             }
             var previous = target.get(type);
+            // Equal inventories still contain two separate sets of resources.
+            // Reject instead of retaining only one copy of their contents.
+            if (!empty(previous) && (value instanceof ItemContainerContents || value instanceof ItemStack
+                    || type == AE2wtlibComponents.PATTERN_ENCODING_LOGIC)) {
+                return false;
+            }
             if (!empty(previous) && !Objects.equals(previous, value)) {
-                // 终端偏好以已有通用终端/另一终端为准；物品、奇点和绑定等资源数据仍拒绝冲突。
-                if (preference(type)) continue;
                 return false;
             }
             copyComponent(target, type, value);
@@ -93,18 +101,11 @@ public final class SafeTerminalMerge {
         return true;
     }
 
-    private static boolean preference(DataComponentType<?> type) {
-        return type == DataComponents.CUSTOM_NAME || type == DataComponents.LORE
-                || type == AE2wtlibComponents.PICKUP_CONFIG || type == AE2wtlibComponents.INSERT_CONFIG
-                || type == AE2wtlibComponents.PICKUP_MODE || type == AE2wtlibComponents.INSERT_MODE
-                || type == AE2wtlibComponents.RESTOCK || type == AE2wtlibComponents.PICK_BLOCK
-                || type == AE2wtlibComponents.CRAFT_IF_MISSING;
-    }
-
     private static boolean empty(Object value) {
         if (value == null) return true;
         if (value instanceof ItemStack stack) return stack.isEmpty();
         if (value instanceof ItemContainerContents contents) return contents.stream().allMatch(ItemStack::isEmpty);
+        if (value instanceof net.minecraft.nbt.CompoundTag tag) return tag.isEmpty();
         return false;
     }
 

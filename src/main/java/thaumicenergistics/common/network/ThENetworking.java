@@ -15,6 +15,10 @@ public final class ThENetworking {
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("thaumicenergistics").versioned("1");
 
+        registrar.playToServer(OpenWirelessArcaneTerminalC2SPacket.TYPE,
+                OpenWirelessArcaneTerminalC2SPacket.STREAM_CODEC,
+                (packet, context) -> packet.handleOnServer(context));
+
         // GolemBackpackSyncPacket — S2C（服务端→客户端，同步背包连接状态和皮肤）
         registrar.playToClient(
                 GolemBackpackSyncPacket.TYPE,

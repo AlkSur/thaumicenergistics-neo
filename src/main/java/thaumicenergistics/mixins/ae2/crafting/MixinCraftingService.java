@@ -41,7 +41,9 @@ public abstract class MixinCraftingService {
             boolean prioritizePower,
             IActionSource src,
             CallbackInfoReturnable<ICraftingSubmitResult> cir) {
-        // 仅玩家发起的请求需要研究校验；机器自动合成放行
+        // 仅玩家发起的请求需要研究校验；机器自动合成放行。
+        // AE2 permits a player source to carry its terminal as machine() too.
+        // The presence of a machine proxy must not bypass the player's research check.
         if (src == null || src.player().isEmpty()) {
             return;
         }

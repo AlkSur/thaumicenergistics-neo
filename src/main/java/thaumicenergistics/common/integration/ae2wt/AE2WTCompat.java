@@ -29,6 +29,17 @@ public final class AE2WTCompat {
     private AE2WTCompat() {
     }
 
+    /** Preserve the library's mode synchronization and its normal wireless opening checks. */
+    public static boolean openArcaneFromInventory(net.minecraft.server.level.ServerPlayer player,
+            appeng.menu.locator.ItemMenuHostLocator locator) {
+        if (!de.mari_023.ae2wtlib.api.registration.WTDefinition.exists(ARCANE_TERMINAL_NAME)) return false;
+        var definition = de.mari_023.ae2wtlib.api.registration.WTDefinition.of(ARCANE_TERMINAL_NAME);
+        var stack = locator.locateItem(player);
+        if (!de.mari_023.ae2wtlib.api.terminal.WUTHandler.hasTerminal(stack, definition)) return false;
+        de.mari_023.ae2wtlib.api.terminal.WUTHandler.setCurrentTerminal(player, locator, stack, definition);
+        return definition.containerOpener().tryOpen(player, locator, false);
+    }
+
     /** 返回公共 Item 类型，避免普通注册类的字节码验证提前解析 ItemWT 子类。 */
     public static net.minecraft.world.item.Item createTerminalItem() {
         return new AE2WTArcaneTerminalItem();
@@ -55,12 +66,13 @@ public final class AE2WTCompat {
     }
 
     public static net.minecraft.world.item.ItemStack displayPartner(String partner) {
-        var name = partner.isEmpty() ? "crafting" : partner;
+        if (partner.isEmpty()) return new net.minecraft.world.item.ItemStack(
+                de.mari_023.ae2wtlib.api.AE2wtlibAPI.getWUT());
+        var name = partner;
         var definition = de.mari_023.ae2wtlib.api.registration.WTDefinition.wirelessTerminals().stream()
                 .filter(terminal -> name.equals(terminal.terminalName())).findFirst().orElse(null);
         if (definition == null) return net.minecraft.world.item.ItemStack.EMPTY;
-        return partner.isEmpty() ? definition.universalTerminal().copy()
-                : new net.minecraft.world.item.ItemStack(definition.item());
+        return new net.minecraft.world.item.ItemStack(definition.item());
     }
 
     public static void registerArcaneTerminal() {

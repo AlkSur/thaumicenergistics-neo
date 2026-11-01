@@ -61,8 +61,9 @@ public final class AEssentiaKey extends AEKey {
                 }
             }
         }
-        // 回退：翻译键
-        return Component.translatable("aspect.thaumicenergistics." + tag);
+        // Keep the saved identity visible when its addon/aspect is unavailable.
+        return Component.translatable("tooltip.thaumicenergistics.unknown_essentia")
+                .append(" (" + id + ")");
     }
 
 

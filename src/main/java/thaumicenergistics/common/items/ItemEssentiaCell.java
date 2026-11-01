@@ -36,6 +36,8 @@ import appeng.api.stacks.AEKey;
 
 public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
+    public static final int UPGRADE_SLOTS = 4;
+
     private final String tier;
     private final int totalBytes;
     private final int bytesPerType;
@@ -68,6 +70,8 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
     @Override
     public int getTotalTypes(ItemStack cellItem) {
+        // AE2 reads this limit from the item definition, including for existing cells.
+        // Stored contents, partitions, and upgrades need no data rewrite to gain the new limit.
         return this.totalTypes;
     }
 
@@ -91,7 +95,7 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
     @Override
     public IUpgradeInventory getUpgrades(ItemStack is) {
-        return UpgradeInventories.forItem(is, 3);
+        return UpgradeInventories.forItem(is, UPGRADE_SLOTS);
     }
 
     @Override
@@ -101,11 +105,12 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
     @Override
     public FuzzyMode getFuzzyMode(ItemStack is) {
-        return FuzzyMode.IGNORE_ALL;
+        return is.getOrDefault(appeng.api.ids.AEComponents.STORAGE_CELL_FUZZY_MODE, FuzzyMode.IGNORE_ALL);
     }
 
     @Override
     public void setFuzzyMode(ItemStack is, FuzzyMode fzMode) {
+        is.set(appeng.api.ids.AEComponents.STORAGE_CELL_FUZZY_MODE, fzMode);
     }
 
     @Override
@@ -264,25 +269,25 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
         return new ItemEssentiaCell(props, "16k", 16, 8, ThEConfig.CELL_MAX_TYPES, 1.5);
     }
     public static ItemEssentiaCell create64k(Item.Properties props) {
-        return new ItemEssentiaCell(props, "64k", 64, 8, ThEConfig.CELL_MAX_TYPES, 2.0);
+        return new ItemEssentiaCell(props, "64k", 64, 8, ThEConfig.CELL_64K_MAX_TYPES, 2.0);
     }
     public static ItemEssentiaCell create256k(Item.Properties props) {
-        return new ItemEssentiaCell(props, "256k", 256, 8, ThEConfig.CELL_MAX_TYPES, 2.5);
+        return new ItemEssentiaCell(props, "256k", 256, 8, ThEConfig.CELL_256K_MAX_TYPES, 2.5);
     }
     public static ItemEssentiaCell create1m(Item.Properties props) {
-        return new ItemEssentiaCell(props, "1m", 1024, 8, ThEConfig.CELL_MAX_TYPES, 3.0);
+        return new ItemEssentiaCell(props, "1m", 1024, 8, ThEConfig.CELL_MEGABYTE_MAX_TYPES, 3.0);
     }
     public static ItemEssentiaCell create4m(Item.Properties props) {
-        return new ItemEssentiaCell(props, "4m", 4096, 8, ThEConfig.CELL_MAX_TYPES, 3.5);
+        return new ItemEssentiaCell(props, "4m", 4096, 8, ThEConfig.CELL_MEGABYTE_MAX_TYPES, 3.5);
     }
     public static ItemEssentiaCell create16m(Item.Properties props) {
-        return new ItemEssentiaCell(props, "16m", 16384, 8, ThEConfig.CELL_MAX_TYPES, 4.0);
+        return new ItemEssentiaCell(props, "16m", 16384, 8, ThEConfig.CELL_MEGABYTE_MAX_TYPES, 4.0);
     }
     public static ItemEssentiaCell create64m(Item.Properties props) {
-        return new ItemEssentiaCell(props, "64m", 65536, 8, ThEConfig.CELL_MAX_TYPES, 4.5);
+        return new ItemEssentiaCell(props, "64m", 65536, 8, ThEConfig.CELL_MEGABYTE_MAX_TYPES, 4.5);
     }
     public static ItemEssentiaCell create256m(Item.Properties props) {
-        return new ItemEssentiaCell(props, "256m", 262144, 8, ThEConfig.CELL_MAX_TYPES, 5.0);
+        return new ItemEssentiaCell(props, "256m", 262144, 8, ThEConfig.CELL_MEGABYTE_MAX_TYPES, 5.0);
     }
     public static ItemEssentiaCell createCreative(Item.Properties props) {
         return new ItemEssentiaCell(props, "creative", Integer.MAX_VALUE / 1024, 8, 63, 0.0);

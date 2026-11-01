@@ -1,6 +1,6 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
-license="MIT"
+license="Code: LGPL-3.0 (port) and MIT (original); textures by 麦淇淋: CC-BY-NC-SA-3.0 Unported; see LICENSE and LICENSE-ASSETS.md"
 
 [[mods]]
 modId="thaumicenergistics"
@@ -8,6 +8,7 @@ version="${version}"
 displayName="ThaumicEnergistics"
 description="Bridges Thaumcraft Essentia with Applied Energistics 2 ME networks."
 authors="Nividica, Community"
+credits="材质作者：麦淇淋（CC BY-NC-SA 3.0 Unported）；第三方素材保留原有版权、署名及许可，见 LICENSE-ASSETS.md"
 logoFile="assets/thaumicenergistics/meta/logo.png"
 displayTest="IGNORE_ALL_VERSION"
 

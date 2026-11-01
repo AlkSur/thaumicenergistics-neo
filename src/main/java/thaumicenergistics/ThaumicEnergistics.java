@@ -187,6 +187,17 @@ public final class ThaumicEnergistics {
             // T-M6-IMPL：概率加速卡关联概率之脑（白名单 + Supported By 行；
             // 实际装填走方块右键直插，上限 4 由 BE 记账）。
             Upgrades.add(ModItems.PROBABILITY_ACCELERATOR_CARD.get(), ModItems.BRAIN_OF_PROBABILITY_ITEM.get(), 4);
+
+            // Keep AE2's per-item limits while grouping every capacity under one tooltip entry.
+            for (var entry : ModItems.REGISTRY.getEntries()) {
+                if (entry.get() instanceof thaumicenergistics.common.items.ItemEssentiaCell cell) {
+                    String group = "tooltip.thaumicenergistics.upgrade_host.essentia_storage_cell";
+                    Upgrades.add(AEItems.INVERTER_CARD, cell, 1, group);
+                    Upgrades.add(AEItems.VOID_CARD, cell, 1, group);
+                    Upgrades.add(AEItems.EQUAL_DISTRIBUTION_CARD, cell, 1, group);
+                    Upgrades.add(AEItems.FUZZY_CARD, cell, 1, group);
+                }
+            }
         });
     }
 
@@ -209,7 +220,7 @@ public final class ThaumicEnergistics {
             event.register(ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL.get(),
                     (ContainerArcaneCraftingTerminal menu, Inventory inv, Component title)
                             -> new GuiArcaneCraftingTerminal(menu, inv, title,
-                            StyleManager.loadStyleDoc("/screens/arcane_crafting_terminal.json")));
+                            StyleManager.loadStyleDoc("/screens/arcane_crafting_terminal_wireless_base.json")));
         }
 
         event.register(ModMenuTypes.ESSENTIA_LEVEL_EMITTER.get(),

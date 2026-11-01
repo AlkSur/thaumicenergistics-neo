@@ -624,6 +624,16 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     public short getVisSourceFreq() { return visSourceFreq; }
+    public boolean isNodeActive() { return mainNode.isActive(); }
+
+    /** The configured source must resolve to an active, loaded relay route. */
+    public boolean isVisSourceAvailable() {
+        var grid = mainNode.getGrid();
+        if (!isNodeActive() || grid == null || visSourceFreq == 0) return false;
+        var p2p = appeng.me.service.P2PService.get(grid);
+        return p2p != null && p2p.getInput(visSourceFreq) instanceof VisInterfacePart source
+                && source.hasAvailableRelay();
+    }
     /** ME 节点是否有能量（Jade 网络状态细分用）。 */
     public boolean isNodePowered() { return mainNode != null && mainNode.isPowered(); }
 

@@ -217,6 +217,9 @@ neoForge.ideSyncTask(generateModMetadata)
 
 jar { 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(projectDir) {
+        include 'LICENSE', 'LICENSE-ASSETS.md', 'LICENSE-CC-BY-NC-SA-3.0.txt'
+    }
     // PCL/启动器显示的 jar 图标（mod 列表图标走 neoforge.mods.toml 的 logoFile）
     from('src/main/resources') {
         include 'pack.png'

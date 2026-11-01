@@ -1,6 +1,6 @@
 {
   "$schema": "../schema.json",
-  "includes": ["arcane_crafting_terminal.json"],
+  "includes": ["arcane_crafting_terminal_wireless_base.json"],
   "widgets": {
     "scrollingUpgrades": {
       "left": 192,

@@ -219,11 +219,14 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
             };
             addSlot(new SlotItemHandler(machineHandler, invIdx, ARMOR_X, ARMOR_Y + i * 18) {
                 @Override public boolean mayPlace(ItemStack s) {
-                    if (s.getItem() instanceof IVisDiscountGear) return true;
-                    if (s.getItem() instanceof IWarpingGear) return true;
+                    // Discount/warping armor still belongs to its actual equipment slot.
+                    var actual = inv.player.getEquipmentSlotForItem(s);
+                    if (actual == EquipmentSlot.HEAD || actual == EquipmentSlot.CHEST
+                            || actual == EquipmentSlot.LEGS || actual == EquipmentSlot.FEET)
+                        return actual == eq;
                     if (s.getItem() instanceof Equipable eqItem)
                         return eqItem.getEquipmentSlot() == eq;
-                    return false;
+                    return s.getItem() instanceof IVisDiscountGear || s.getItem() instanceof IWarpingGear;
                 }
                 @Override
                 public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
