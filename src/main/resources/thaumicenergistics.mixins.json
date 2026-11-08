@@ -10,12 +10,15 @@
     "ae2.bus.MixinExportBusPart",
     "ae2.bus.MixinStorageBusPart",
     "ae2.interfaces.MixinInterfaceLogic",
+    "ae2.interfaces.MixinInterfaceInventory",
     "ae2.interfaces.MixinInterfaceBlockEntity",
     "ae2.interfaces.MixinConfigMenuInventory",
     "ae2.crafting.MixinCraftingService",
     "tc.MixinVisRelayBlock",
     "tc.MixinGolemItems",
-    "tc.MixinThaumcraftGolemEntity"
+    "tc.MixinThaumcraftGolemEntity",
+    "tc.MixinRechargePedestalTools",
+    "minecraft.MixinCrystalToolAnvil"
   ],
   "client": [
     "ae2.screen.MixinCraftConfirmScreen",

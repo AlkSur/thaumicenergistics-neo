@@ -1,6 +1,10 @@
 package thaumicenergistics.common.grid;
-import java.util.*;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
+
 public class GridEssentiaCache {
     private final Map<ResourceLocation, Long> data = Collections.synchronizedMap(new LinkedHashMap<>());
     public long get(ResourceLocation id) { return data.getOrDefault(id, 0L); }

@@ -4,6 +4,7 @@ import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderTarget;
+import java.util.function.BooleanSupplier;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
@@ -23,10 +24,16 @@ public final class ProviderEssentiaTargets {
     @Nullable
     public static PatternProviderTarget wrap(@Nullable PatternProviderTarget original, @Nullable IGrid grid,
             IActionSource source, @Nullable BlockEntity target, @Nullable Direction face) {
+        return wrap(original, grid, source, target, face, () -> true);
+    }
+
+    @Nullable
+    private static PatternProviderTarget wrap(@Nullable PatternProviderTarget original, @Nullable IGrid grid,
+            IActionSource source, @Nullable BlockEntity target, @Nullable Direction face, BooleanSupplier enabled) {
         if (grid == null || target == null || !(target instanceof IAspectContainer)
                 && EssentiaEndpoints.transport(target, face) == null) return original;
         if (original instanceof ThEEssentiaPushTarget || original instanceof ThECompositePushTarget) return original;
-        var essentia = new ThEEssentiaPushTarget(grid, source, target, face);
+        var essentia = new ThEEssentiaPushTarget(grid, source, target, face, enabled);
         return original == null ? essentia : new ThECompositePushTarget(original, essentia);
     }
 
@@ -34,8 +41,13 @@ public final class ProviderEssentiaTargets {
     public static PatternProviderTarget fromSource(@Nullable PatternProviderTarget original, IActionSource source,
             @Nullable BlockEntity target, @Nullable Direction face) {
         var machine = source.machine().orElse(null);
-        if (!hasCard(machine)) return original;
+        if (machine == null) return original;
         var node = machine.getActionableNode();
-        return wrap(original, node != null ? node.getGrid() : null, source, target, face);
+        // Dispatcher sources may be IActionHost lambdas. Recover the upgrade host
+        // through the public node owner, without accessing addon internals.
+        Object host = hasCard(machine) || node == null ? machine : node.getOwner();
+        if (!hasCard(host)) return original;
+        return wrap(original, node != null ? node.getGrid() : null, source, target, face,
+                () -> hasCard(host) && machine.getActionableNode() == node && node != null && node.isActive());
     }
 }

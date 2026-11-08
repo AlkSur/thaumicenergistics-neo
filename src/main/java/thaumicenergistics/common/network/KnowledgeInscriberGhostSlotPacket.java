@@ -1,13 +1,13 @@
 package thaumicenergistics.common.network;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.ContainerKnowledgeInscriber;
-import net.minecraft.network.codec.ByteBufCodecs;
 
 /**
  * 客户端→服务端 网络包：同步知识记录仪合成网格中某个幽灵槽的内容。

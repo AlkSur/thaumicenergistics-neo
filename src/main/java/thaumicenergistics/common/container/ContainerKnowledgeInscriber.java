@@ -4,10 +4,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -15,9 +14,12 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
+import net.neoforged.neoforge.network.PacketDistributor;
 import thaumcraft.api.ThaumcraftApi;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.crafting.IArcaneRecipe;
@@ -32,7 +34,6 @@ import thaumicenergistics.common.network.KnowledgeInscriberGhostSlotPacket;
 import thaumicenergistics.common.tiles.TileKnowledgeInscriber;
 import thaumicenergistics.init.ModItems;
 import thaumicenergistics.init.ModMenuTypes;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
 
@@ -95,6 +96,8 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     private final SimpleContainer craftingContainer = new SimpleContainer(CRAFTING_GRID_SIZE);
 
     private IArcaneRecipe activeRecipe = null;
+    private int selectedStoredIndex = -1;
+    private CompoundTag selectedStoredEntry;
     private final DataSlot saveStateSlot;
 
     public ContainerKnowledgeInscriber(int id, Inventory inv) {
@@ -175,6 +178,7 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     }
 
     private void onKCoreChanged() {
+        clearStoredSelection();
         ItemStack kCore = kCoreInventory.getStackInSlot(0);
         if (kCore.isEmpty()) {
             kCoreHandler.close();
@@ -196,23 +200,20 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     }
 
     private void updatePatternSlots() {
-        ArrayList<ItemStack> results = kCoreHandler.hasCore()
-                ? kCoreHandler.getStoredOutputs()
-                : new ArrayList<>();
-        Iterator<ItemStack> it = results.iterator();
-
         for (int i = 0; i < MAXIMUM_PATTERNS; i++) {
-            if (it.hasNext()) {
-                patternInventory.setStackInSlot(i, it.next().copy());
-            } else {
-                patternInventory.setStackInSlot(i, ItemStack.EMPTY);
-            }
+            patternInventory.setStackInSlot(i,
+                    kCoreHandler.hasCore() && i < kCoreHandler.getStoredEntryCount()
+                            ? kCoreHandler.getStoredEntryOutput(i) : ItemStack.EMPTY);
         }
     }
 
     private CoreSaveState getSaveState() {
         if (!kCoreHandler.hasCore()) {
             return CoreSaveState.Disabled_MissingCore;
+        }
+        // The selected raw record remains deletable even when its recipe or research is gone.
+        if (kCoreHandler.matchesStoredEntry(selectedStoredIndex, selectedStoredEntry)) {
+            return CoreSaveState.Enabled_Delete;
         }
         if (activeRecipe == null) {
             return CoreSaveState.Disabled_InvalidRecipe;
@@ -230,7 +231,7 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
             return CoreSaveState.Disabled_InvalidRecipe;
         }
 
-        boolean isNew = !kCoreHandler.hasPatternFor(result);
+        boolean isNew = kCoreHandler.getMatchingPattern(createActivePattern()) == null;
         if (isNew) {
             return kCoreHandler.hasRoomToStorePattern()
                     ? CoreSaveState.Enabled_Save
@@ -381,6 +382,14 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
             return;
         }
 
+        kCoreHandler.addPattern(createActivePattern());
+        updatePatternSlots();
+        sendSaveState();
+        syncKCoreToTile();
+    }
+
+    private ArcaneCraftingPattern createActivePattern() {
+        if (activeRecipe == null) return null;
         ItemStack[] inputs = new ItemStack[CRAFTING_GRID_SIZE];
         for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
             ItemStack stack = craftingInventory.getStackInSlot(i);
@@ -393,16 +402,19 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         }
         ItemStack result = resultInventory.getStackInSlot(0).copy();
 
-        ArcaneCraftingPattern pattern = new ArcaneCraftingPattern(aspects, result, inputs, research);
-        kCoreHandler.addPattern(pattern);
-        updatePatternSlots();
-        sendSaveState();
-        syncKCoreToTile();
+        return new ArcaneCraftingPattern(aspects, result, inputs, activeRecipe.getResearch());
     }
 
     private void deletePattern() {
-        ItemStack result = resultInventory.getStackInSlot(0);
-        ArcaneCraftingPattern pattern = kCoreHandler.getPatternForItem(result);
+        if (selectedStoredIndex >= 0) {
+            if (!kCoreHandler.removeStoredEntry(selectedStoredIndex, selectedStoredEntry)) return;
+            clearStoredSelection();
+            updatePatternSlots();
+            sendSaveState();
+            syncKCoreToTile();
+            return;
+        }
+        ArcaneCraftingPattern pattern = kCoreHandler.getMatchingPattern(createActivePattern());
         if (pattern != null) {
             kCoreHandler.removePattern(pattern);
             updatePatternSlots();
@@ -412,6 +424,7 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     }
 
     public void onClearGrid() {
+        clearStoredSelection();
         for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
             craftingInventory.setStackInSlot(i, ItemStack.EMPTY);
             craftingContainer.setItem(i, ItemStack.EMPTY);
@@ -434,16 +447,13 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
             if (slotId >= 37 && slotId < 37 + MAXIMUM_PATTERNS) {
                 int patternIdx = slotId - 37;
                 ItemStack output = patternInventory.getStackInSlot(patternIdx);
-                if (!output.isEmpty()) {
-                    ArcaneCraftingPattern pattern = kCoreHandler.getPatternForItem(output);
-                    if (pattern != null) {
-                        loadPatternToGrid(pattern, player);
-                    }
+                if (!output.isEmpty() && patternIdx < kCoreHandler.getStoredEntryCount()) {
+                    loadPatternToGrid(patternIdx);
                 }
                 return;
             }
             if (slot instanceof GhostSlot ghostSlot) {
-                int gridIndex = ghostSlot.index;
+                int gridIndex = ghostSlot.getContainerSlot();
                 ItemStack carried = getCarried();
                 ItemStack newStack = carried.isEmpty()
                         ? ItemStack.EMPTY
@@ -466,7 +476,7 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
 
     public void setGhostSlotOnServer(int slotIndex, ItemStack stack) {
         if (slotIndex < 0 || slotIndex >= CRAFTING_GRID_SIZE) return;
-        ItemStack s = stack == null ? ItemStack.EMPTY : stack.copy();
+        ItemStack s = stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1);
         craftingContainer.setItem(slotIndex, s);
         int slotId = 37 + MAXIMUM_PATTERNS + slotIndex;
         if (slotId < slots.size() && slots.get(slotId) instanceof GhostSlot) {
@@ -475,37 +485,35 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         onCraftingChanged();
     }
 
-    /** GhostSlot 的网格索引（0-8）。ghostSlot.index 是菜单槽序号（37+MAXIMUM_PATTERNS+idx），需换算。 */
+    /** GhostSlot 在底层九格容器中的索引；不使用菜单槽序号。 */
     public int getGhostGridIndex(Slot slot) {
         if (slot instanceof GhostSlot && slot.container == craftingContainer) {
-            return slot.index - (37 + MAXIMUM_PATTERNS);
+            return slot.getContainerSlot();
         }
         return -1;
     }
 
     /** 点击图案槽：把核心已有配方加载到合成网格（清空 + 填 9 格材料），供保存/删除。 */
-    private void loadPatternToGrid(ArcaneCraftingPattern pattern, Player player) {
-        ItemStack[] ingredients = pattern.getIngredients();
-        boolean client = player.level().isClientSide;
+    private void loadPatternToGrid(int index) {
+        ItemStack[] ingredients = kCoreHandler.getStoredEntryInputs(index);
         for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
-            ItemStack s = i < ingredients.length && ingredients[i] != null ? ingredients[i].copy() : ItemStack.EMPTY;
-            craftingContainer.setItem(i, s.copy());
-            int slotId = 37 + MAXIMUM_PATTERNS + i;
-            if (slotId < slots.size() && slots.get(slotId) instanceof GhostSlot gs) {
-                gs.set(s.copy());
-            }
-            if (client) {
-                PacketDistributor.sendToServer(new KnowledgeInscriberGhostSlotPacket(containerId, i, s.copy()));
-            }
+            craftingContainer.setItem(i, ingredients[i].copy());
+            craftingInventory.setStackInSlot(i, ingredients[i].copy());
         }
-        if (client) {
-            onCraftingChangedClient();
-        } else {
-            onCraftingChanged();
-        }
+        selectedStoredIndex = index;
+        selectedStoredEntry = kCoreHandler.getStoredEntry(index);
+        // A normal slot click runs this on the server. Do not send nine ghost edits:
+        // those are separate edit requests and must invalidate the stored selection.
+        updateRecipe();
+    }
+
+    private void clearStoredSelection() {
+        selectedStoredIndex = -1;
+        selectedStoredEntry = null;
     }
 
     public void onCraftingChangedClient() {
+        clearStoredSelection();
         for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
             craftingInventory.setStackInSlot(i, craftingContainer.getItem(i).copy());
         }
@@ -513,6 +521,7 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     }
 
     private void onCraftingChanged() {
+        clearStoredSelection();
         for (int i = 0; i < CRAFTING_GRID_SIZE; i++) {
             craftingInventory.setStackInSlot(i, craftingContainer.getItem(i).copy());
         }

@@ -1,39 +1,20 @@
 package thaumicenergistics.common.tiles;
 
-import java.util.ArrayList;
-import thaumicenergistics.common.crafting.ArcaneAssemblerPattern;
-import thaumicenergistics.common.crafting.ArcaneCraftJob;
-import java.util.EnumSet;
-import java.util.Hashtable;
-import java.util.List;
-
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.Containers;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.SimpleContainer;
-
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.ids.AEComponents;
 import appeng.api.implementations.blockentities.ICraftingMachine;
 import appeng.api.implementations.blockentities.PatternContainerGroup;
+import appeng.api.implementations.items.IMemoryCard;
+import appeng.api.implementations.items.MemoryCardMessages;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
-import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IInWorldGridNodeHost;
+import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.security.IActionHost;
@@ -45,28 +26,46 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.util.AECableType;
-
+import appeng.me.service.P2PService;
+import appeng.parts.p2p.P2PTunnelPart;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.Hashtable;
+import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.Containers;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 import thaumcraft.api.IVisDiscountGear;
 import thaumcraft.api.IWarpingGear;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
-
+import thaumcraft.api.aspects.IEssentiaContainerItem;
 import thaumicenergistics.ThaumicEnergistics;
+import thaumicenergistics.common.blocks.NetworkStatusEntityBlock;
+import thaumicenergistics.common.crafting.ArcaneAssemblerPattern;
+import thaumicenergistics.common.crafting.ArcaneCraftJob;
+import thaumicenergistics.common.crafting.ArcanePatternDecoder;
 import thaumicenergistics.common.integration.tc.ArcaneCraftingPattern;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.inventory.HandlerKnowledgeCore;
-import thaumicenergistics.init.ModBlockEntities;
-import thaumicenergistics.init.ModItems;
-import appeng.api.ids.AEComponents;
-import appeng.api.implementations.items.IMemoryCard;
-import appeng.api.implementations.items.MemoryCardMessages;
-import appeng.me.service.P2PService;
-import appeng.parts.p2p.P2PTunnelPart;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
 import thaumicenergistics.common.network.AssemblerPreviewSyncPacket;
 import thaumicenergistics.common.parts.VisInterfacePart;
+import thaumicenergistics.init.ModBlockEntities;
+import thaumicenergistics.init.ModItems;
 
 public class TileArcaneAssembler extends ThETileBase
         implements IInWorldGridNodeHost, IActionHost, IGridTickable, ICraftingProvider, ICraftingMachine {
@@ -161,7 +160,7 @@ public class TileArcaneAssembler extends ThETileBase
         super(ModBlockEntities.ARCANE_ASSEMBLER.get(), pos, state);
 
         mainNode = GridHelper.createManagedNode(this, nodeListener)
-                .setVisualRepresentation(thaumicenergistics.init.ModItems.ARCANE_ASSEMBLER_ITEM.get())
+                .setVisualRepresentation(ModItems.ARCANE_ASSEMBLER_ITEM.get())
                 .setInWorldNode(true)
                 .setTagName("proxy")
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
@@ -181,6 +180,7 @@ public class TileArcaneAssembler extends ThETileBase
         super.onLoad();
         if (level != null && !level.isClientSide()) {
             mainNode.create(level, getBlockPos());
+            NetworkStatusEntityBlock.updateOnlineState(this, mainNode.isActive());
         }
     }
 
@@ -195,7 +195,7 @@ public class TileArcaneAssembler extends ThETileBase
         super.onBreakBlock();
         if (level != null && !level.isClientSide) {
             // 制作前退真实材料，制作后只掉落尚未输出的产物和催化剂。
-            var remaining = job.produced() ? job.outputs() : java.util.Arrays.asList(job.inputs());
+            var remaining = job.produced() ? job.outputs() : Arrays.asList(job.inputs());
             if (isCrafting) {
                 for (ItemStack stack : remaining) {
                     if (!stack.isEmpty()) Containers.dropItemStack(level,
@@ -509,7 +509,7 @@ public class TileArcaneAssembler extends ThETileBase
             }
         }
 
-        return new ArcaneAssemblerPattern(thaumicenergistics.common.crafting.ArcanePatternDecoder.definition(acp), null, aspects, result, inputs,
+        return new ArcaneAssemblerPattern(ArcanePatternDecoder.definition(acp), null, aspects, result, inputs,
                 acp.getResearch(), acp.getIngredients(), alternatives);
     }
 
@@ -547,7 +547,7 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     private static boolean hasWispAspect(ItemStack stack) {
-        if (!(stack.getItem() instanceof thaumcraft.api.aspects.IEssentiaContainerItem container)) {
+        if (!(stack.getItem() instanceof IEssentiaContainerItem container)) {
             return false;
         }
         AspectList contents = container.getAspects(stack);
@@ -580,7 +580,7 @@ public class TileArcaneAssembler extends ThETileBase
 
     @Override
     public PatternContainerGroup getCraftingMachineInfo() {
-        ItemStack icon = new ItemStack(thaumicenergistics.init.ModItems.ARCANE_ASSEMBLER_ITEM.get());
+        ItemStack icon = new ItemStack(ModItems.ARCANE_ASSEMBLER_ITEM.get());
         return new PatternContainerGroup(
                 AEItemKey.of(icon),
                 Component.translatable("block.thaumicenergistics.arcane_assembler"),
@@ -630,7 +630,7 @@ public class TileArcaneAssembler extends ThETileBase
     public boolean isVisSourceAvailable() {
         var grid = mainNode.getGrid();
         if (!isNodeActive() || grid == null || visSourceFreq == 0) return false;
-        var p2p = appeng.me.service.P2PService.get(grid);
+        var p2p = P2PService.get(grid);
         return p2p != null && p2p.getInput(visSourceFreq) instanceof VisInterfacePart source
                 && source.hasAvailableRelay();
     }
@@ -644,7 +644,7 @@ public class TileArcaneAssembler extends ThETileBase
      */
     public void onMemoryCardActivate(Player player,
                                      IMemoryCard memoryCard,
-                                     net.minecraft.world.item.ItemStack heldItem) {
+                                     ItemStack heldItem) {
         Short freq = heldItem.get(AEComponents.EXPORTED_P2P_FREQUENCY);
         if (freq != null) {
             // 卡上带 P2P 频率（从 vis_interface shift+右键复制来的）→ 设为 vis 源
@@ -669,11 +669,11 @@ public class TileArcaneAssembler extends ThETileBase
             legacyCraftBlocked = false;
             stalePatterns = true;
             updatePatternSlots();
-            // 直接通知 AE2 合成服务重新拉取 getAvailablePatterns()。
+            // 直接通知 AE2 合成服务重新拉取 getAvailablePatterns。
             // 之前仅靠 tickingRequest 里处理 stalePatterns 再 requestUpdate，
             // 但节点休眠时 tickingRequest 不被调用，AE2 永远学不到 kCore 里的样板 → ME 终端无可合成项。
-            // 守卫 getGrid()!=null：装配器未连 ME 网络（无相邻 cable）时 getGrid() 为 null，
-            // 此时 requestUpdate 内部 node.getGrid().getCraftingService() 会 NPE，导致 kCore 插入事务回滚 → "无法绑定"。
+            // 守卫 getGrid!=null：装配器未连 ME 网络（无相邻 cable）时 getGrid 为 null，
+            // 此时 requestUpdate 内部 node.getGrid.getCraftingService 会 NPE，导致 kCore 插入事务回滚 → "无法绑定"。
             if (level != null && !level.isClientSide() && mainNode.getGrid() != null) {
                 ICraftingProvider.requestUpdate(mainNode);
             }
@@ -722,6 +722,7 @@ public class TileArcaneAssembler extends ThETileBase
 
     public void markForUpdate() {
         if (level != null) {
+            NetworkStatusEntityBlock.updateOnlineState(this, mainNode.isActive());
             setChanged();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             // 关键：blockEntityChanged 触发 BE 数据（getUpdateTag）同步到客户端。

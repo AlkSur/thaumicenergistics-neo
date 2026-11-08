@@ -1,31 +1,27 @@
 package thaumicenergistics.mixins.ae2.bus;
 
+import appeng.api.parts.IPartItem;
+import appeng.api.stacks.AEKeyType;
+import appeng.api.stacks.GenericStack;
+import appeng.parts.AEBasePart;
+import appeng.parts.automation.IOBusPart;
+import appeng.parts.automation.UpgradeablePart;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import appeng.api.stacks.AEKeyType;
-import appeng.parts.AEBasePart;
-import appeng.parts.automation.IOBusPart;
-import appeng.parts.automation.UpgradeablePart;
-import appeng.api.parts.IPartItem;
-import appeng.api.stacks.GenericStack;
-import thaumicenergistics.common.integration.appeng.AEssentiaKey;
-
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer;
+import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 
 /**
@@ -62,9 +58,9 @@ public abstract class MixinIOBusPart extends UpgradeablePart implements Essentia
      * 把源质键类型补进原版 IO 总线 config 的支持类型集合（只增不减）。
      * <p>
      * 目标调用：{@code IOBusPart.<init>} 内
-     * {@code ConfigInventory.configTypes(63).supportedTypes(supportedKeyTypes)}（IOBusPart.java:96-97），
+     * {@code ConfigInventory.configTypes(63).supportedTypes(supportedKeyTypes)}，
      * 字节码为 {@code ConfigInventory$Builder.supportedTypes(Ljava/util/Collection;)}。
-     * 源集合来自 {@code StackWorldBehaviors.withImportStrategy()/withExportStrategy()}（仅 item/fluid），
+     * 源集合来自 {@code StackWorldBehaviors.withImportStrategy/withExportStrategy}（仅 item/fluid），
      * 本模组未给源质注册搬运策略，故须在此追加 {@link AEssentiaKeyType#INSTANCE}。
      */
     @ModifyArg(

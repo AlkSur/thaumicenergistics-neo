@@ -1,4 +1,5 @@
 package thaumicenergistics.api.storage;
+
 import net.minecraft.resources.ResourceLocation;
 
 public record AspectStack(ResourceLocation aspectId, long amount) implements IAspectStack {

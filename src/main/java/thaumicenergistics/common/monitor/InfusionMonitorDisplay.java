@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.FloatTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -17,7 +20,7 @@ public final class InfusionMonitorDisplay {
     private static final int BUBBLE_LINE_WIDTH = 320;
     private final Supplier<Level> levelSupplier;
     private final BlockPos position;
-    private net.minecraft.world.entity.Display.TextDisplay bubble;
+    private Display.TextDisplay bubble;
     private Component lastText;
 
     public InfusionMonitorDisplay(Supplier<Level> levelSupplier, BlockPos position) {
@@ -79,20 +82,20 @@ public final class InfusionMonitorDisplay {
     }
 
     /** 构造 FloatTag 列表（1.21.1 CompoundTag 无 putFloatArray，需 ListTag）。 */
-    private static net.minecraft.nbt.ListTag floatList(float... values) {
-        net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+    private static ListTag floatList(float... values) {
+        ListTag list = new ListTag();
         for (float v : values) {
-            list.add(net.minecraft.nbt.FloatTag.valueOf(v));
+            list.add(FloatTag.valueOf(v));
         }
         return list;
     }
 
     /** 按 Tag + 方块附近 AABB 查找已存在的气泡。 */
-    private net.minecraft.world.entity.Display.TextDisplay findBubble(Level level) {
+    private Display.TextDisplay findBubble(Level level) {
         if (level == null) return null;
         AABB aabb = new AABB(position).inflate(0.15, 2.0, 0.15);
-        List<net.minecraft.world.entity.Display.TextDisplay> list = level.getEntitiesOfClass(
-                net.minecraft.world.entity.Display.TextDisplay.class, aabb,
+        List<Display.TextDisplay> list = level.getEntitiesOfClass(
+                Display.TextDisplay.class, aabb,
                 e -> e.getTags().contains(BUBBLE_TAG)
                         && e.distanceToSqr(position.getX() + 0.5, position.getY() + 1.2, position.getZ() + 0.5) < 0.01);
         return list.isEmpty() ? null : list.get(0);
@@ -104,7 +107,7 @@ public final class InfusionMonitorDisplay {
         if (bubble != null && bubble.isAlive()) {
             bubble.discard();
         } else {
-            net.minecraft.world.entity.Display.TextDisplay found = findBubble(level);
+            Display.TextDisplay found = findBubble(level);
             if (found != null) {
                 found.discard();
             }

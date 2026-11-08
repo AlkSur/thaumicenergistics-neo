@@ -1,11 +1,13 @@
 package thaumicenergistics.common.entities;
 
+import appeng.api.ids.AEComponents;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
-
 import net.minecraft.core.GlobalPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -13,19 +15,16 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import net.minecraft.core.component.DataComponents;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
+import thaumcraft.common.items.GolemBellItem;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.items.ItemGolemWirelessBackpack;
-import thaumicenergistics.init.ModItems;
-import appeng.api.ids.AEComponents;
-import net.minecraft.nbt.CompoundTag;
-import thaumcraft.common.items.GolemBellItem;
 import thaumicenergistics.common.network.GolemBackpackSyncPacket;
+import thaumicenergistics.init.ModItems;
 
 /**
  * 傀儡无线背包处理器：装备/拆卸/Facade 皮肤更换。
@@ -267,8 +266,6 @@ public final class GolemBackpackHandler {
         event.setCancellationResult(InteractionResult.SUCCESS);
         event.setCanceled(true);
     }
-
-    // ========== NBT 操作方法 ==========
 
     public static boolean hasBackpack(ThaumcraftGolemEntity golem) {
         return golem.getPersistentData().contains(NBT_KEY_LINK);

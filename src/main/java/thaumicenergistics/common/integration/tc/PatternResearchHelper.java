@@ -7,6 +7,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import org.jetbrains.annotations.Nullable;
+import thaumicenergistics.common.crafting.ArcaneAssemblerPattern;
 
 /**
  * 从 AE2 {@link IPatternDetails} 中提取 TC 研究键的辅助类。
@@ -26,7 +27,7 @@ public final class PatternResearchHelper {
      */
     @Nullable
     public static String getResearch(IPatternDetails pattern) {
-        if (pattern instanceof thaumicenergistics.common.crafting.ArcaneAssemblerPattern arcanePattern) {
+        if (pattern instanceof ArcaneAssemblerPattern arcanePattern) {
             return arcanePattern.getResearch();
         }
 

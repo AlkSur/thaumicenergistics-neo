@@ -1,21 +1,20 @@
 package thaumicenergistics.common.container;
 
+import appeng.api.config.ActionItems;
+import appeng.client.gui.me.common.MEStorageScreen;
+import appeng.client.gui.style.ScreenStyle;
+import appeng.client.gui.widgets.ActionButton;
+import appeng.core.AEConfig;
+import appeng.menu.slot.AppEngCraftingSlot;
+import java.util.Map;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import appeng.api.config.ActionItems;
-import appeng.client.gui.widgets.ActionButton;
-import appeng.core.AEConfig;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.anti_ad.mc.ipn.api.IPNIgnore;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.gui.AspectGuiRenderer;
-import appeng.client.gui.me.common.MEStorageScreen;
-import appeng.client.gui.style.ScreenStyle;
-import net.neoforged.neoforge.network.PacketDistributor;
 import thaumicenergistics.common.network.ArcaneTerminalClearC2SPacket;
-
-import java.util.Map;
-
-import org.anti_ad.mc.ipn.api.IPNIgnore;
 
 /**
  * 奥术合成终端 GUI。标 @IPNIgnore：IPN 一键整理完全跳过此界面（不渲染排序按钮、不执行整理）。
@@ -52,8 +51,8 @@ public class GuiArcaneCraftingTerminal extends MEStorageScreen<ContainerArcaneCr
      * <p>
      * 关键时序：AEBaseScreen.init 先调 AbstractContainerScreen.init（按 imageWidth 算 leftPos），随后用该 leftPos
      * 一次性解析并冻结按钮/文本层坐标（populateScreen）；而渲染时贴图与槽位按当前 leftPos 画。若把 175 居中放在
-     * super.init() 之后，按钮层基准是 194 居中、贴图层是 175 居中，差 (194-175)/2≈10px，按钮层就像整体左移。
-     * 因此先把 imageWidth 临时改为 175，让 super.init() 全程内部就用 87.5 居中解析所有层，再恢复。
+     * super.init 之后，按钮层基准是 194 居中、贴图层是 175 居中，差 (194-175)/2≈10px，按钮层就像整体左移。
+     * 因此先把 imageWidth 临时改为 175，让 super.init 全程内部就用 87.5 居中解析所有层，再恢复。
      */
     @Override
     public void init() {
@@ -96,7 +95,7 @@ public class GuiArcaneCraftingTerminal extends MEStorageScreen<ContainerArcaneCr
         // 锚点取合成结果槽的 Y：圆环紧贴结果槽左侧，窗口缩放时随槽位一起移动
         int anchorY = -1;
         for (var slot : this.menu.slots) {
-            if (slot instanceof appeng.menu.slot.AppEngCraftingSlot) {
+            if (slot instanceof AppEngCraftingSlot) {
                 anchorY = slot.y;
                 break;
             }

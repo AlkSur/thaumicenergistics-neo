@@ -1,5 +1,6 @@
 package thaumicenergistics.common.integration.jade;
 
+import appeng.util.Platform;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -10,7 +11,6 @@ import snownee.jade.api.ITooltip;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.BoxStyle;
 import snownee.jade.api.ui.IElementHelper;
-import appeng.util.Platform;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.tiles.TileEssentiaVibrationChamber;
 

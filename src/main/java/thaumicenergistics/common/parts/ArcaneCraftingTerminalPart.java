@@ -1,18 +1,8 @@
 package thaumicenergistics.common.parts;
 
-import java.util.List;
-
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.Vec3;
+import appeng.api.ids.AEComponents;
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
-import appeng.api.ids.AEComponents;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.ticking.IGridTickable;
@@ -27,6 +17,15 @@ import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
 import appeng.parts.reporting.AbstractTerminalPart;
 import appeng.util.inv.AppEngInternalInventory;
+import java.util.List;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.init.ModMenuTypes;
 
@@ -107,8 +106,6 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart implements 
         return super.onUseItemOn(heldItem, player, hand, pos);
     }
 
-    // ===== 法杖自动充能（内存卡链接 Vis Interface 作为 vis 源） =====
-
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
         return new TickingRequest(VIS_REPLENISH_INTERVAL, VIS_REPLENISH_INTERVAL, false);
@@ -116,7 +113,7 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart implements 
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        // 充能体抽至 ArcaneVisReplenish 单套实现（无线终端菜单打开期间共用，T-M3-IMPL D1），行为零变化
+        // 充能体抽至 ArcaneVisReplenish 单套实现（无线终端菜单打开期间共用，D1），行为零变化
         if (ArcaneVisReplenish.replenish(node.getGrid(), visSourceFreq, wandInv.getStackInSlot(0))) {
             // 法杖 vis 存储在 ItemStack NBT，手动标记保存
             getHost().markForSave();

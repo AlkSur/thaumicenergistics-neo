@@ -1,5 +1,7 @@
 package thaumicenergistics.common.integration.jade;
 
+import appeng.util.Platform;
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -64,8 +66,8 @@ public enum AssemblerProvider implements IBlockComponentProvider, IServerDataPro
         short frequency = accessor.getServerData().getShort(TAG_FREQUENCY);
         if (frequency != 0) {
             tooltip.add(Component.translatable("waila.ae2.P2PFrequency",
-                    appeng.util.Platform.p2p().toColoredHexString(frequency)
-                            .withStyle(net.minecraft.ChatFormatting.BOLD)));
+                    Platform.p2p().toColoredHexString(frequency)
+                            .withStyle(ChatFormatting.BOLD)));
         }
         tooltip.add(Component.translatable("thaumicenergistics.jade.assembler.vis_source",
                 Component.translatable(visConnected

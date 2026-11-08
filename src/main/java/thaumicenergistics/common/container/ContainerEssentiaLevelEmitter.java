@@ -1,7 +1,5 @@
 package thaumicenergistics.common.container;
 
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.MenuType;
 import appeng.api.config.Settings;
 import appeng.api.stacks.AEKey;
 import appeng.api.util.IConfigManager;
@@ -9,6 +7,8 @@ import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.UpgradeableMenu;
 import appeng.menu.slot.FakeSlot;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.MenuType;
 import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.parts.EssentiaLevelEmitterPart;

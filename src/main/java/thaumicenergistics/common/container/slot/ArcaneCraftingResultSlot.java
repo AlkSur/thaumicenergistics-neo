@@ -1,27 +1,30 @@
 package thaumicenergistics.common.container.slot;
 
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.energy.IEnergySource;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.MEStorage;
+import appeng.api.storage.StorageHelper;
 import appeng.helpers.ICraftingGridMenu;
 import appeng.helpers.InventoryAction;
 import appeng.menu.slot.CraftingTermSlot;
-import thaumcraft.api.aspects.Aspect;
-import thaumcraft.api.aspects.AspectList;
-import thaumcraft.common.items.TCFunctionalItems;
-import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
-import appeng.api.stacks.AEItemKey;
-import appeng.api.storage.StorageHelper;
 import appeng.util.Platform;
 import appeng.util.inv.CarriedItemInventory;
+import appeng.util.inv.PlayerInternalInventory;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import thaumcraft.api.aspects.Aspect;
+import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.crafting.IArcaneRecipe;
+import thaumcraft.common.items.TCFunctionalItems;
 import thaumcraft.common.lib.crafting.ThaumcraftCraftingManager;
+import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
 
 /**
  * 奥术合成结果槽：继承 AE2 CraftingTermSlot 使客户端识别（shift/右键/space 合成自动生效），
@@ -83,7 +86,6 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
                 return;
             }
         }
-        
 
         // 奥术配方（非 vanilla CRAFTING）不走 AE2 craftItem（findRecipe 只认 vanilla）
         // 走自定义合成：从合成格读配方 → 产物 + 消耗材料 + 从网络补货
@@ -128,15 +130,14 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
         }
         // 保留原料（retainIngredient，如元始珍珠）：getRemainingItems 返回非空栈的槽位不消耗。
         // 对应 TC 奥术工作台行为——珍珠作为"催化"留在合成格，仅消耗构材与虚空金属锭。
-        NonNullList<net.minecraft.world.item.ItemStack> remainders =
+        NonNullList<ItemStack> remainders =
                 arcaneRecipe.getRemainingItems(craftContainer);
-        
 
         // shift=整组到背包、普通=1 个到手
         int maxTimesToCraft;
         InternalInventory target;
         if (action == InventoryAction.CRAFT_SHIFT || action == InventoryAction.CRAFT_ALL) {
-            target = new appeng.util.inv.PlayerInternalInventory(who.getInventory());
+            target = new PlayerInternalInventory(who.getInventory());
             maxTimesToCraft = (int) Math.floor((double) arcaneResult.getMaxStackSize() / (double) arcaneResult.getCount());
             if (action == InventoryAction.CRAFT_ALL) {
                 maxTimesToCraft *= Inventory.INVENTORY_SIZE;
@@ -173,7 +174,7 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
             }
 
             // 记录消耗前合成格（首次记录，后续每轮消耗后补货）
-            var beforeItems = new java.util.HashMap<Integer, ItemStack>();
+            var beforeItems = new HashMap<Integer, ItemStack>();
             for (int i = 0; i < grid.size(); i++) {
                 var s = grid.getStackInSlot(i);
                 if (!s.isEmpty()) beforeItems.put(i, s.copy());
@@ -208,12 +209,12 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
             // 产物入目标
             var extra = target.addItems(arcaneResult.copy());
             if (!extra.isEmpty()) {
-                Platform.spawnDrops(who.level(), who.blockPosition(), java.util.List.of(extra));
+                Platform.spawnDrops(who.level(), who.blockPosition(), List.of(extra));
                 break;
             }
             crafted++;
         }
-        
+
         // 触发容器刷新（重算结果槽）
         container.slotsChanged(grid.toContainer());
     }
@@ -225,7 +226,7 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
         }
         try {
             // 记录消耗前各合成格物品，取走后从 ME 存储自动补回（AE2 终端行为）
-            java.util.Map<Integer, ItemStack> beforeItems = new java.util.HashMap<>();
+            Map<Integer, ItemStack> beforeItems = new HashMap<>();
             var grid = craftingGrid;
             for (int i = 0; i < grid.size(); i++) {
                 var s = grid.getStackInSlot(i);

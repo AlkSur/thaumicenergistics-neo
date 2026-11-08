@@ -1,23 +1,19 @@
 package thaumicenergistics.mixins.ae2.provider;
 
+import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.security.IActionSource;
+import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import appeng.helpers.patternprovider.PatternProviderTarget;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
-
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import appeng.api.networking.IManagedGridNode;
-import appeng.api.networking.security.IActionSource;
-import appeng.helpers.patternprovider.PatternProviderLogic;
-import appeng.helpers.patternprovider.PatternProviderLogicHost;
-import appeng.helpers.patternprovider.PatternProviderTarget;
-
-
 import thaumicenergistics.common.integration.appeng.ProviderEssentiaTargets;
 
 /**
@@ -27,17 +23,17 @@ import thaumicenergistics.common.integration.appeng.ProviderEssentiaTargets;
 @Mixin(value = PatternProviderLogic.class, remap = false)
 public abstract class MixinPatternProviderLogicEssentia {
 
-    /** 宿主（Part 或 BlockEntity），声明于本类自身（PatternProviderLogic.java:96）。 */
+    /** 宿主（Part 或 BlockEntity），声明于本类自身。 */
     @Final
     @Shadow
     private PatternProviderLogicHost host;
 
-    /** 网格节点，声明于本类自身（PatternProviderLogic.java:97）。 */
+    /** 网格节点，声明于本类自身。 */
     @Final
     @Shadow
     private IManagedGridNode mainNode;
 
-    /** 供应器自身的操作源（PatternProviderLogic.java:98，MachineSource），供网络抽取记账用。 */
+    /** 供应器自身的操作源，供网络抽取记账用。 */
     @Final
     @Shadow
     private IActionSource actionSource;

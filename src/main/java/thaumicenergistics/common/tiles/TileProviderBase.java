@@ -9,6 +9,8 @@ import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.util.AECableType;
 import appeng.api.util.AEColor;
+import java.util.EnumSet;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -17,13 +19,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import thaumcraft.api.aspects.Aspect;
-import thaumicenergistics.common.integration.tc.TCReflection;
 import org.jetbrains.annotations.Nullable;
-
+import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.api.grid.IEssentiaGrid;
-import java.util.EnumSet;
-import java.util.Set;
+import thaumicenergistics.common.blocks.NetworkStatusEntityBlock;
+import thaumicenergistics.common.integration.tc.TCReflection;
 
 public abstract class TileProviderBase extends ThETileBase implements IInWorldGridNodeHost {
 
@@ -70,6 +70,7 @@ public abstract class TileProviderBase extends ThETileBase implements IInWorldGr
         super.onLoad();
         if (level != null && !level.isClientSide()) {
             mainNode.create(level, getBlockPos());
+            NetworkStatusEntityBlock.updateOnlineState(this, mainNode.isActive());
         }
     }
 
@@ -115,12 +116,12 @@ public abstract class TileProviderBase extends ThETileBase implements IInWorldGr
 
     public void markForUpdate() {
         if (level != null) {
+            // Recompute on every node state event, including channel and boot changes.
+            NetworkStatusEntityBlock.updateOnlineState(this, mainNode.isActive());
             setChanged();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }
-
-    // ===== IInWorldGridNodeHost =====
 
     @Override
     @Nullable
@@ -147,8 +148,6 @@ public abstract class TileProviderBase extends ThETileBase implements IInWorldGr
 
     protected void onPowerChange(boolean isPowered) {
     }
-
-    // ===== Essentia 网格访问 =====
 
     protected boolean getEssentiaMonitor() {
         IGridNode node = mainNode.getNode();

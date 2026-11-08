@@ -1,12 +1,9 @@
 package thaumicenergistics.common.entities;
 
-import net.minecraft.core.GlobalPos;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import appeng.api.implementations.blockentities.IWirelessAccessPoint;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.energy.IEnergyService;
+import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEFluidKey;
 import appeng.api.stacks.AEItemKey;
@@ -14,12 +11,15 @@ import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
 import appeng.blockentity.networking.WirelessAccessPointBlockEntity;
 import appeng.util.Platform;
+import java.util.Set;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.fluids.FluidStack;
 import org.jetbrains.annotations.Nullable;
 import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
-
-import java.util.Set;
-import appeng.api.networking.security.IActionHost;
 import thaumicenergistics.api.grid.IEssentiaGrid;
 
 /**
@@ -52,8 +52,6 @@ public class WirelessAELinkGolem {
     public boolean isConnected() {
         return getGrid() != null;
     }
-
-    // ==================== 物品网络操作 ====================
 
     /**
      * 获取 AE2 网络的物品存储（MEStorage 同时处理物品和流体）。
@@ -115,8 +113,6 @@ public class WirelessAELinkGolem {
         return what.toStack((int) extracted);
     }
 
-    // ==================== 流体网络操作 ====================
-
     /**
      * 从 AE 网络提取流体。
      *
@@ -158,8 +154,6 @@ public class WirelessAELinkGolem {
         fluid.shrink((int) inserted);
     }
 
-    // ==================== 源质网络操作 ====================
-
     @Nullable
     public IEssentiaGrid getEssentiaGrid() {
         IGrid grid = getGrid();
@@ -174,7 +168,7 @@ public class WirelessAELinkGolem {
      * @param maxAmount 最大提取量
      * @return 实际提取的量
      */
-    public int extractEssentia(net.minecraft.resources.ResourceLocation aspectId, int maxAmount) {
+    public int extractEssentia(ResourceLocation aspectId, int maxAmount) {
         IEssentiaGrid essentiaGrid = getEssentiaGrid();
         if (essentiaGrid == null) return 0;
         if (actionSource == null) return 0;
@@ -191,7 +185,7 @@ public class WirelessAELinkGolem {
      * @param amount 要存入的量
      * @return 实际存入的量
      */
-    public int depositEssentia(net.minecraft.resources.ResourceLocation aspectId, int amount) {
+    public int depositEssentia(ResourceLocation aspectId, int amount) {
         IEssentiaGrid essentiaGrid = getEssentiaGrid();
         if (essentiaGrid == null) return 0;
         if (actionSource == null) return 0;
@@ -201,8 +195,6 @@ public class WirelessAELinkGolem {
         long rejected = essentiaGrid.injectEssentia(aspectId, toDeposit, false);
         return toDeposit - (int) rejected;
     }
-
-    // ==================== 连接管理 ====================
 
     private void updateConnection() {
         cachedGrid = null;
@@ -275,8 +267,6 @@ public class WirelessAELinkGolem {
 
         return false;
     }
-
-    // ==================== 速率计算 ====================
 
     /**
      * 物品交互速率（按 1.7.10 AIAENetworkGolem 速率表）。

@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "thaumicenergistics.refmap.json",
   "mixins": [
-    "MixinPatternProviderLogicEssentia"
+    "MixinPatternProviderLogicEssentia",
+    "MixinPatternProviderTarget"
   ],
   "client": [],
   "server": []

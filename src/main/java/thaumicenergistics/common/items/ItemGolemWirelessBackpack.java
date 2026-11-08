@@ -1,16 +1,15 @@
 package thaumicenergistics.common.items;
 
+import appeng.api.features.IGridLinkableHandler;
+import appeng.api.ids.AEComponents;
+import appeng.core.localization.GuiText;
+import appeng.core.localization.Tooltips;
+import java.util.List;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import appeng.api.features.IGridLinkableHandler;
-import appeng.api.ids.AEComponents;
-import appeng.core.localization.GuiText;
-import appeng.core.localization.Tooltips;
-
-import java.util.List;
 
 public class ItemGolemWirelessBackpack extends Item {
 

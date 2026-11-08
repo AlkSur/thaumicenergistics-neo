@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * 因此 vis 中继无法挂在线缆上——这使它无法直接放在 ThE Vis Interface（线缆部件）上方。
  *
  * 此 mixin 允许 AE2 {@link CableBusBlock} 作为有效支撑，使中继可放置在
- * Vis Interface 旁边。实际 vis 网络连接仍由 {@code VisInterfacePart.getRelay()} 决定，
+ * Vis Interface 旁边。实际 vis 网络连接仍由 {@code VisInterfacePart.getRelay} 决定，
  * 仅当中继真正面对 Vis Interface 部件时才建立连接。
  */
 @Mixin(targets = "thaumcraft.common.blocks.VisRelayBlock", remap = false)

@@ -12,6 +12,15 @@
     "thaumicenergistics:essentia_provider_connection",
     "thaumicenergistics:alkusure86fumo",
     "thaumicenergistics:brain_of_probability",
-    "thaumicenergistics:brain_of_probability_top"
+    "thaumicenergistics:brain_of_probability_top",
+    "thaumicenergistics:flawless_budding_thaumic_crystal",
+    "thaumicenergistics:flawed_budding_thaumic_crystal",
+    "thaumicenergistics:chipped_budding_thaumic_crystal",
+    "thaumicenergistics:damaged_budding_thaumic_crystal",
+    "thaumicenergistics:mystic_crystal_block",
+    "thaumicenergistics:small_mystic_crystal_bud",
+    "thaumicenergistics:medium_mystic_crystal_bud",
+    "thaumicenergistics:large_mystic_crystal_bud",
+    "thaumicenergistics:mystic_crystal_cluster"
   ]
 }

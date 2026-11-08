@@ -1,21 +1,23 @@
 package thaumicenergistics.common.crafting;
 
-import java.util.List;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.core.registries.BuiltInRegistries;
-import org.jetbrains.annotations.Nullable;
 import appeng.api.crafting.IPatternDetails;
-import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
-import thaumcraft.api.crafting.IArcaneRecipe;
+import java.util.Arrays;
+import java.util.List;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 import thaumcraft.api.aspects.AspectList;
+import thaumcraft.api.crafting.IArcaneRecipe;
 
 public final class ArcaneAssemblerPattern implements IPatternDetails {
-    private static final net.minecraft.resources.ResourceLocation PRIMORDIAL_PEARL_ID =
-            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("thaumcraft", "primordial_pearl");
+    private static final ResourceLocation PRIMORDIAL_PEARL_ID =
+            ResourceLocation.fromNamespaceAndPath("thaumcraft", "primordial_pearl");
     private final AEItemKey definition;
     private final IArcaneRecipe recipe;
     private final AspectList aspects;
@@ -142,7 +144,7 @@ public final class ArcaneAssemblerPattern implements IPatternDetails {
     public ItemStack[] materializeInputs(KeyCounter[] holders, Level level) {
         if (grid == null || holders.length != inputs.length) return null;
         ItemStack[] actual = new ItemStack[9];
-        java.util.Arrays.fill(actual, ItemStack.EMPTY);
+        Arrays.fill(actual, ItemStack.EMPTY);
         int inputIndex = 0;
         for (int slot = 0; slot < grid.length && slot < actual.length; slot++) {
             if (grid[slot] == null || grid[slot].isEmpty()) continue;

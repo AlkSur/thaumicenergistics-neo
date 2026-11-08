@@ -15,7 +15,7 @@ import thaumicenergistics.common.tiles.BrainOfProbabilityBlockEntity;
 
 /**
  * 概率之脑罐腔内脑子的缓慢旋转渲染。脑子模型与贴图直接取自 TC 脑罐渲染器的公开静态组装
- * （{@link BrainJarBlockEntityRenderer#createBrain()} 与 brain2.png），不复制资产；姿态链与
+ * （{@link BrainJarBlockEntityRenderer#createBrain} 与 brain2.png），不复制资产；姿态链与
  * 渲染类型逐条对齐 TC 官方 render（entityCutoutNoCull——cull 开启会因翻转姿态剔除全部可见面），
  * 仅旋转源改为 gameTime 驱动。
  */

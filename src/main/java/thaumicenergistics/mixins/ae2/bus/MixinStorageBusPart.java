@@ -1,29 +1,27 @@
 package thaumicenergistics.mixins.ae2.bus;
 
+import appeng.api.AECapabilities;
+import appeng.api.storage.IStorageMounts;
+import appeng.api.storage.IStorageProvider;
+import appeng.api.storage.MEStorage;
+import appeng.core.definitions.AEParts;
+import appeng.helpers.IPriorityHost;
+import appeng.parts.AEBasePart;
+import appeng.parts.automation.UpgradeablePart;
+import appeng.parts.storagebus.StorageBusPart;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import appeng.api.AECapabilities;
-import appeng.api.storage.IStorageMounts;
-import appeng.api.storage.IStorageProvider;
-import appeng.api.storage.MEStorage;
-import appeng.helpers.IPriorityHost;
-import appeng.core.definitions.AEParts;
-import appeng.parts.AEBasePart;
-import appeng.parts.automation.UpgradeablePart;
-import appeng.parts.storagebus.StorageBusPart;
-
 import thaumicenergistics.common.essentia.capability.EssentiaContainerStorage;
+import thaumicenergistics.common.storage.EssentiaStorageBusInventory;
 import thaumicenergistics.init.ModItems;
 
 /**
@@ -35,8 +33,6 @@ public abstract class MixinStorageBusPart {
 
     @Unique
     private MEStorage thE$containerStorage;
-
-    // ===== T-M1-007-⑦b：插卡后追加源质容器挂载 =====
 
     @Inject(method = "mountInventories", at = @At("TAIL"))
     private void thE$mountEssentiaContainer(IStorageMounts mounts, CallbackInfo ci) {
@@ -76,10 +72,10 @@ public abstract class MixinStorageBusPart {
     @Unique
     private MEStorage thE$getContainerStorage() {
         if (this.thE$containerStorage == null) {
-            this.thE$containerStorage = new thaumicenergistics.common.storage.EssentiaStorageBusInventory(
+            this.thE$containerStorage = new EssentiaStorageBusInventory(
                     new EssentiaContainerStorage(
                     this::thE$getAdjacentBlockEntity,
-                    // T-M2-REMOVE：本模组存储总线已删，描述名改挂 AE2 原版存储总线（宿主本体）
+                    // 本模组存储总线已删，描述名改挂 AE2 原版存储总线（宿主本体）
                     AEParts.STORAGE_BUS.asItem().getDescription(),
                     () -> ((AEBasePart) (Object) this).getSide().getOpposite()),
                     () -> (StorageBusPart) (Object) this);

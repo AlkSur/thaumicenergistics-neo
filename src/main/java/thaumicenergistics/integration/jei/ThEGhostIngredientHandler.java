@@ -1,19 +1,16 @@
 package thaumicenergistics.integration.jei;
 
+import appeng.api.stacks.GenericStack;
+import appeng.client.gui.AEBaseScreen;
+import appeng.menu.AEBaseMenu;
+import appeng.menu.slot.FakeSlot;
 import java.util.ArrayList;
 import java.util.List;
-
+import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
+import mezz.jei.api.ingredients.ITypedIngredient;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.world.item.ItemStack;
-
-import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
-import mezz.jei.api.ingredients.ITypedIngredient;
-
-import appeng.api.stacks.GenericStack;
-import appeng.menu.AEBaseMenu;
-import appeng.menu.slot.FakeSlot;
-import appeng.client.gui.AEBaseScreen;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.TCReflection;
 

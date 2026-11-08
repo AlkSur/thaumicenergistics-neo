@@ -1,5 +1,6 @@
 package thaumicenergistics.common.integration.tc;
 
+import java.lang.ref.WeakReference;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
@@ -7,10 +8,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.visnet.TileVisNode;
 import thaumcraft.api.visnet.VisNetHandler;
-import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.common.parts.VisInterfacePart;
-
-import java.lang.ref.WeakReference;
+import thaumicenergistics.init.ModBlockEntities;
 
 /**
  * 注册到 {@link VisNetHandler} 的虚拟 TC vis 源，位于 Vis Interface "provider" 端前方。

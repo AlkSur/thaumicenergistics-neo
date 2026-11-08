@@ -1,5 +1,8 @@
 package thaumicenergistics.common.integration.tc;
 
+import java.lang.reflect.Field;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
@@ -9,8 +12,8 @@ import thaumicenergistics.api.storage.AspectStack;
 
 /** port.261 炼金炉的私有方面缓存兼容，公开 capability 无法覆盖时才调用。 */
 final class LegacyFurnaceEssentia {
-    private static volatile java.lang.reflect.Field furnaceAspectsField;
-    private static final java.util.Set<Class<?>> WARNED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static volatile Field furnaceAspectsField;
+    private static final Set<Class<?>> WARNED = ConcurrentHashMap.newKeySet();
     private LegacyFurnaceEssentia() { }
 
     /** 读取荒古炼金炉 private aspects 字段（不实现 IAspectContainer；只读，返回活引用用于原地修改）。 */

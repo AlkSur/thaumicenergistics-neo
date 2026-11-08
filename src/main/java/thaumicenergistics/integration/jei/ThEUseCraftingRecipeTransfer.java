@@ -1,33 +1,32 @@
 package thaumicenergistics.integration.jei;
 
+import appeng.api.stacks.AEItemKey;
+import appeng.core.localization.ItemModText;
+import appeng.core.network.serverbound.FillCraftingGridFromRecipePacket;
+import appeng.util.CraftingRecipeUtil;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.util.Objects;
 import java.util.Optional;
-
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.core.NonNullList;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.CraftingRecipe;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.minecraft.world.item.crafting.RecipeType;
-import net.neoforged.neoforge.network.PacketDistributor;
-
+import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.gui.builder.ITooltipBuilder;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
-
-import org.jetbrains.annotations.Nullable;
-
-import appeng.core.network.serverbound.FillCraftingGridFromRecipePacket;
-import appeng.api.stacks.AEItemKey;
-import appeng.util.CraftingRecipeUtil;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.NonNullList;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
 
@@ -35,9 +34,6 @@ import static appeng.integration.modules.itemlists.TransferHelper.BLUE_PLUS_BUTT
 import static appeng.integration.modules.itemlists.TransferHelper.BLUE_SLOT_HIGHLIGHT_COLOR;
 import static appeng.integration.modules.itemlists.TransferHelper.ORANGE_PLUS_BUTTON_COLOR;
 import static appeng.integration.modules.itemlists.TransferHelper.RED_SLOT_HIGHLIGHT_COLOR;
-import appeng.core.localization.ItemModText;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Player;
 
 /**
  * 奥术合成终端专用的 JEI 配方转移处理器。
@@ -72,7 +68,7 @@ public class ThEUseCraftingRecipeTransfer
 
     @Override
     public mezz.jei.api.recipe.RecipeType<RecipeHolder<CraftingRecipe>> getRecipeType() {
-        return mezz.jei.api.constants.RecipeTypes.CRAFTING;
+        return RecipeTypes.CRAFTING;
     }
 
     @Override

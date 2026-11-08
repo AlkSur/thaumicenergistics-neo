@@ -8,13 +8,13 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import thaumicenergistics.common.tiles.TileEssentiaProvider;
 import thaumicenergistics.common.tiles.TileEssentiaProviderConnection;
-import net.minecraft.world.item.component.CustomData;
 
 /**
  * 源质无线绑定工具：
@@ -76,7 +76,6 @@ public class WirelessConnectorItem extends Item {
         BlockState state = level.getBlockState(pos);
         BlockEntity be = level.getBlockEntity(pos);
 
-        // ===== Shift+右键：绑定 / 断开（顺序不限，第二步完成绑定） =====
         if (player.isShiftKeyDown()) {
             if (be instanceof TileEssentiaProviderConnection receiver) {
                 if (receiver.getLinkedProviderPos() != null) {
@@ -140,7 +139,6 @@ public class WirelessConnectorItem extends Item {
             return InteractionResult.PASS;
         }
 
-        // ===== 右键：显示连接信息（复制显示） =====
         if (be instanceof TileEssentiaProviderConnection receiver) {
             showReceiverInfo(player, receiver);
             return InteractionResult.SUCCESS;

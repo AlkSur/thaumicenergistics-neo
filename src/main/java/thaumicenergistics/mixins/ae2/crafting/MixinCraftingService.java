@@ -1,12 +1,5 @@
 package thaumicenergistics.mixins.ae2.crafting;
 
-import java.util.Map;
-
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.crafting.CraftingSubmitErrorCode;
 import appeng.api.networking.crafting.ICraftingCPU;
@@ -15,13 +8,16 @@ import appeng.api.networking.crafting.ICraftingRequester;
 import appeng.api.networking.crafting.ICraftingSubmitResult;
 import appeng.api.networking.security.IActionSource;
 import appeng.crafting.execution.CraftingSubmitResult;
-
+import java.util.Map;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import thaumcraft.common.research.TCResearchManager;
 import thaumicenergistics.common.integration.tc.PatternResearchHelper;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
 import thaumicenergistics.common.network.ResearchGateErrorPacket;
 
 /**
@@ -42,7 +38,7 @@ public abstract class MixinCraftingService {
             IActionSource src,
             CallbackInfoReturnable<ICraftingSubmitResult> cir) {
         // 仅玩家发起的请求需要研究校验；机器自动合成放行。
-        // AE2 permits a player source to carry its terminal as machine() too.
+        // AE2 permits a player source to carry its terminal as machine too.
         // The presence of a machine proxy must not bypass the player's research check.
         if (src == null || src.player().isEmpty()) {
             return;

@@ -1,13 +1,11 @@
 package thaumicenergistics.common.items;
 
+import appeng.items.materials.UpgradeCardItem;
 import java.util.List;
-
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-
-import appeng.items.materials.UpgradeCardItem;
 
 /**
  * 源质访问卡。
@@ -22,7 +20,7 @@ import appeng.items.materials.UpgradeCardItem;
  * 本模组自定义能力描述，故在此覆写 {@code appendHoverText}——先调用父类（保留升级卡判定与 Supported By 机制），
  * 再追加自定义描述行。
  *
- * <p>T-M1-005 范围内**不做** {@code Upgrades.add} 宿主关联；因此「Supported By」行此时为空属预期。
+ * <p>范围内**不做** {@code Upgrades.add} 宿主关联；因此「Supported By」行此时为空属预期。
  */
 public class ItemEssentiaUpgradeCard extends UpgradeCardItem {
 

@@ -1,65 +1,106 @@
 package thaumicenergistics.init;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.SimpleMenuProvider;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.level.block.state.BlockBehaviour;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.MapColor;
-import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import thaumicenergistics.ThaumicEnergistics;
-import thaumicenergistics.common.blocks.BrainOfProbabilityBlock;
-import thaumicenergistics.common.blocks.FumoBlock;
-import thaumicenergistics.common.blocks.BrainOfProbabilityTopBlock;
-import thaumicenergistics.common.blocks.OrientableEntityBlock;
-import thaumicenergistics.common.blocks.ThEBaseEntityBlock;
-import thaumicenergistics.common.tiles.*;
-import thaumicenergistics.init.ModItems;
-import net.minecraft.network.chat.Component;
 import appeng.api.implementations.items.IMemoryCard;
+import java.util.List;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AmethystBlock;
+import net.minecraft.world.level.block.AmethystClusterBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.common.extensions.IPlayerExtension;
+import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import thaumicenergistics.ThaumicEnergistics;
+import thaumicenergistics.common.blocks.BrainOfProbabilityBlock;
+import thaumicenergistics.common.blocks.BrainOfProbabilityTopBlock;
+import thaumicenergistics.common.blocks.EssentiaVibrationChamberBlock;
+import thaumicenergistics.common.blocks.FumoBlock;
+import thaumicenergistics.common.blocks.NetworkStatusEntityBlock;
+import thaumicenergistics.common.blocks.OrientableEntityBlock;
+import thaumicenergistics.common.blocks.ThEBaseEntityBlock;
+import thaumicenergistics.common.blocks.ThaumicCrystalMatrixBlock;
 import thaumicenergistics.common.container.ContainerArcaneAssembler;
 import thaumicenergistics.common.container.ContainerDistillationPatternEncoder;
 import thaumicenergistics.common.container.ContainerEssentiaCellWorkbench;
 import thaumicenergistics.common.container.ContainerKnowledgeInscriber;
+import thaumicenergistics.common.tiles.TileArcaneAssembler;
+import thaumicenergistics.common.tiles.TileDistillationPatternEncoder;
+import thaumicenergistics.common.tiles.TileEssentiaCellWorkbench;
+import thaumicenergistics.common.tiles.TileEssentiaProvider;
+import thaumicenergistics.common.tiles.TileEssentiaProviderConnection;
+import thaumicenergistics.common.tiles.TileInfusionMonitor;
+import thaumicenergistics.common.tiles.TileInfusionProvider;
+import thaumicenergistics.common.tiles.TileKnowledgeInscriber;
+import thaumicenergistics.init.ModItems;
 
 public final class ModBlocks {
     private ModBlocks() {}
     public static final DeferredRegister.Blocks REGISTRY = DeferredRegister.createBlocks(ThaumicEnergistics.MODID);
+    public static final DeferredBlock<AmethystBlock> MYSTIC_CRYSTAL_BLOCK =
+            REGISTRY.register("mystic_crystal_block", () -> new AmethystBlock(crystalProperties()));
+    public static final DeferredBlock<ThaumicCrystalMatrixBlock>
+            FLAWLESS_BUDDING_THAUMIC_CRYSTAL = matrix("flawless_budding_thaumic_crystal"),
+            FLAWED_BUDDING_THAUMIC_CRYSTAL = matrix("flawed_budding_thaumic_crystal"),
+            CHIPPED_BUDDING_THAUMIC_CRYSTAL = matrix("chipped_budding_thaumic_crystal"),
+            DAMAGED_BUDDING_THAUMIC_CRYSTAL = matrix("damaged_budding_thaumic_crystal");
+    public static final DeferredBlock<AmethystClusterBlock>
+            SMALL_MYSTIC_CRYSTAL_BUD = bud("small_mystic_crystal_bud", 3, 4),
+            MEDIUM_MYSTIC_CRYSTAL_BUD = bud("medium_mystic_crystal_bud", 4, 3),
+            LARGE_MYSTIC_CRYSTAL_BUD = bud("large_mystic_crystal_bud", 5, 3),
+            MYSTIC_CRYSTAL_CLUSTER = bud("mystic_crystal_cluster", 7, 3);
+
+    private static BlockBehaviour.Properties crystalProperties() {
+        return BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).strength(1.5F)
+                .sound(SoundType.AMETHYST).requiresCorrectToolForDrops();
+    }
+
+    private static DeferredBlock<ThaumicCrystalMatrixBlock> matrix(String id) {
+        return REGISTRY.register(id, () -> new ThaumicCrystalMatrixBlock(
+                crystalProperties().strength(3).randomTicks()));
+    }
+
+    private static DeferredBlock<AmethystClusterBlock> bud(String id, int height, int inset) {
+        return REGISTRY.register(id, () -> new AmethystClusterBlock(height, inset,
+                crystalProperties().noOcclusion().lightLevel(state -> 3)));
+    }
     private static final BlockBehaviour.Properties P = BlockBehaviour.Properties.of().mapColor(MapColor.STONE).strength(2f).sound(SoundType.STONE);
     /** 装配器专用：noOcclusion——玻璃方块不被视为不透明，相邻方块（如冰/半透明）接触面不被剔除，透明玻璃后可正常看到后方方块。 */
     private static final BlockBehaviour.Properties PA = P.noOcclusion();
 
-    public static final DeferredBlock<Block> ESSENTIA_PROVIDER = REGISTRY.register("essentia_provider", () -> new ThEBaseEntityBlock(P) { public BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileEssentiaProvider(pos, st); } });
-    public static final DeferredBlock<Block> INFUSION_PROVIDER = REGISTRY.register("infusion_provider", () -> new ThEBaseEntityBlock(P) { public BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileInfusionProvider(pos, st); } });
-    public static final DeferredBlock<Block> ARCANE_ASSEMBLER = REGISTRY.register("arcane_assembler", () -> new ThEBaseEntityBlock(PA) {
+    public static final DeferredBlock<Block> ESSENTIA_PROVIDER = REGISTRY.register("essentia_provider", () -> new NetworkStatusEntityBlock(P) { public BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileEssentiaProvider(pos, st); } });
+    public static final DeferredBlock<Block> INFUSION_PROVIDER = REGISTRY.register("infusion_provider", () -> new NetworkStatusEntityBlock(P) { public BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileInfusionProvider(pos, st); } });
+    public static final DeferredBlock<Block> ARCANE_ASSEMBLER = REGISTRY.register("arcane_assembler", () -> new NetworkStatusEntityBlock(PA) {
         public BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileArcaneAssembler(pos, st); }
         @Override
-        protected ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
             // 手持 AE2 内存卡：交给装配器处理（读 P2P 频率设 vis 源 / 清空），不打开 GUI。
             // 1.21 方块 useItemOn 先于物品 useOn，返回 sidedSuccess 消费交互（也阻止内存卡自身 shift 清空）。
             if (stack.getItem() instanceof IMemoryCard memoryCard
@@ -76,14 +117,14 @@ public final class ModBlocks {
             return ItemInteractionResult.SUCCESS;
         }
         @Override
-        protected net.minecraft.world.MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
+        protected MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
             TileArcaneAssembler tile = (TileArcaneAssembler) level.getBlockEntity(pos);
             return new SimpleMenuProvider(
                     (id, inv, p) -> new ContainerArcaneAssembler(id, inv, tile),
                     Component.translatable("block.thaumicenergistics.arcane_assembler"));
         }
     });
-    public static final DeferredBlock<Block> ESSENTIA_VIBRATION_CHAMBER = REGISTRY.register("essentia_vibration_chamber", () -> new OrientableEntityBlock(P) { public BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileEssentiaVibrationChamber(pos, st); } });
+    public static final DeferredBlock<Block> ESSENTIA_VIBRATION_CHAMBER = REGISTRY.register("essentia_vibration_chamber", () -> new EssentiaVibrationChamberBlock(P));
     public static final DeferredBlock<Block> KNOWLEDGE_INSCRIBER = REGISTRY.register("knowledge_inscriber", () -> new ThEBaseEntityBlock(P) {
         public BlockEntity newBlockEntity(BlockPos pos, BlockState st) { return new TileKnowledgeInscriber(pos, st); }
         @Override
@@ -95,12 +136,12 @@ public final class ModBlocks {
             return this.defaultBlockState().setValue(OrientableEntityBlock.FACING, context.getHorizontalDirection().getOpposite());
         }
         @Override
-        protected ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
             if (!level.isClientSide) player.openMenu(state.getMenuProvider(level, pos));
             return ItemInteractionResult.SUCCESS;
         }
         @Override
-        protected net.minecraft.world.MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
+        protected MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
             TileKnowledgeInscriber tile = (TileKnowledgeInscriber) level.getBlockEntity(pos);
             return new SimpleMenuProvider(
                     (id, inv, p) -> new ContainerKnowledgeInscriber(id, inv, tile),
@@ -118,12 +159,12 @@ public final class ModBlocks {
             return this.defaultBlockState().setValue(OrientableEntityBlock.FACING, context.getHorizontalDirection().getOpposite());
         }
         @Override
-        protected ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
             if (!level.isClientSide) player.openMenu(state.getMenuProvider(level, pos));
             return ItemInteractionResult.SUCCESS;
         }
         @Override
-        protected net.minecraft.world.MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
+        protected MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
             TileDistillationPatternEncoder tile = (TileDistillationPatternEncoder) level.getBlockEntity(pos);
             return new SimpleMenuProvider(
                     (id, inv, p) -> new ContainerDistillationPatternEncoder(id, inv, tile),
@@ -136,12 +177,12 @@ public final class ModBlocks {
             return new TileEssentiaCellWorkbench(pos, state);
         }
         @Override
-        protected ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
             if (!level.isClientSide) player.openMenu(state.getMenuProvider(level, pos));
             return ItemInteractionResult.SUCCESS;
         }
         @Override
-        protected net.minecraft.world.MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
+        protected MenuProvider getMenuProvider(BlockState state, Level level, BlockPos pos) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof TileEssentiaCellWorkbench workbench) {
                 return new SimpleMenuProvider((id, inv, p) -> new ContainerEssentiaCellWorkbench(id, inv, workbench),
@@ -150,8 +191,6 @@ public final class ModBlocks {
             return null;
         }
     });
-
-    // ==================== 注魔监视器（灵气观测器） ====================
 
     /** 是否放入魔导手册。 */
     public static final BooleanProperty BOOK =
@@ -197,7 +236,6 @@ public final class ModBlocks {
                     .setValue(PULSE, false);
         }
 
-        // ===== M4：注魔结束红石脉冲（五面输出，T-M4-SIGNAL-REV） =====
         // FACING = 放置时朝向放置者（正面=贴注魔矩阵面，典型安装时朝上）；除正面外五面（4 侧面+底部）输出恒 15。
 
         @Override
@@ -218,7 +256,7 @@ public final class ModBlocks {
         }
 
         @Override
-        protected ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
             if (level.getBlockEntity(pos) instanceof TileInfusionMonitor monitor) {
                 // 手持魔导手册 → 直接放入（返回 SUCCESS 拦截，避免魔导手册自身 use 打开界面）
                 if (TileInfusionMonitor.isThaumonomicon(stack)) {
@@ -270,8 +308,6 @@ public final class ModBlocks {
         }
     });
 
-    // ==================== Alkusure86 玩偶（Fumo） ====================
-
     /** 水平朝向（韵魔观测器共用）。 */
     public static final DirectionProperty FACING =
             BlockStateProperties.HORIZONTAL_FACING;
@@ -301,7 +337,7 @@ public final class ModBlocks {
         }
 
         @Override
-        protected ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+        protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
             if (player.isShiftKeyDown()) {
                 // Shift+右键：拿起方块到手（或背包）
                 pickUp(level, pos, player);
@@ -347,8 +383,8 @@ public final class ModBlocks {
 
         // 纯 Block 无战利品表 → 必须覆写 getDrops，否则挖掘不掉落
         @Override
-        public java.util.List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-            return java.util.List.of(new ItemStack(ModItems.ALKUSURE86_FUMO_ITEM.get()));
+        public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+            return List.of(new ItemStack(ModItems.ALKUSURE86_FUMO_ITEM.get()));
         }
     });
 
@@ -369,8 +405,6 @@ public final class ModBlocks {
             () -> new FumoBlock(PD));
     public static final DeferredBlock<Block> BEIWUCN_FUMO = REGISTRY.register("beiwucnfumo",
             () -> new FumoBlock(PD));
-
-    // ==================== 源质无线接收器 ====================
 
     /** 是否已连接源质供应器（off/on 模型切换）。 */
     public static final BooleanProperty CONNECTED =
@@ -429,8 +463,6 @@ public final class ModBlocks {
             return 0; // 不遮挡光线
         }
     });
-
-    // ==================== M6：概率之脑（两格，CE gacha_box 同构） ====================
 
     public static final DeferredBlock<Block> BRAIN_OF_PROBABILITY =
             REGISTRY.register("brain_of_probability", () -> new BrainOfProbabilityBlock(P));

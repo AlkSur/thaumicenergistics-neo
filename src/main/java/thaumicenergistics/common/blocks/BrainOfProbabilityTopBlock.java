@@ -1,26 +1,27 @@
 package thaumicenergistics.common.blocks;
 
+import java.util.List;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.LevelReader;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 /**
  * 概率之脑上格（M6，CE aggregator 同构）：纯形态格，无 BE、无交互；
@@ -59,8 +60,8 @@ public class BrainOfProbabilityTopBlock extends Block {
 
     /** 上格破坏时掉落本格对应的上格物品（供恢复结构用）。 */
     @Override
-    public java.util.List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
-        return java.util.List.of();
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+        return List.of();
     }
 
     private static boolean isOnBody(BlockGetter level, BlockPos pos) {

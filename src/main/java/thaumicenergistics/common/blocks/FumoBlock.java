@@ -1,7 +1,6 @@
 package thaumicenergistics.common.blocks;
 
 import java.util.List;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;

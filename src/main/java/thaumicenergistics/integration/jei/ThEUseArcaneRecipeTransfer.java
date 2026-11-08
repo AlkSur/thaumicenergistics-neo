@@ -1,38 +1,32 @@
 package thaumicenergistics.integration.jei;
 
+import appeng.api.stacks.AEItemKey;
+import appeng.core.localization.ItemModText;
+import appeng.core.network.serverbound.FillCraftingGridFromRecipePacket;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.core.NonNullList;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
-
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
-
-
-import appeng.core.network.serverbound.FillCraftingGridFromRecipePacket;
-import appeng.api.stacks.AEItemKey;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.neoforged.neoforge.network.PacketDistributor;
-
 import thaumcraft.integration.jei.JeiArcaneRecipe;
 import thaumcraft.integration.jei.ThaumcraftJeiPlugin;
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
 
 import static appeng.integration.modules.itemlists.TransferHelper.BLUE_PLUS_BUTTON_COLOR;
-import static appeng.integration.modules.itemlists.TransferHelper.BLUE_SLOT_HIGHLIGHT_COLOR;
 import static appeng.integration.modules.itemlists.TransferHelper.ORANGE_PLUS_BUTTON_COLOR;
-import static appeng.integration.modules.itemlists.TransferHelper.RED_SLOT_HIGHLIGHT_COLOR;
-import appeng.core.localization.ItemModText;
-import net.minecraft.world.entity.player.Player;
 
 /**
  * 奥术合成终端专用的 JEI 奥术配方转移处理器。
@@ -60,7 +54,7 @@ public class ThEUseArcaneRecipeTransfer
     }
 
     @Override
-    public mezz.jei.api.recipe.RecipeType<JeiArcaneRecipe> getRecipeType() {
+    public RecipeType<JeiArcaneRecipe> getRecipeType() {
         return ThaumcraftJeiPlugin.ARCANE;
     }
 

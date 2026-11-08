@@ -1,20 +1,5 @@
 package thaumicenergistics.mixins.ae2.bus;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
@@ -26,8 +11,23 @@ import appeng.parts.automation.ExportBusPart;
 import appeng.parts.automation.IOBusPart;
 import appeng.parts.automation.UpgradeablePart;
 import appeng.util.ConfigInventory;
-
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import thaumicenergistics.api.storage.AspectStack;
+import thaumicenergistics.common.essentia.capability.EssentiaEnergy;
 import thaumicenergistics.common.essentia.capability.EssentiaTransfer;
+import thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer;
+import thaumicenergistics.common.essentia.capability.ExportBusEssentiaTransport;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.init.ModItems;
 
@@ -39,7 +39,7 @@ import thaumicenergistics.init.ModItems;
 public abstract class MixinExportBusPart {
 
     /**
-     * 原版总线的操作源。原版 {@code IOBusPart} 用 {@code new MachineSource(this)} 构造（IOBusPart.java:95），
+     * 原版总线的操作源。原版 {@code IOBusPart} 用 {@code new MachineSource(this)} 构造，
      * 该字段声明在父类、无法 {@code @Shadow}，故在此等价重建并缓存。
      */
     @Unique
@@ -56,7 +56,7 @@ public abstract class MixinExportBusPart {
     /**
      * 单次搬运量 = 基础速率 8 × 每 tick 操作次数（受加速卡影响），与本模组三总线一致。
      * <p>
-     * 公式照抄 {@code IOBusPart.getOperationsPerTick()}（IOBusPart.java:194-202）；原方法声明在父类、
+     * 公式照抄 {@code IOBusPart.getOperationsPerTick}；原方法声明在父类、
      * 无法 {@code @Shadow}，故经公开接口 {@code getInstalledUpgrades} 自算。仅计 AE2 加速卡，源质卡天然不计入。
      */
     @Unique
@@ -98,15 +98,15 @@ public abstract class MixinExportBusPart {
             return;
         }
 
-        if ((Object) this instanceof thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer buffer
+        if ((Object) this instanceof EssentiaTransferBuffer buffer
                 && !buffer.thE$getTransferBuffer().isEmpty()) {
             var pending = buffer.thE$getTransferBuffer();
-            long delivered = thaumicenergistics.common.essentia.capability.EssentiaEnergy.transfer(
+            long delivered = EssentiaEnergy.transfer(
                     grid, pending.amount(), allowed -> EssentiaTransfer.insertOwned(
                             AEssentiaKey.of(pending.aspectId()), allowed, adjacentBE, side.getOpposite()));
             buffer.thE$setTransferBuffer(delivered == pending.amount()
-                    ? thaumicenergistics.api.storage.AspectStack.EMPTY
-                    : new thaumicenergistics.api.storage.AspectStack(pending.aspectId(), pending.amount() - delivered));
+                    ? AspectStack.EMPTY
+                    : new AspectStack(pending.aspectId(), pending.amount() - delivered));
             if (delivered > 0) cir.setReturnValue(true);
             return;
         }
@@ -129,7 +129,7 @@ public abstract class MixinExportBusPart {
             var transfer = EssentiaTransfer.push(
                     grid, thE$source(), key, rate, adjacentBE, side.getOpposite());
             if (!transfer.leftover().isEmpty()
-                    && (Object) this instanceof thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer buffer) {
+                    && (Object) this instanceof EssentiaTransferBuffer buffer) {
                 buffer.thE$setTransferBuffer(transfer.leftover());
             }
             long injected = transfer.moved();
@@ -141,7 +141,7 @@ public abstract class MixinExportBusPart {
                 return;
             }
             if (transfer.leftover().isEmpty()
-                    && thaumicenergistics.common.essentia.capability.ExportBusEssentiaTransport.reserveForConsumer(
+                    && ExportBusEssentiaTransport.reserveForConsumer(
                             (ExportBusPart) (Object) this, key, rate, adjacentBE, side.getOpposite(), grid, thE$source())) {
                 this.thE$roundRobinIndex = (index + 1) % count;
                 cir.setReturnValue(true);
@@ -151,12 +151,12 @@ public abstract class MixinExportBusPart {
     }
 
     /**
-     * 收集本轮可尝试的源质要素（T-M1-011：来自宿主原生 config）。
+     * 收集本轮可尝试的源质要素（来自宿主原生 config）。
      * <p>
      * <b>未配置源质 → 空集合（不搬）</b>（R-2 口径：必须显式配置才导出）；
      * 配置了源质 → 宿主 config 内的源质键（只搬选中）。
      * <p>
-     * config 经公开 getter {@code IOBusPart.getConfig()} 读取——{@code config} 字段声明在父类
+     * config 经公开 getter {@code IOBusPart.getConfig} 读取——{@code config} 字段声明在父类
      * {@code IOBusPart}（:79），目标类 {@code ExportBusPart} 未声明，故禁 {@code @Shadow}。
      */
     @Unique

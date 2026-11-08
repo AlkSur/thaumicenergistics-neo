@@ -1,8 +1,11 @@
 package thaumicenergistics.common.blocks;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -18,15 +21,11 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.util.StringRepresentable;
-
-import thaumicenergistics.common.tiles.BrainOfProbabilityBlockEntity;
 import thaumcraft.common.registry.TCItems;
-import thaumicenergistics.init.ModItems;
-import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionResult;
 import thaumicenergistics.common.blocks.ThEBaseEntityBlock;
+import thaumicenergistics.common.tiles.BrainOfProbabilityBlockEntity;
 import thaumicenergistics.init.ModBlocks;
+import thaumicenergistics.init.ModItems;
 
 /**
  * 概率之脑下格（M6，CE gacha_box 同构）：BE 所在格。
@@ -93,8 +92,6 @@ public class BrainOfProbabilityBlock extends ThEBaseEntityBlock {
         }
     }
 
-    // ===== 交互（M6 语义：无 GUI 纯右键，CE BlockGachaBox.useItemOn 同构） =====
-
     /** 手持物品右键：潜行→取出全部；脑→装入并记归属；加速卡→直插（上限 4）。 */
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
@@ -155,7 +152,7 @@ public class BrainOfProbabilityBlock extends ThEBaseEntityBlock {
                     "thaumicenergistics.brain_prob.rebound", player.getName().getString()), true);
             return ItemInteractionResult.SUCCESS;
         }
-        // 装脑：已装则拒收；空手跳过（T-M6-RECIPE-2：投入物改 thaumcraft 罐装脑）
+        // 装脑：已装则拒收；空手跳过（投入物改 thaumcraft 罐装脑）
         if (!stack.isEmpty() && !state.getValue(JAR) && stack.is(TCItems.BRAIN_JAR.get())) {
             if (level.isClientSide) {
                 return ItemInteractionResult.sidedSuccess(true);

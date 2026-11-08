@@ -1,41 +1,27 @@
 package thaumicenergistics.common.integration.tc;
 
+import appeng.core.definitions.AEItems;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.common.NeoForge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
+import thaumcraft.api.crafting.IArcaneRecipe;
 import thaumcraft.api.events.ResearchCompletedEvent;
 import thaumcraft.api.research.ResearchCategories;
 import thaumcraft.api.research.ResearchItem;
 import thaumcraft.api.research.ResearchPage;
-import thaumcraft.api.crafting.IArcaneRecipe;
 import thaumcraft.common.research.TCResearchManager;
-import net.neoforged.neoforge.common.NeoForge;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.features.RecipeRegistration;
 import thaumicenergistics.init.ModItems;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import appeng.core.definitions.AEItems;
 
 /**
- * 神秘能源 魔导手册研究注册
- * 严格按照 1.7.10 ResearchRegistry 布局移植
- *
- * 1.7.10 伪前置（TC原版）映射：
- *   DISTILESSENTIA  = 要素蒸馏
- *   TUBEFILTER      = 高级源质管道
- *   MIRROR          = 魔镜
- *   INFUSION        = 注魔
- *   WARDEDARCANA    = 守护之奥术
- *   ALCHEMICALDUPLICATION = 炼金复制
- *   FOCUSFIRE       = 法杖核心
- *   VISPOWER        = 掌控魔力
- *   SCEPTRE         = 工艺权杖
- *   COREUSE         = 傀儡核心：使用
- *   COREGATHER      = 傀儡核心：聚集
+ * 注册研究分类、配方页和跨分类伪前置，并同步原版研究的解锁状态。
  */
 public final class ThEThaumcraft {
     private static final Logger LOG = LoggerFactory.getLogger("ThE-TC");
@@ -66,6 +52,7 @@ public final class ThEThaumcraft {
 
         // 注册顺序沿袭 1.7.10 移植（决定研究 tab 内节点坐标布局），勿随意调整。
         registerBaseEnergistics();
+        CrystalResearchRegistration.registerAll();
         registerArcaneAssembler();
         registerKnowledgeInscriber();
         registerEssentiaStorage();
@@ -81,7 +68,7 @@ public final class ThEThaumcraft {
         registerDistillationEncoder();
         registerGolemWifiBackpack();
 
-        // T-RESEARCH-B2：M3~M6 新内容入树；T-RESEARCH-B4：删除重挂（WIRELESSESSENTIATERMINAL/VISCONNECTORCARD 节点已删）
+        // ~M6 新内容入树；删除重挂（WIRELESSESSENTIATERMINAL/VISCONNECTORCARD 节点已删）
         registerWirelessArcaneCraftingTerminal();
         registerEssentiaAccessCard();
         registerGachaBox();
@@ -89,11 +76,8 @@ public final class ThEThaumcraft {
         LOG.info("ThaumicEnergistics research registered.");
     }
 
-    // ==================== 伪前置节点（跨分类引用 TC 原版研究） ====================
     // 在 ThE 研究 tab 中创建占位节点，使跨分类连线正常。
-    // 坐标来自 1.7.10 ResearchRegistry.PseudoResearchTypes
-    //SCEPTRE(工艺权杖)、DISTILESSENTIA(要素蒸馏) 、WARDEDARCANA(守护之奥术)、VISPOWER(掌控魔力)、
-    // TUBEFILTER(高级源质管道)、INFUSION(注魔) 、MIRROR(魔镜)、COREUSE(傀儡核心：使用)
+
     private static void registerPseudoParents() {
         // ALCHEMY
         registerPseudo("DISTILESSENTIA", "ALCHEMY", -2, 0);
@@ -105,8 +89,9 @@ public final class ThEThaumcraft {
         registerPseudo("WARDEDARCANA", "ARTIFICE", 1, 2);
         // THAUMATURGY
         registerPseudo("FOCUSFIRE", "THAUMATURGY", -4, -7);
-        registerPseudo("VISPOWER", "THAUMATURGY", 4, 0);
-        registerPseudo("SCEPTRE", "THAUMATURGY", 5, 0);
+
+        registerPseudo("VISPOWER", "THAUMATURGY", 6, -3);
+        registerPseudo("SCEPTRE", "THAUMATURGY", 7, -3);
         // GOLEMANCY
         registerPseudo("COREGATHER", "GOLEMANCY", 1, -6);
     }
@@ -123,18 +108,13 @@ public final class ThEThaumcraft {
         }
     }
 
-    /**
-     * 注册事件监听：当 TC 原版研究被 complete 时，自动 complete 对应的伪前置节点。
-     * 替代 1.7.10 的 sibling 机制——在 NeoForge 版本中 sibling 机制失效，
-     * 因为 {@code TCResearchIndex.Entry} 是不可变 record，
-     * 修改 {@code ResearchItem.siblings} 不会更新到 {@code TCResearchIndex}。
-     */
+    /** 通过完成事件同步伪前置。TC 研究索引不可变，修改 siblings 不会更新已注册条目。 */
     private static void registerPseudoSync() {
         NeoForge.EVENT_BUS.addListener(ResearchCompletedEvent.class, (ResearchCompletedEvent rc) -> {
             String completedKey = rc.researchKey();
             // 跳过 clue 解锁（key 以 @ 开头）
             if (completedKey.startsWith("@")) return;
-            // 跳过 PSEUDO_ 节点完成事件，防止 complete() 触发二次事件造成连锁
+            // 跳过 PSEUDO_ 节点完成事件，防止 complete 触发二次事件造成连锁
             if (completedKey.startsWith("PSEUDO_")) return;
             String pseudoKey = REAL_TO_PSEUDO.get(completedKey);
             if (pseudoKey == null) return;
@@ -146,7 +126,6 @@ public final class ThEThaumcraft {
         });
     }
 
-    // ==================== 1. (0,0) BASEENERGISTICS 基础能源学====================
     //无前置
     private static void registerBaseEnergistics() {
         new ResearchItem("BASEENERGISTICS", TAB,
@@ -155,17 +134,15 @@ public final class ThEThaumcraft {
                 0,
                 ResourceLocation.fromNamespaceAndPath(MODID, "textures/research/tab_icon.png"))
                 .setRound().setAutoUnlock()
-                .setPages(new ResearchPage("tc.research_text.BASEENERGISTICS"))
+                .setPages(new ResearchPage("tc.research_text.BASEENERGISTICS.stage.1"))
                 .registerResearchItem();
     }
 
-    // ==================== 2. (6,-1) ARCANE_ASSEMBLER  奥术装配器====================
-    // 前置: VISINTERFACE（要素中继接口） + SCEPTRE(工艺权杖)
     private static void registerArcaneAssembler() {
         new ResearchItem("ARCANEASSEMBLER", TAB,
                 new AspectList().add(Aspect.CRAFT, 10).add(Aspect.MAGIC, 10)
                         .add(Aspect.MECHANISM, 5).add(Aspect.ORDER, 5),
-                6, -1, 3, new ItemStack(ModItems.ARCANE_ASSEMBLER_ITEM.get()))
+                8, -4, 3, new ItemStack(ModItems.ARCANE_ASSEMBLER_ITEM.get()))
                 .setRound().setParents("VISINTERFACE", "PSEUDO_SCEPTRE")
                 .setPages(
                         new ResearchPage("tc.research_text.ARCANEASSEMBLER.stage.1"),
@@ -174,41 +151,39 @@ public final class ThEThaumcraft {
                 .registerResearchItem();
     }
 
-    // ==================== 2. (6,0) KNOWLEDGE_INSCRIBER 知识记录仪====================
-    // 前置: ARCANEASSEMBLER（奥术装配器）
     private static void registerKnowledgeInscriber() {
         new ResearchItem("KNOWLEDGEINSCRIBER", TAB,
                 new AspectList().add(Aspect.MIND, 10).add(Aspect.MECHANISM, 5).add(Aspect.MAGIC, 5),
-                6, 0, 3, new ItemStack(ModItems.KNOWLEDGE_INSCRIBER_ITEM.get()))
+                8, -3, 3, new ItemStack(ModItems.KNOWLEDGE_INSCRIBER_ITEM.get()))
                 .setRound().setParents("ARCANEASSEMBLER")
                 .setPages(
-                        new ResearchPage("tc.research_text.KNOWLEDGEINSCRIBER"),
+                        new ResearchPage("tc.research_text.KNOWLEDGEINSCRIBER.stage.1"),
                         new ResearchPage(RecipeRegistration.KNOWLEDGE_CORE_ITEM),
                         new ResearchPage(RecipeRegistration.KNOWLEDGE_INSCRIBER_BLOCK))
                 .registerResearchItem();
     }
 
-    // ==================== 3. (0,2) ESSENTIASTORAGE 源质存储====================
-    // 前置: BASEENERGISTICS（基础能源学） + DISTILESSENTIA(要素蒸馏) + WARDEDARCANA(守护之奥术)
     private static void registerEssentiaStorage() {
         new ResearchItem("ESSENTIASTORAGE", TAB,
                 new AspectList().add(Aspect.ORDER, 1).add(Aspect.MAGIC, 1),
                 0, 2, 2, new ItemStack(ModItems.ESSENTIA_CELL_1K.get()))
                 .setRound().setParents("BASEENERGISTICS", "PSEUDO_DISTILESSENTIA", "PSEUDO_WARDEDARCANA")
                 .setPages(
-                        new ResearchPage("tc.research_text.ESSENTIASTORAGE"),
+                        new ResearchPage("tc.research_text.ESSENTIASTORAGE.stage.1"),
+                        new ResearchPage(RecipeRegistration.ADVANCED_STORAGE_CASING),
+                        new ResearchPage(new IArcaneRecipe[]{RecipeRegistration.ESSENTIA_CELL_1M,
+                                RecipeRegistration.ESSENTIA_CELL_4M, RecipeRegistration.ESSENTIA_CELL_16M,
+                                RecipeRegistration.ESSENTIA_CELL_64M, RecipeRegistration.ESSENTIA_CELL_256M}),
                         new ResearchPage(RecipeRegistration.STORAGE_COMPONENT_1K),
                         new ResearchPage(new IArcaneRecipe[]{RecipeRegistration.STORAGE_COMPONENT_4K, RecipeRegistration.STORAGE_COMPONENT_16K, RecipeRegistration.STORAGE_COMPONENT_64K,
                                 RecipeRegistration.STORAGE_COMPONENT_256K, RecipeRegistration.STORAGE_COMPONENT_1M, RecipeRegistration.STORAGE_COMPONENT_4M, RecipeRegistration.STORAGE_COMPONENT_16M, RecipeRegistration.STORAGE_COMPONENT_64M, RecipeRegistration.STORAGE_COMPONENT_256M}))
                 .registerResearchItem();
     }
 
-    // ==================== 4. (2,-1) ARCANECRAFTINGTERMINAL 奥术合成终端====================
-    // 前置: BASEENERGISTICS（基础能源学）
     private static void registerArcaneCraftingTerminal() {
         new ResearchItem("ARCANECRAFTINGTERMINAL", TAB,
                 new AspectList().add(Aspect.CRAFT, 10).add(Aspect.MAGIC, 10).add(Aspect.MECHANISM, 5),
-                2, -1, 2, new ItemStack(ModItems.ARCANE_CRAFTING_TERMINAL_ITEM.get()))
+                4, -4, 2, new ItemStack(ModItems.ARCANE_CRAFTING_TERMINAL_ITEM.get()))
                 .setRound().setParents("BASEENERGISTICS")
                 .setPages(
                         new ResearchPage("tc.research_text.ARCANECRAFTINGTERMINAL.stage.1"),
@@ -217,23 +192,17 @@ public final class ThEThaumcraft {
                 .registerResearchItem();
     }
 
-    // ==================== 5. (4,-1) VISINTERFACE 要素中继接口====================
-    // 前置: ARCANECRAFTINGTERMINAL（奥术合成终端） + VISPOWER(掌控魔力)
     private static void registerVisInterface() {
         new ResearchItem("VISINTERFACE", TAB,
                 new AspectList().add(Aspect.AURA, 10).add(Aspect.MAGIC, 5).add(Aspect.MECHANISM, 5),
-                4, -1, 3, new ItemStack(ModItems.VIS_INTERFACE.get()))
+                6, -4, 3, new ItemStack(ModItems.VIS_INTERFACE.get()))
                 .setRound().setParents("ARCANECRAFTINGTERMINAL", "PSEUDO_VISPOWER")
                 .setPages(
-                        new ResearchPage("tc.research_text.VISINTERFACE"),
+                        new ResearchPage("tc.research_text.VISINTERFACE.stage.1"),
                         new ResearchPage(RecipeRegistration.VIS_INTERFACE))
                 .registerResearchItem();
     }
 
-    // ==================== 6. 源质总线节点已删（T-RESEARCH-B4：ESSENTIAACCESSCARD 顶位继承） ====================
-
-    // ==================== 7. (-5,-2) INFUSIONPROVIDER 注魔供应器====================
-    // 前置: ESSENTIAACCESSCARD（源质访问卡，T-RESEARCH-B4 顶位继承原源质总线） + INFUSION(注魔) + MIRROR(魔镜)
     private static void registerInfusionProvider() {
         new ResearchItem("INFUSIONPROVIDER", TAB,
                 new AspectList().add(Aspect.MECHANISM, 10).add(Aspect.MAGIC, 10)
@@ -247,8 +216,6 @@ public final class ThEThaumcraft {
                 .registerResearchItem();
     }
 
-    // ==================== 8. (-7,-2) INFUSIONMONITOR 韵魔观测器====================
-    // 前置: INFUSIONPROVIDER（注魔供应器）；位于其左侧。无需研究比较，直接花费要素解锁。
     private static void registerInfusionMonitor() {
         new ResearchItem("INFUSIONMONITOR", TAB,
                 new AspectList().add(Aspect.MAGIC, 4).add(Aspect.AURA, 4).add(Aspect.SENSES, 6),
@@ -261,8 +228,6 @@ public final class ThEThaumcraft {
                 .registerResearchItem();
     }
 
-    // ==================== 8. (-2,-4) ESSENTIAPROVIDER 源质供应器====================
-    // 前置: ESSENTIAACCESSCARD（源质访问卡，T-RESEARCH-B4 顶位继承原源质总线）
     private static void registerEssentiaProvider() {
         new ResearchItem("ESSENTIAPROVIDER", TAB,
                 new AspectList().add(Aspect.MECHANISM, 8).add(Aspect.MAGIC, 8).add(Aspect.EXCHANGE, 5),
@@ -281,11 +246,6 @@ public final class ThEThaumcraft {
                 .registerResearchItem();
     }
 
-    // ==================== 9. (-1,-4) ESSENTIATERMINAL 源质终端已删（T-M2-REMOVE） ====================
-    // 节点无后继（全仓 grep 实证）；ESSENTIA_LEVEL_EMITTER 配方键与配方页已迁 ESSENTIAACCESSCARD（裁定 A）
-
-    // ==================== 10. (0,-2) DIGISENTIA 数字化源质====================
-    // 前置: BASEENERGISTICS（基础能源学） + DISTILESSENTIA(要素蒸馏)
     private static void registerDigisentia() {
         new ResearchItem("DIGISENTIA", TAB,
                 new AspectList().add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5).add(Aspect.MAGIC, 3),
@@ -299,80 +259,65 @@ public final class ThEThaumcraft {
                 .registerResearchItem();
     }
 
-    // ==================== 12. (-3,-7) FOCUS_AEWRENCH 法杖核心 AE扳手====================
-    // 前置: BASEENERGISTICS（基础能源学） + FOCUSFIRE(法杖核心)
     private static void registerFocusAEWrench() {
         new ResearchItem("FOCUS_AEWRENCH", TAB,
                 new AspectList().add(Aspect.TOOL, 5).add(Aspect.ENERGY, 5).add(Aspect.MECHANISM, 3),
                 -3, -7, 3, new ItemStack(ModItems.FOCUS_AEWRENCH.get()))
                 .setRound().setParents("PSEUDO_FOCUSFIRE").setParentsHidden("BASEENERGISTICS")
                 .setPages(
-                        new ResearchPage("tc.research_text.FOCUS_AEWRENCH"),
+                        new ResearchPage("tc.research_text.FOCUS_AEWRENCH.stage.1"),
                         new ResearchPage(RecipeRegistration.FOCUS_AEWRENCH_RECIPE))
                 .registerResearchItem();
     }
 
-    // ==================== 13. (-5,-5) CERTUS_DUPE 赛特斯石英复制====================
-    // 前置: ALCHEMICALDUPLICATION(炼金复制) + BASEENERGISTICS（基础能源学）
     private static void registerCertusDupe() {
         new ResearchItem("CERTUS_DUPE", TAB,
                 new AspectList().add(Aspect.CRYSTAL, 5).add(Aspect.MAGIC, 5).add(Aspect.EXCHANGE, 5),
                 -5, -5, 2, new ItemStack(AEItems.CERTUS_QUARTZ_CRYSTAL.asItem()))
                 .setRound().setParents("PSEUDO_ALCHEMICALDUPLICATION").setParentsHidden("BASEENERGISTICS")
                 .setPages(
-                        new ResearchPage("tc.research_text.CERTUS_DUPE"),
+                        new ResearchPage("tc.research_text.CERTUS_DUPE.stage.1"),
                         new ResearchPage(RecipeRegistration.CERTUS_DUPE_RECIPE))
                 .registerResearchItem();
     }
 
-    // ==================== 14. (1,-4) VIBRATIONCHAMBER 源质谐振仓====================
-    // 前置: DIGISENTIA
     private static void registerEssentiaVibrationChamber() {
         new ResearchItem("ESSENTIAVIBRATIONCHAMBER", TAB,
                 new AspectList().add(Aspect.ENERGY, 8).add(Aspect.MECHANISM, 5).add(Aspect.FIRE, 3),
                 1, -4, 3, new ItemStack(ModItems.ESSENTIA_VIBRATION_CHAMBER_ITEM.get()))
                 .setRound().setParents("DIGISENTIA")
                 .setPages(
-                        new ResearchPage("tc.research_text.ESSENTIAVIBRATIONCHAMBER"),
+                        new ResearchPage("tc.research_text.ESSENTIAVIBRATIONCHAMBER.stage.1"),
                         new ResearchPage(RecipeRegistration.ESSENTIA_VIBRATION_CHAMBER))
                 .registerResearchItem();
     }
 
-    // ==================== 15. (-4,-4) DISTILLATIONENCODER 蒸馏编码台====================
-    // 前置: ESSENTIAACCESSCARD（源质访问卡，T-RESEARCH-B4 顶位继承原源质总线）
     private static void registerDistillationEncoder() {
         new ResearchItem("DISTILLATIONENCODER", TAB,
                 new AspectList().add(Aspect.MECHANISM, 5).add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5),
                 -4, -4, 3, new ItemStack(ModItems.DISTILLATION_ENCODER_ITEM.get()))
                 .setRound().setParents("ESSENTIAACCESSCARD")
                 .setPages(
-                        new ResearchPage("tc.research_text.DISTILLATIONENCODER"),
+                        new ResearchPage("tc.research_text.DISTILLATIONENCODER.stage.1"),
                         new ResearchPage(RecipeRegistration.DISTILLATION_ENCODER_BLOCK))
                 .registerResearchItem();
     }
 
-    // ==================== 16. (0,-6) GOLEMWIFIBACKPACK 无线傀儡背包====================
-    // 前置: DIGISENTIA + COREGATHER(傀儡核心：聚集)
     private static void registerGolemWifiBackpack() {
         new ResearchItem("GOLEMWIFIBACKPACK", TAB,
                 new AspectList().add(Aspect.MAGIC, 5).add(Aspect.MECHANISM, 5).add(Aspect.MIND, 3),
                 0, -6, 3, new ItemStack(ModItems.GOLEM_WIFI_BACKPACK.get()))
                 .setRound().setParents("PSEUDO_COREGATHER").setParentsHidden("DIGISENTIA")
                 .setPages(
-                        new ResearchPage("tc.research_text.GOLEMWIFI"),
+                        new ResearchPage("tc.research_text.GOLEMWIFI.stage.1"),
                         new ResearchPage(RecipeRegistration.GOLEM_WIFI_BACKPACK_RECIPE))
                 .registerResearchItem();
     }
 
-    // ==================== T-RESEARCH-B2：M3~M6 新增节点（纯新增） ====================
-    // T-RESEARCH-B4：WIRELESSESSENTIATERMINAL 节点已删；T-M2-REMOVE：无线源质终端本体与配方一并删除
-
-    // ==================== 18. (3,-2) WIRELESSARCANECRAFTINGTERMINAL 无线奥术合成终端====================
-    // 前置: ARCANECRAFTINGTERMINAL（奥术合成终端）
     private static void registerWirelessArcaneCraftingTerminal() {
         new ResearchItem("WIRELESSARCANECRAFTINGTERMINAL", TAB,
                 new AspectList().add(Aspect.CRAFT, 8).add(Aspect.MAGIC, 8).add(Aspect.MECHANISM, 5),
-                3, -2, 2, new ItemStack(ModItems.WIRELESS_ARCANE_CRAFTING_TERMINAL.get()))
+                5, -5, 2, new ItemStack(ModItems.WIRELESS_ARCANE_CRAFTING_TERMINAL.get()))
                 .setRound().setParents("ARCANECRAFTINGTERMINAL")
                 .setPages(
                         new ResearchPage("tc.research_text.WIRELESSARCANECRAFTINGTERMINAL.stage.1"),
@@ -381,9 +326,6 @@ public final class ThEThaumcraft {
                 .registerResearchItem();
     }
 
-    // ==================== 21. (-2,-2) ESSENTIAACCESSCARD 源质访问卡====================
-    // T-RESEARCH-B4：顶位继承原源质总线（用户拍板「继承它的关系包括前置、后继」）
-    // T-M2-REMOVE：三总线删除后，ESSENTIA_LEVEL_EMITTER 配方注册键与配方页迁入本节点（裁定 A）。
     // 坐标 = 原 ESSENTIABUSES (-2,-2)；前置 = 原 ESSENTIABUSES 前置（DIGISENTIA + PSEUDO_TUBEFILTER），
     // 原 PSEUDO_INFUSION/PSEUDO_MIRROR 前置丢弃；原 ESSENTIABUSES 三后继（INFUSIONPROVIDER/
     // ESSENTIAPROVIDER/DISTILLATIONENCODER）与三总线配方键已改挂本节点。
@@ -393,16 +335,14 @@ public final class ThEThaumcraft {
                 -2, -2, 2, new ItemStack(ModItems.ESSENTIA_UPGRADE_CARD.get()))
                 .setRound().setParents("DIGISENTIA", "PSEUDO_TUBEFILTER")
                 .setPages(
-                        new ResearchPage("tc.research_text.ESSENTIAACCESSCARD"),
+                        new ResearchPage("tc.research_text.ESSENTIAACCESSCARD.stage.1"),
                         new ResearchPage(RecipeRegistration.ESSENTIA_UPGRADE_CARD),
                         new ResearchPage(RecipeRegistration.ESSENTIA_LEVEL_EMITTER))
                 .registerResearchItem();
     }
 
-    // ==================== 22. (-1,-4) GACHABOX 概率之脑====================
-    // 前置: DIGISENTIA（数字化源质）；裁决：不加伪前置。
-    // T-M6-RECIPE-2：配方页改挂注魔配方（catalyst=知识核心，罐装脑走方块交互不入配方）
-    // 用户指令：节点移至原源质终端旧址（源质谐振仓 (1,-4) 左边）。
+    // 配方页改挂注魔配方（catalyst=知识核心，罐装脑走方块交互不入配方）
+
     private static void registerGachaBox() {
         new ResearchItem("GACHABOX", TAB,
                 new AspectList().add(Aspect.MIND, 8).add(Aspect.ENTROPY, 5).add(Aspect.MAGIC, 5),

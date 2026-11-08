@@ -1,12 +1,9 @@
 package thaumicenergistics.common.integration.ae2wt;
 
+import appeng.menu.locator.ItemMenuHostLocator;
+import de.mari_023.ae2wtlib.api.terminal.ItemWT;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
-
-import appeng.menu.locator.ItemMenuHostLocator;
-
-import de.mari_023.ae2wtlib.api.terminal.ItemWT;
-
 import thaumicenergistics.init.ModMenuTypes;
 
 /**

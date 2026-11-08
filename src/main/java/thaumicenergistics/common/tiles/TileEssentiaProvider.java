@@ -1,7 +1,14 @@
 package thaumicenergistics.common.tiles;
 
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -11,13 +18,6 @@ import thaumcraft.common.essentia.EssentiaTransport;
 import thaumicenergistics.api.storage.IAspectStack;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModItems;
-
-import java.util.List;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.LongTag;
-import net.minecraft.nbt.Tag;
 
 public class TileEssentiaProvider extends TileProviderBase implements IEssentiaTransport, EssentiaTransport {
 
@@ -41,15 +41,14 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
         return 3.0 + 5.0 * getLinkedReceiverCount();
     }
 
-    // ===== 无线接收器连接管理 =====
     /** 最多连接的接收器数量。 */
     public static final int MAX_LINKED_RECEIVERS = 8;
     /** 最大连接距离（格）。 */
     public static final int MAX_LINK_DISTANCE = 32;
 
-    private List<BlockPos> linkedReceivers = new java.util.ArrayList<>();
+    private List<BlockPos> linkedReceivers = new ArrayList<>();
 
-    public java.util.List<BlockPos> getLinkedReceivers() {
+    public List<BlockPos> getLinkedReceivers() {
         return linkedReceivers;
     }
 
@@ -98,14 +97,14 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     }
 
     /** getEssentiaList 短时缓存：TC 管道 suction 每 tick 调 getEssentiaType，避免每 tick 全量遍历。 */
-    private List<IAspectStack> cachedEssentiaList = java.util.List.of();
+    private List<IAspectStack> cachedEssentiaList = List.of();
     private int essentiaListCacheTimer = 0;
     private static final int ESSENTIA_LIST_CACHE_TICKS = 20;
 
-    private List<thaumicenergistics.api.storage.IAspectStack> getCachedEssentiaList() {
+    private List<IAspectStack> getCachedEssentiaList() {
         if (essentiaListCacheTimer <= 0) {
             essentiaListCacheTimer = ESSENTIA_LIST_CACHE_TICKS;
-            cachedEssentiaList = essentiaGrid != null ? essentiaGrid.getEssentiaList() : java.util.List.of();
+            cachedEssentiaList = essentiaGrid != null ? essentiaGrid.getEssentiaList() : List.of();
         }
         return cachedEssentiaList;
     }
@@ -130,8 +129,6 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     }
 
     private int validateCounter = 0;
-
-    // ===== IEssentiaTransport =====
 
     @Override
     public boolean isConnectable(Direction side) {
@@ -214,8 +211,6 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
         return 1;
     }
 
-    // ===== 供源质无线接收器转发的公开方法 =====
-
     public boolean thE_isActive() {
         return mainNode.isActive();
     }
@@ -248,8 +243,6 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     public boolean renderExtendedTube() {
         return false;
     }
-
-    // ===== 内部 =====
 
     private Aspect getNeighborWantedAspect(Direction side) {
         BlockPos neighborPos = worldPosition.relative(side);
@@ -292,8 +285,6 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
             }
         }
     }
-
-    // ===== NBT =====
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {

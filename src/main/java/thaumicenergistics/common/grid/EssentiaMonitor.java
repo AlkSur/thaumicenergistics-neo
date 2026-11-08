@@ -1,5 +1,9 @@
 package thaumicenergistics.common.grid;
-import java.util.*;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import net.minecraft.resources.ResourceLocation;
 import thaumicenergistics.api.storage.AspectStack;

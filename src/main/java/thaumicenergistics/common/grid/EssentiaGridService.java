@@ -1,12 +1,5 @@
 package thaumicenergistics.common.grid;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import net.minecraft.resources.ResourceLocation;
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridServiceProvider;
@@ -14,6 +7,11 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.storage.IStorageService;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import net.minecraft.resources.ResourceLocation;
 import thaumicenergistics.api.grid.IEssentiaGrid;
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.api.storage.IAspectStack;

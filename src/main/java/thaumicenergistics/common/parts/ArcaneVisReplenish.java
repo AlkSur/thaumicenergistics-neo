@@ -1,12 +1,10 @@
 package thaumicenergistics.common.parts;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-
 import appeng.api.networking.IGrid;
 import appeng.me.service.P2PService;
 import appeng.parts.p2p.P2PTunnelPart;
-
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.common.items.TCFunctionalItems;
 import thaumicenergistics.common.integration.tc.TCReflection;
@@ -14,7 +12,7 @@ import thaumicenergistics.common.integration.tc.TCReflection;
 /**
  * 法杖 vis 充能逻辑单套实现（共享核心充能循环）：
  * 有线部件 IGridTickable 经 P2P 频率定位（{@link #replenish}，行为零变化）；
- * 无线终端升级卡自动模式遍历网络全部要素中继接口（{@link #replenishAuto}，T-M3-VISCARD-REV）。
+ * 无线终端升级卡自动模式遍历网络全部要素中继接口（{@link #replenishAuto}，）。
  */
 public final class ArcaneVisReplenish {
 

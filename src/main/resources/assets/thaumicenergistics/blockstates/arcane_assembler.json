@@ -1,1 +1,17 @@
-{"variants":{"":{"model":"thaumicenergistics:block/arcane_assembler"}}}
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "thaumicenergistics:block/arcane_assembler"
+      }
+    },
+    {
+      "when": {
+        "online": "true"
+      },
+      "apply": {
+        "model": "thaumicenergistics:block/arcane_assembler_light"
+      }
+    }
+  ]
+}

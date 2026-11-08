@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import thaumcraft.api.aspects.Aspect;
@@ -12,7 +13,6 @@ import thaumcraft.api.aspects.IEssentiaTransport;
 import thaumcraft.common.essentia.EssentiaTransport;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModBlocks;
-import net.minecraft.world.level.Level;
 
 /**
  * 源质无线接收器：通过无线连接器与源质供应器建立连接后，
@@ -133,8 +133,6 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
         super(ModBlockEntities.ESSENTIA_PROVIDER_CONNECTION.get(), pos, state);
     }
 
-    // ===== 连接管理 =====
-
     public BlockPos getLinkedProviderPos() {
         return linkedProviderPos;
     }
@@ -202,8 +200,6 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
         updateConnectedState();
         return null;
     }
-
-    // ===== IEssentiaTransport（转发到连接供应器） =====
 
     @Override
     public boolean isConnectable(Direction side) {
@@ -297,8 +293,6 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
         }
         return null;
     }
-
-    // ===== NBT =====
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {

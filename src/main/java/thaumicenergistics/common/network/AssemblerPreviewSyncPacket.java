@@ -1,7 +1,7 @@
 package thaumicenergistics.common.network;
 
+import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -62,7 +62,7 @@ public record AssemblerPreviewSyncPacket(
         }
         // null → EMPTY 兜底：previewGrid 任何时刻都不应含 null（序列化 ItemStack 会 NPE）
         ItemStack[] grid = assembler.getPreviewGrid();
-        List<ItemStack> gridList = new java.util.ArrayList<>(9);
+        List<ItemStack> gridList = new ArrayList<>(9);
         for (int i = 0; i < 9; i++) {
             gridList.add(grid != null && grid[i] != null ? grid[i] : ItemStack.EMPTY);
         }

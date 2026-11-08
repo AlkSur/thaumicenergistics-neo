@@ -1,7 +1,6 @@
 package thaumicenergistics.common.integration.jade;
 
 import java.util.Map;
-
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -13,12 +12,11 @@ import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.IServerDataProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.config.IPluginConfig;
-
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.tiles.BrainOfProbabilityBlockEntity;
 
 /**
- * 概率之脑 Jade 显示（T-M6-GACHA-REV），两行：
+ * 概率之脑 Jade 显示，两行：
  * <ol>
  *   <li>「本轮奖励」：最近一次出货明细（要素本地化名 + 点数；无出货历史显示暂无）。</li>
  *   <li>「下次抽奖」：当前周期剩余秒数（空闲显示 —）。</li>

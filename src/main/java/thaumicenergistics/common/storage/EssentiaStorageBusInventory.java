@@ -1,9 +1,7 @@
 package thaumicenergistics.common.storage;
 
-import java.util.function.Supplier;
-import java.util.Objects;
-import appeng.api.config.FuzzyMode;
 import appeng.api.config.Actionable;
+import appeng.api.config.FuzzyMode;
 import appeng.api.config.IncludeExclude;
 import appeng.api.config.Settings;
 import appeng.api.config.StorageFilter;
@@ -16,6 +14,8 @@ import appeng.core.definitions.AEItems;
 import appeng.me.storage.MEInventoryHandler;
 import appeng.parts.storagebus.StorageBusPart;
 import appeng.util.prioritylist.IPartitionList;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /** 新增视图也经过总线的访问和过滤规则；设置即时读取，避免与原句柄分叉。 */
 public final class EssentiaStorageBusInventory extends MEInventoryHandler {

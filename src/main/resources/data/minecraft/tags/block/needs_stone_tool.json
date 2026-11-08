@@ -7,6 +7,15 @@
     "thaumicenergistics:essentia_vibration_chamber",
     "thaumicenergistics:knowledge_inscriber",
     "thaumicenergistics:essentia_cell_workbench",
-    "thaumicenergistics:distillation_encoder"
+    "thaumicenergistics:distillation_encoder",
+    "thaumicenergistics:flawless_budding_thaumic_crystal",
+    "thaumicenergistics:flawed_budding_thaumic_crystal",
+    "thaumicenergistics:chipped_budding_thaumic_crystal",
+    "thaumicenergistics:damaged_budding_thaumic_crystal",
+    "thaumicenergistics:mystic_crystal_block",
+    "thaumicenergistics:small_mystic_crystal_bud",
+    "thaumicenergistics:medium_mystic_crystal_bud",
+    "thaumicenergistics:large_mystic_crystal_bud",
+    "thaumicenergistics:mystic_crystal_cluster"
   ]
 }

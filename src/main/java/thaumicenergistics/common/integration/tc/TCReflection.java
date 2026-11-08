@@ -1,8 +1,10 @@
 package thaumicenergistics.common.integration.tc;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -33,13 +35,12 @@ public final class TCReflection {
         if (be == null) {
             return null;
         }
-        // ===== 路径0: 荒古炼金炉直连（AlchemicalFurnaceBlockEntity 不实现 IAspectContainer，
-        // 源质在 private aspects 缓存——直接抽取，替代"必须经蒸馏釜/罐子"）=====
+
         if (FURNACE_CLASS_NAME.equals(be.getClass().getName())) {
             AspectStack fromFurnace = LegacyFurnaceEssentia.extractFromFurnace(be, only, maxAmount);
             if (fromFurnace != null) return fromFurnace;
         }
-        // ===== 路径0b: TC 管道接口（EssentiaTransport——高级荒古炼金炉喷嘴/源质管道）=====
+
         if (be instanceof EssentiaTransport transport) {
             for (Direction face : Direction.values()) {
                 if (!transport.canOutputTo(face)) continue;
@@ -62,7 +63,6 @@ public final class TCReflection {
             return null;
         }
 
-        // ===== 路径A: 旧版 IAspectContainer API (getAspects) =====
         AspectList aspectList = container.getAspects();
         if (aspectList != null && aspectList.size() > 0) {
             Aspect[] aspects = aspectList.getAspects();
@@ -83,9 +83,8 @@ public final class TCReflection {
             }
         }
 
-        // ===== 路径B: TC 移植版反射回退 (getAspect/getAmount) =====
         try {
-            java.lang.reflect.Method[] methods = getAspectMethods(be.getClass());
+            Method[] methods = getAspectMethods(be.getClass());
             if (methods.length < 2) {
                 return null;
             }
@@ -141,8 +140,8 @@ public final class TCReflection {
     }
 
     /** 非破坏性列出容器内全部源质（存储总线挂载为网络存储、导入总线预检用）。 */
-    public static java.util.List<AspectStack> listEssentia(@Nullable BlockEntity be) {
-        java.util.List<AspectStack> result = new java.util.ArrayList<>();
+    public static List<AspectStack> listEssentia(@Nullable BlockEntity be) {
+        List<AspectStack> result = new ArrayList<>();
         if (be == null) return result;
         // 荒古炼金炉（不实现 IAspectContainer）
         if (FURNACE_CLASS_NAME.equals(be.getClass().getName())) {
@@ -201,14 +200,14 @@ public final class TCReflection {
     }
 
     /** 按方块实体类缓存反射方法（getAspect/getAmount），避免每次调用 getMethod。 */
-    private static final Map<Class<?>, java.lang.reflect.Method[]> REFLECT_METHOD_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Method[]> REFLECT_METHOD_CACHE = new ConcurrentHashMap<>();
 
-    private static java.lang.reflect.Method[] getAspectMethods(Class<?> clazz) {
+    private static Method[] getAspectMethods(Class<?> clazz) {
         return REFLECT_METHOD_CACHE.computeIfAbsent(clazz, c -> {
             try {
-                return new java.lang.reflect.Method[] { c.getMethod("getAspect"), c.getMethod("getAmount") };
+                return new Method[] { c.getMethod("getAspect"), c.getMethod("getAmount") };
             } catch (NoSuchMethodException e) {
-                return new java.lang.reflect.Method[0];
+                return new Method[0];
             }
         });
     }

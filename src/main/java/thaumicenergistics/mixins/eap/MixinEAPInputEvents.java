@@ -1,12 +1,12 @@
 package thaumicenergistics.mixins.eap;
 
+import appeng.api.stacks.GenericStack;
+import mezz.jei.api.ingredients.ITypedIngredient;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import appeng.api.stacks.GenericStack;
-import mezz.jei.api.ingredients.ITypedIngredient;
 import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.TCReflection;

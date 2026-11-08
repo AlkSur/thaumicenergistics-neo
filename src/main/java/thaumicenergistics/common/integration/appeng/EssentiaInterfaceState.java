@@ -1,14 +1,5 @@
 package thaumicenergistics.common.integration.appeng;
 
-import java.util.function.Supplier;
-import appeng.helpers.externalstorage.GenericStackInv;
-import java.util.List;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
@@ -19,15 +10,19 @@ import appeng.api.upgrades.IUpgradeInventory;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
 import appeng.helpers.InterfaceLogicHost;
-
+import appeng.helpers.externalstorage.GenericStackInv;
+import java.util.List;
+import java.util.function.Supplier;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import thaumcraft.api.aspects.Aspect;
-
 import thaumicenergistics.api.storage.AspectStack;
+import thaumicenergistics.common.essentia.capability.EssentiaEnergy;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.appeng.IEssentiaInterfaceLogic;
 import thaumicenergistics.common.integration.tc.AspectIds;
 import thaumicenergistics.init.ModItems;
-
 
 /** ME 接口的源质业务状态；Mixin 仅负责转发宿主字段和生命周期。 */
 public final class EssentiaInterfaceState implements IEssentiaInterfaceLogic {
@@ -83,7 +78,7 @@ public final class EssentiaInterfaceState implements IEssentiaInterfaceLogic {
     }
     @Override
     public boolean thE$essentiaActive() {
-        // 联网判据用 networkStorage（InterfaceLogic 自身即以它作「是否挂网」的判断，见 getInventory()）
+        // 联网判据用 networkStorage（InterfaceLogic 自身即以它作「是否挂网」的判断，见 getInventory）
         return thE$hasEssentiaCard() && networkStorage.get() != null;
     }
 
@@ -206,7 +201,7 @@ public final class EssentiaInterfaceState implements IEssentiaInterfaceLogic {
         }
         var grid = thE$grid();
         if (grid == null) return 0;
-        long injected = thaumicenergistics.common.essentia.capability.EssentiaEnergy.transfer(
+        long injected = EssentiaEnergy.transfer(
                 grid, this.thE$essentiaBuffer.amount(), allowed -> networkStorage.get().insert(
                         key, allowed, Actionable.MODULATE, actionSource.get()));
         if (injected <= 0) {
@@ -229,7 +224,7 @@ public final class EssentiaInterfaceState implements IEssentiaInterfaceLogic {
         }
     }
 
-    /** 本逻辑所在网格（未挂网 → null）。经公开 getActionableNode() 取得，避开父类陷阱。 */
+    /** 本逻辑所在网格（未挂网 → null）。经公开 getActionableNode 取得，避开父类陷阱。 */
     private IGrid thE$grid() {
         IGridNode node = thE$actionableNode();
         return node != null ? node.getGrid() : null;

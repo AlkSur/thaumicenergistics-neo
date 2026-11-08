@@ -1,10 +1,10 @@
 package thaumicenergistics.common.integration.appeng;
 
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
 import net.minecraft.resources.ResourceLocation;
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.api.storage.IAspectStack;
-import appeng.api.stacks.AEKey;
-import appeng.api.stacks.GenericStack;
 
 public final class EssentiaStorageChannel {
     private EssentiaStorageChannel() {}

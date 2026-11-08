@@ -1,35 +1,33 @@
 package thaumicenergistics.common.tiles;
 
-import java.util.EnumSet;
-
-import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.entity.BlockEntity;
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
-import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IInWorldGridNodeHost;
+import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.util.AECableType;
-
+import java.util.EnumSet;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.IEssentiaTransport;
 import thaumcraft.common.essentia.EssentiaTransport;
 import thaumicenergistics.api.grid.IEssentiaGrid;
+import thaumicenergistics.common.blocks.EssentiaVibrationChamberBlock;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModItems;
@@ -83,6 +81,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         super.onLoad();
         if (level != null && !level.isClientSide()) {
             mainNode.create(level, getBlockPos());
+            updateWorkingState();
         }
     }
 
@@ -104,6 +103,14 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLast) {
         if (level == null || level.isClientSide()) return TickRateModulation.IDLE;
+        try {
+            return tickGeneration(node, ticksSinceLast);
+        } finally {
+            updateWorkingState();
+        }
+    }
+
+    private TickRateModulation tickGeneration(IGridNode node, int ticksSinceLast) {
         IGrid grid = node.getGrid();
         if (grid == null) return TickRateModulation.IDLE;
 
@@ -331,8 +338,21 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
 
     public void markForUpdate() {
         if (level != null) {
+            updateWorkingState();
             setChanged();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    private void updateWorkingState() {
+        if (level == null || level.isClientSide() || isRemoved() || !level.hasChunkAt(worldPosition)) return;
+        var state = getBlockState();
+        boolean working = mainNode.getGrid() != null && burnTicksRemaining > 0
+                && storedEnergy < MAX_ENERGY_STORAGE - 0.01;
+        if (state.hasProperty(EssentiaVibrationChamberBlock.WORKING)
+                && state.getValue(EssentiaVibrationChamberBlock.WORKING) != working) {
+            level.setBlock(worldPosition, state.setValue(EssentiaVibrationChamberBlock.WORKING, working),
+                    Block.UPDATE_CLIENTS);
         }
     }
 

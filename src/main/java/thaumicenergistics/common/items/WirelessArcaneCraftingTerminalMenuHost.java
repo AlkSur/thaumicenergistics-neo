@@ -1,16 +1,5 @@
 package thaumicenergistics.common.items;
 
-import java.util.function.BiConsumer;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
 import appeng.api.features.Locatables;
@@ -28,11 +17,18 @@ import appeng.menu.ISubMenu;
 import appeng.menu.locator.ItemMenuHostLocator;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.InternalInventoryHost;
-
+import java.util.function.BiConsumer;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.fml.ModList;
-
+import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.IArcaneTerminalInventoryHost;
+import thaumicenergistics.common.inventory.PersistedTerminalInventories;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
 import thaumicenergistics.init.ModComponents;
 
@@ -48,7 +44,6 @@ public class WirelessArcaneCraftingTerminalMenuHost
         extends WirelessTerminalMenuHost<WirelessArcaneCraftingTerminalItem>
         implements ISegmentedInventory, IArcaneTerminalInventoryHost {
 
-    // ==================== WTBRIDGE 软依赖常量（id 来源：ae2wtlib 19.5.1，升级对齐点） ====================
     /** 量子桥卡物品 id（ae2wtlib AE2wtlibItems.QUANTUM_BRIDGE_CARD 注册名）。 */
     public static final ResourceLocation AE2WTLIB_QUANTUM_BRIDGE_CARD =
             ResourceLocation.fromNamespaceAndPath("ae2wtlib", "quantum_bridge_card");
@@ -82,8 +77,8 @@ public class WirelessArcaneCraftingTerminalMenuHost
             ItemMenuHostLocator locator,
             BiConsumer<Player, ISubMenu> returnToMainMenu) {
         super(item, player, locator, returnToMainMenu);
-        this.craftingGrid = thaumicenergistics.common.inventory.PersistedTerminalInventories.createPersistedInv(player, this.getItemStack(), 9, AEComponents.CRAFTING_INV);
-        this.wandInv = thaumicenergistics.common.inventory.PersistedTerminalInventories.createPersistedInv(player, this.getItemStack(), 1, ModComponents.WAND_INV.get());
+        this.craftingGrid = PersistedTerminalInventories.createPersistedInv(player, this.getItemStack(), 9, AEComponents.CRAFTING_INV);
+        this.wandInv = PersistedTerminalInventories.createPersistedInv(player, this.getItemStack(), 1, ModComponents.WAND_INV.get());
         this.singularityInv = createSingularityInv(player, this.getItemStack());
     }
 
@@ -149,8 +144,6 @@ public class WirelessArcaneCraftingTerminalMenuHost
     public ResourceLocation getSingularityInvId() {
         return INV_SINGULARITY;
     }
-
-    // ==================== WTBRIDGE：量子桥卡连接逻辑 ====================
 
     /**
      * 桥卡链路有效时 connected（跨维/无限距离）；否则回落 AE2 原生状态。
@@ -287,6 +280,5 @@ public class WirelessArcaneCraftingTerminalMenuHost
                 Math.min(missing, safePower), Actionable.MODULATE, PowerMultiplier.ONE);
         getItem().injectAEPower(stack, extracted, Actionable.MODULATE);
     }
-
 
 }

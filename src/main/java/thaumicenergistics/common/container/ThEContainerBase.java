@@ -12,7 +12,6 @@ public abstract class ThEContainerBase extends AbstractContainerMenu {
     protected final Inventory playerInv;
     protected final int playerInvStart;
 
-    // ===== AE2 标准坐标（源自 storage_bus.json + player_inventory.json）=====
     // 所有 ThE 容器（无论是否走 UpgradeableMenu）都以此基准对齐。
     public static final int AE2_IMAGE_HEIGHT = 253;
     public static final int AE2_PLAYER_INV_Y = AE2_IMAGE_HEIGHT - 84;  // 169

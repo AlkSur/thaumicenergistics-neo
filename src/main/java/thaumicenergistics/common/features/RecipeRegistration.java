@@ -30,6 +30,12 @@ public final class RecipeRegistration {
     /** 韵魔观测器注魔配方。 */
     public static InfusionRecipe INFUSION_MONITOR;
     // 奥术有序配方
+    public static ShapedArcaneRecipe ADVANCED_STORAGE_CASING;
+    public static ShapedArcaneRecipe ESSENTIA_CELL_1M;
+    public static ShapedArcaneRecipe ESSENTIA_CELL_4M;
+    public static ShapedArcaneRecipe ESSENTIA_CELL_16M;
+    public static ShapedArcaneRecipe ESSENTIA_CELL_64M;
+    public static ShapedArcaneRecipe ESSENTIA_CELL_256M;
     public static ShapedArcaneRecipe STORAGE_COMPONENT_1K;
     public static ShapedArcaneRecipe STORAGE_COMPONENT_4K;
     public static ShapedArcaneRecipe STORAGE_COMPONENT_16K;
@@ -72,6 +78,7 @@ public final class RecipeRegistration {
     private static final TagKey<Item> MONITORS = tag("thaumicenergistics", "monitors");
     /** Optional exact-item ingredient: an empty tag keeps these recipes unavailable without Thaumic Tinkerer. */
     private static final TagKey<Item> ICHOR = tag("thaumicenergistics", "ichor");
+    private static final TagKey<Item> ESSENTIA_CELL_GLASS = tag("thaumicenergistics", "essentia_cell_glass");
 
     @SuppressWarnings("SameParameterValue")
     private static TagKey<Item> tag(String ns, String path) {
@@ -79,6 +86,7 @@ public final class RecipeRegistration {
     }
 
     public static void registerAll() {
+        CrystalRecipeRegistration.registerAll();
         registerShapedArcane();
         registerShapelessArcane();
         registerInfusion();
@@ -99,14 +107,29 @@ public final class RecipeRegistration {
 
     // ==================== 奥术有序配方 ====================
     private static void registerShapedArcane() {
+        ADVANCED_STORAGE_CASING = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.ADVANCED_STORAGE_CASING),
+                advancedHousingVisCost(),
+                "WRW",
+                "R R",
+                "TTT",
+                'W', ESSENTIA_CELL_GLASS,
+                'R', new ItemStack(Items.REDSTONE, 1),
+                'T', tc("void_metal_ingot"));
+
+        ESSENTIA_CELL_1M = registerCellWithHousingMaterials(ModItems.ESSENTIA_CELL_1M, ModItems.STORAGE_COMPONENT_1M);
+        ESSENTIA_CELL_4M = registerCellWithHousingMaterials(ModItems.ESSENTIA_CELL_4M, ModItems.STORAGE_COMPONENT_4M);
+        ESSENTIA_CELL_16M = registerCellWithHousingMaterials(ModItems.ESSENTIA_CELL_16M, ModItems.STORAGE_COMPONENT_16M);
+        ESSENTIA_CELL_64M = registerCellWithHousingMaterials(ModItems.ESSENTIA_CELL_64M, ModItems.STORAGE_COMPONENT_64M);
+        ESSENTIA_CELL_256M = registerCellWithHousingMaterials(ModItems.ESSENTIA_CELL_256M, ModItems.STORAGE_COMPONENT_256M);
+
         STORAGE_COMPONENT_1K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_1K),
                 new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 1),
                 "EQ ",
                 "QPQ",
                 " QE",
                 'E', WISP_ESSENCES,
-                'Q', ae("certus_quartz_crystal"),
-                'P', ae("logic_processor"));
+                'Q', stack(ModItems.MYSTIC_CRYSTAL),
+                'P', stack(ModItems.MYSTIC_PROCESSOR));
 
         STORAGE_COMPONENT_4K = ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(ModItems.STORAGE_COMPONENT_4K),
                 new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 2),
@@ -114,7 +137,7 @@ public final class RecipeRegistration {
                 "1G1",
                 "E1E",
                 'E', WISP_ESSENCES,
-                'P', ae("calculation_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 '1', stack(ModItems.STORAGE_COMPONENT_1K),
                 'G', ae("quartz_glass"));
 
@@ -124,7 +147,7 @@ public final class RecipeRegistration {
                 "4G4",
                 "E4S",
                 'S', tc("salis_mundus"),
-                'P', ae("engineering_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 '4', stack(ModItems.STORAGE_COMPONENT_4K),
                 'G', ae("quartz_glass"),
                 'E', WISP_ESSENCES);
@@ -135,7 +158,7 @@ public final class RecipeRegistration {
                 "6G6",
                 "S6S",
                 'S', tc("salis_mundus"),
-                'P', ae("engineering_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 '6', stack(ModItems.STORAGE_COMPONENT_16K),
                 'G', ae("quartz_glass"));
 
@@ -143,7 +166,7 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.FIRE, 3).add(Aspect.ORDER, 8),
                 "SPS", "CGC", "SCS",
                 'S', tc("salis_mundus"),
-                'P', ae("engineering_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 'C', stack(ModItems.STORAGE_COMPONENT_64K),
                 'G', tc("warded_glass"));
 
@@ -151,7 +174,7 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
                 "SPS", "CGC", "SCS",
                 'S', tc("salis_mundus"),
-                'P', ae("engineering_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 'C', stack(ModItems.STORAGE_COMPONENT_256K),
                 'G', tc("warded_glass"));
 
@@ -159,7 +182,7 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
                 "SPS", "CGC", "SCS",
                 'S', tc("salis_mundus"),
-                'P', ae("engineering_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 'C', stack(ModItems.STORAGE_COMPONENT_1M),
                 'G', tc("warded_glass"));
 
@@ -167,7 +190,7 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
                 "SPS", "CGC", "SCS",
                 'S', tc("salis_mundus"),
-                'P', ae("engineering_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 'C', stack(ModItems.STORAGE_COMPONENT_4M),
                 'G', tc("warded_glass"));
 
@@ -175,7 +198,7 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
                 "SPS", "CGC", "SCS",
                 'S', ICHOR,
-                'P', ae("engineering_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 'C', stack(ModItems.STORAGE_COMPONENT_16M),
                 'G', tc("warded_glass"));
 
@@ -183,7 +206,7 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.FIRE, 10).add(Aspect.ORDER, 24),
                 "SPS", "CGC", "SCS",
                 'S', ICHOR,
-                'P', ae("engineering_processor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 'C', stack(ModItems.STORAGE_COMPONENT_64M),
                 'G', tc("warded_glass"));
 
@@ -195,7 +218,7 @@ public final class RecipeRegistration {
                 'Q', ae("quartz_glass"),
                 'l', new ItemStack(Items.LAPIS_LAZULI, 1),
                 'B', tc("zombie_brain"),
-                'P', ae("calculation_processor"));
+                'P', stack(ModItems.MYSTIC_PROCESSOR));
 
         FOCUS_AEWRENCH_RECIPE = ThaumcraftApi.addArcaneCraftingRecipe("FOCUS_AEWRENCH", stack(ModItems.FOCUS_AEWRENCH),
                 new AspectList().add(Aspect.AIR, 10).add(Aspect.FIRE, 10),
@@ -210,11 +233,11 @@ public final class RecipeRegistration {
         GOLEM_WIFI_BACKPACK_RECIPE = ThaumcraftApi.addArcaneCraftingRecipe("GOLEMWIFIBACKPACK", stack(ModItems.GOLEM_WIFI_BACKPACK),
                 new AspectList().add(Aspect.AIR, 6).add(Aspect.FIRE, 4).add(Aspect.ORDER, 3),
                 "tIt",
-                "nRn",
+                "PRP",
                 "fCf",
                 't', tc("thaumium_ingot"),
                 'I', ae("interface"),
-                'n', tc("nitor"),
+                'P', stack(ModItems.MYSTIC_PROCESSOR),
                 'R', ae("wireless_receiver"),
                 'f', ae("fluix_crystal"),
                 'C', ae("charger"));
@@ -227,7 +250,7 @@ public final class RecipeRegistration {
                 'I', new ItemStack(Items.IRON_INGOT, 1),
                 'L', MONITORS,
                 'T', tc("thaumonomicon"),
-                'P', ae("logic_processor"));
+                'P', stack(ModItems.MYSTIC_PROCESSOR));
 
         DISTILLATION_ENCODER_BLOCK = ThaumcraftApi.addArcaneCraftingRecipe("DISTILLATIONENCODER", stack(ModBlocks.DISTILLATION_ENCODER),
                 new AspectList().add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5).add(Aspect.FIRE, 3),
@@ -237,7 +260,7 @@ public final class RecipeRegistration {
                 'I', new ItemStack(Items.IRON_INGOT, 1),
                 'L', MONITORS,
                 'G', tc("thaumometer"),
-                'P', ae("engineering_processor"));
+                'P', stack(ModItems.MYSTIC_PROCESSOR));
     }
 
 
@@ -247,7 +270,7 @@ public final class RecipeRegistration {
         // 1. 扩散核心
         DIFFUSION_CORE = ThaumcraftApi.addShapelessArcaneCraftingRecipe("DIGISENTIA", stack(ModItems.DIFFUSION_CORE),
                 new AspectList().add(Aspect.WATER, 2).add(Aspect.ENTROPY, 2),
-                tc("quicksilver_drop"),
+                stack(ModItems.MYSTIC_CRYSTAL_DUST),
                 tc("quicksilver_drop"),
                 tc("quicksilver_drop"),
                 tc("entropy_shard"),
@@ -256,7 +279,7 @@ public final class RecipeRegistration {
         // 2. 凝聚核心
         COALESCENCE_CORE = ThaumcraftApi.addShapelessArcaneCraftingRecipe("DIGISENTIA", stack(ModItems.COALESCENCE_CORE),
                 new AspectList().add(Aspect.WATER, 2).add(Aspect.ORDER, 2),
-                tc("quicksilver_drop"),
+                stack(ModItems.MYSTIC_CRYSTAL_DUST),
                 tc("quicksilver_drop"),
                 tc("quicksilver_drop"),
                 tc("order_shard"),
@@ -265,7 +288,7 @@ public final class RecipeRegistration {
         // 3. 原质等级发射器（T-M2-REMOVE：注册键随源质终端节点删除迁 ESSENTIAACCESSCARD，配方页同步迁入访问卡节点）
         ESSENTIA_LEVEL_EMITTER = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIAACCESSCARD", new ItemStack(ModItems.ESSENTIA_LEVEL_EMITTER.get(), 1),
                 new AspectList().add(Aspect.FIRE, 4),
-                ae("calculation_processor"),
+                stack(ModItems.MYSTIC_PROCESSOR),
                 new ItemStack(Items.REDSTONE_TORCH),
                 tc("salis_mundus"));
 
@@ -274,20 +297,22 @@ public final class RecipeRegistration {
                 new AspectList().add(Aspect.AIR, 10).add(Aspect.EARTH, 10).add(Aspect.FIRE, 10).add(Aspect.WATER, 10).add(Aspect.ORDER, 10).add(Aspect.ENTROPY, 10),
                 ae("terminal"),
                 tc("arcane_workbench"),
-                ae("calculation_processor"));
+                stack(ModItems.MYSTIC_PROCESSOR));
 
         // 6. 源流接口
         VIS_INTERFACE = ThaumcraftApi.addShapelessArcaneCraftingRecipe("VISINTERFACE", stack(ModItems.VIS_INTERFACE),
                 new AspectList().add(Aspect.AIR, 2).add(Aspect.EARTH, 2).add(Aspect.FIRE, 2).add(Aspect.WATER, 2).add(Aspect.ORDER, 2).add(Aspect.ENTROPY, 2),
                 tc("balanced_shard"),
-                ae("me_p2p_tunnel"));
+                ae("me_p2p_tunnel"),
+                stack(ModItems.MYSTIC_PROCESSOR));
 
         // 7. 原质振荡室
         ESSENTIA_VIBRATION_CHAMBER = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIAVIBRATIONCHAMBER", stack(ModBlocks.ESSENTIA_VIBRATION_CHAMBER),
                 new AspectList().add(Aspect.FIRE, 10).add(Aspect.WATER, 6).add(Aspect.ORDER, 4).add(Aspect.ENTROPY, 4),
                 ae("vibration_chamber"),
                 tc("jar_of_essentia"),
-                stack(ModItems.COALESCENCE_CORE));
+                stack(ModItems.COALESCENCE_CORE),
+                stack(ModItems.MYSTIC_PROCESSOR));
 
         // 8. 源质无线接收器（无序奥术，研究：源质供应器）
         ESSENTIA_PROVIDER_CONNECTION = ThaumcraftApi.addShapelessArcaneCraftingRecipe("ESSENTIAPROVIDER",
@@ -333,7 +358,7 @@ public final class RecipeRegistration {
                 ae("interface"),
                 tc("water_shard"),
                 tc("water_shard"),
-                tc("salis_mundus"),
+                stack(ModItems.MYSTIC_PROCESSOR),
                 tc("salis_mundus"),
                 stack(ModItems.DIFFUSION_CORE),
                 stack(ModItems.COALESCENCE_CORE),
@@ -350,14 +375,14 @@ public final class RecipeRegistration {
                 tc("air_shard"),
                 stack(ModItems.COALESCENCE_CORE),
                 stack(ModItems.COALESCENCE_CORE),
-                tc("salis_mundus"),
+                stack(ModItems.MYSTIC_PROCESSOR),
                 tc("salis_mundus"));
 
         // 3. 奥术装配器
         // 权杖要求：6 个原质要素值全满（满充能）。createFullVisScepter() 生成"满充能"预期栈，
         // TC port 的 InfusionRecipe.hasExpectedComponents 会逐键比对 custom_data——
         // 预期键必须全部存在于实物且数值相等 → 未满充能的权杖无法匹配。
-        // 组件数：8 个（1.7.10 原版一致）。实测 9 组件（含世界盐）注魔祭坛无法启动——
+        // 组件数保持 8 个：神秘水晶处理器替代平衡碎片，其余六种碎片及满充能权杖保留。9 组件无法启动——
         // TC 自身所有注魔配方组件数上限就是 8。
         ARCANE_ASSEMBLER = ThaumcraftApi.addInfusionCraftingRecipe("ARCANEASSEMBLER", stack(ModBlocks.ARCANE_ASSEMBLER),
                 5, new AspectList().add(Aspect.CRAFT, 64).add(Aspect.EXCHANGE, 32).add(Aspect.AURA, 16).add(Aspect.MAGIC, 16).add(Aspect.METAL, 8).add(Aspect.CRYSTAL, 8),
@@ -365,14 +390,14 @@ public final class RecipeRegistration {
                 tc("fire_shard"),
                 tc("entropy_shard"),
                 tc("order_shard"),
-                tc("balanced_shard"),
+                stack(ModItems.MYSTIC_PROCESSOR),
                 tc("water_shard"),
                 tc("earth_shard"),
                 tc("air_shard"),
                 createFullVisScepter());
 
         // 4. 韵魔观测器
-        // 中央：原版侦测器；外围：元始护符 + 揭示护目镜 + 世界盐×2。
+        // 中央：原版侦测器；外围：元始护符 + 揭示护目镜 + 世界盐×2 + 神秘水晶处理器。
         // 需要灵气：魔力×16、灵气(AURA)×32、感官(SENSES, tag=sensus)×16。
         // 不稳定度 3（配方基础，参与"总不稳定 = 基础 + 祭坛对称度"，可自由调整：
         // 1~2 低风险 / 3~5 中等 / 6~8 高）。
@@ -382,12 +407,13 @@ public final class RecipeRegistration {
                 tc("primal_charm"),
                 tc("goggles_revealing"),
                 tc("salis_mundus"),
-                tc("salis_mundus"));
+                tc("salis_mundus"),
+                stack(ModItems.MYSTIC_PROCESSOR));
 
         // 5. 源质访问卡（T-M1-012：弃旧 shapeless，改注魔配方）
         // 落点为本方法（port.261 无注魔 datapack 序列化器，注魔唯一入口为代码 API）。
         // research="" 无研究门槛——注魔矩阵不消费 research；TCResearchManager.has 对空/空白键直接返回 true。
-        // 中心 ae2:basic_card；组件 铁锭×2 + 神秘锭×2 + 世界盐×1 + 运算处理器×1 + 扩散核心×1（共 7 个，TC 上限 8）。
+        // 中心 ae2:basic_card；组件 铁锭×2 + 神秘锭×2 + 世界盐×1 + 神秘水晶处理器×1 + 扩散核心×1（共 7 个，TC 上限 8）。
         // 要素 cognitio×16 / fabrico×16 / permutatio×8 / metallum×8 / praecantatio×8；不稳定度 2。
         //产物数量x4（T-M3-RECIPE：材料贵、用量大，产物 1 → 4）
         //研究键挂自身节点（T-RESEARCH-B2：原为空键无门槛）
@@ -399,7 +425,7 @@ public final class RecipeRegistration {
                 tc("thaumium_ingot"),
                 tc("thaumium_ingot"),
                 tc("salis_mundus"),
-                ae("calculation_processor"),
+                stack(ModItems.MYSTIC_PROCESSOR),
                 stack(ModItems.DIFFUSION_CORE));
 
         // 11. 概率之脑（T-M6-RECIPE-2：CE gacha_box 注魔配方移植）
@@ -407,7 +433,7 @@ public final class RecipeRegistration {
         // 要素运行期取（port.261 无这些静态常量，M6 范式 Aspect.get）：
         //   认知 32 / 置换 16 / 前行 16 / 运动 8 / 机械 8 / 秽 8。
         // catalyst=本仓知识核心；组件 8 件（TC 上限 8）：认知灵光精粹（fixedAspect 物品，等价 CE 认知 vis 晶体）
-        //   + 扩散核心 + 秽灵光精粹（等价 CE crystal_vitium）+ AE2 形成核心 + AE2 运算处理器
+        //   + 扩散核心 + 秽灵光精粹（等价 CE crystal_vitium）+ AE2 形成核心 + 神秘水晶处理器
         //   + 神秘锭×2 + 世界盐。罐装脑不入组件——装脑走方块交互（CE 同款注释语义）。
         GACHA_BOX = ThaumcraftApi.addInfusionCraftingRecipe("GACHABOX", stack(ModBlocks.BRAIN_OF_PROBABILITY),
                 8, new AspectList()
@@ -422,7 +448,7 @@ public final class RecipeRegistration {
                 stack(ModItems.DIFFUSION_CORE),
                 tc("wisp_essence_vitium"),
                 ae("formation_core"),
-                ae("calculation_processor"),
+                stack(ModItems.MYSTIC_PROCESSOR),
                 tc("thaumium_ingot"),
                 tc("thaumium_ingot"),
                 tc("salis_mundus"));
@@ -447,6 +473,22 @@ public final class RecipeRegistration {
             TCVisHelper.storeVis(scepter, a, max, max);
         }
         return scepter;
+    }
+
+    private static AspectList advancedHousingVisCost() {
+        return new AspectList().add(Aspect.FIRE, 6).add(Aspect.ORDER, 10);
+    }
+
+    /** Direct assembly pays the same materials and Vis as crafting a separate advanced housing. */
+    private static ShapedArcaneRecipe registerCellWithHousingMaterials(
+            java.util.function.Supplier<? extends ItemLike> cell,
+            java.util.function.Supplier<? extends ItemLike> component) {
+        return ThaumcraftApi.addArcaneCraftingRecipe("ESSENTIASTORAGE", stack(cell), advancedHousingVisCost(),
+                "WRW", "RCR", "TTT",
+                'W', ESSENTIA_CELL_GLASS,
+                'R', new ItemStack(Items.REDSTONE),
+                'T', tc("void_metal_ingot"),
+                'C', stack(component));
     }
 
     private static ItemStack stack(java.util.function.Supplier<? extends ItemLike> s) {

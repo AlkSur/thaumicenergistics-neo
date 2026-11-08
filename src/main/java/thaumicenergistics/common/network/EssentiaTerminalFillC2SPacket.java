@@ -1,5 +1,6 @@
 package thaumicenergistics.common.network;
 
+import appeng.menu.me.common.MEStorageMenu;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -8,7 +9,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import thaumicenergistics.ThaumicEnergistics;
-import appeng.menu.me.common.MEStorageMenu;
 import thaumicenergistics.common.container.EssentiaFillHelper;
 import thaumicenergistics.common.container.MenuResources;
 
@@ -16,7 +16,7 @@ import thaumicenergistics.common.container.MenuResources;
  * 客户端→服务端：源质终端右键源质条目装罐。
  * 客户端已把 serial 解析为 aspect id（服务端无 client repo，无法解析 serial）。
  * 携带 sourceStack：罐子可能持于主手（未进入 carried），服务端直接用客户端栈，
- * 避免只读 menu.getCarried() 为空导致装罐静默失败。
+ * 避免只读 menu.getCarried 为空导致装罐静默失败。
  */
 public record EssentiaTerminalFillC2SPacket(int containerId, ResourceLocation aspectId,
         ItemStack sourceStack) implements CustomPacketPayload {

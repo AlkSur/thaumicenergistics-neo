@@ -6,11 +6,11 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.container.ContainerEssentiaCellWorkbench;
-import net.minecraft.server.level.ServerPlayer;
 
 /**
  * 客户端→服务端 网络包：源质元件工作台分区操作。
@@ -49,8 +49,6 @@ public record CellWorkbenchC2SPacket(
         return TYPE;
     }
 
-    // ===== 客户端静态发送（从当前打开的工作台菜单自动取 containerId） =====
-
     private static void send(int action, ResourceLocation a, ResourceLocation b) {
         var player = Minecraft.getInstance().player;
         if (player == null) return;
@@ -80,8 +78,6 @@ public record CellWorkbenchC2SPacket(
     public static void sendPartitionToContents() {
         send(ACTION_PARTITION_TO_CONTENTS, EMPTY, EMPTY);
     }
-
-    // ===== 服务端处理 =====
 
     public void handleOnServer(IPayloadContext ctx) {
         ctx.enqueueWork(() -> {

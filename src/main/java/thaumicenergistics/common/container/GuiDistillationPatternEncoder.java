@@ -1,5 +1,6 @@
 package thaumicenergistics.common.container;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -9,7 +10,6 @@ import net.minecraft.world.entity.player.Inventory;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.gui.AspectGuiRenderer;
 import thaumicenergistics.ThaumicEnergistics;
-import net.minecraft.client.Minecraft;
 
 public class GuiDistillationPatternEncoder extends AbstractContainerScreen<ContainerDistillationPatternEncoder> {
 

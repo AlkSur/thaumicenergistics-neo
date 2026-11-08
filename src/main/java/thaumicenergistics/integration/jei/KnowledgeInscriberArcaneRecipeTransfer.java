@@ -2,25 +2,22 @@ package thaumicenergistics.integration.jei;
 
 import java.util.List;
 import java.util.Optional;
-
-import net.minecraft.core.NonNullList;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ItemStack;
-
+import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferError;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandler;
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper;
-
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
-
 import thaumcraft.integration.jei.JeiArcaneRecipe;
 import thaumcraft.integration.jei.ThaumcraftJeiPlugin;
 import thaumicenergistics.common.container.ContainerKnowledgeInscriber;
 import thaumicenergistics.common.container.slot.GhostSlot;
 import thaumicenergistics.common.network.KnowledgeInscriberGhostSlotPacket;
 import thaumicenergistics.init.ModMenuTypes;
-import net.minecraft.world.entity.player.Player;
 
 /**
  * 知识记录仪 JEI 奥术配方 "+" 一键放置：
@@ -56,7 +53,7 @@ public class KnowledgeInscriberArcaneRecipeTransfer
     public IRecipeTransferError transferRecipe(
             ContainerKnowledgeInscriber menu,
             JeiArcaneRecipe recipe,
-            mezz.jei.api.gui.ingredient.IRecipeSlotsView display,
+            IRecipeSlotsView display,
             Player player,
             boolean maxTransfer,
             boolean doTransfer) {
@@ -82,7 +79,7 @@ public class KnowledgeInscriberArcaneRecipeTransfer
                 .toList();
         for (int i = 0; i < template.size(); i++) {
             ItemStack stack = template.get(i);
-            if (stack.isEmpty() || i >= ghostSlots.size()) continue;
+            if (i >= ghostSlots.size()) continue;
             ghostSlots.get(i).set(stack);
             PacketDistributor.sendToServer(
                     new KnowledgeInscriberGhostSlotPacket(menu.containerId, i, stack));

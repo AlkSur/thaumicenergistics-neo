@@ -1,26 +1,21 @@
 package thaumicenergistics.common.essentia.capability;
 
-import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import org.jetbrains.annotations.Nullable;
-import java.util.function.Predicate;
-import net.minecraft.resources.ResourceLocation;
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
-
+import java.util.function.Predicate;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.integration.tc.EssentiaEndpoints;
 import thaumicenergistics.common.integration.tc.TCReflection;
 
 /**
- * 源质搬运能力：把源质输入 / 输出总线的搬运核心算法抽取为无状态、可复用的操作，
- * 供既有三总线与后续「源质访问卡」共用（升级卡挂到 AE2 宿主后调用同一套逻辑）。
- * <p>
- * 本类只负责「一次搬运」的算法，不含 tick 调度、GUI、配置栏、能量结算等宿主相关逻辑；
- * 调用方自行提供速率、记能量账、持久化缓冲。依赖方向单向向下（AE2 / TC 集成层），
- * 不反向依赖菜单 / 客户端表现层。
+ * 总线和供应器共用的单次源质搬运操作。
+ * 先模拟容量，再实际传输；未接收余量交还调用方持久化重试，不能丢弃。
  */
 public final class EssentiaTransfer {
 
@@ -37,7 +32,7 @@ public final class EssentiaTransfer {
         var aspect = TCReflection.findAspectById(key.getId());
         if (aspect == null) return 0;
         int wanted = (int) Math.min(amount, Integer.MAX_VALUE);
-        return thaumicenergistics.common.integration.tc.EssentiaEndpoints.insert(
+        return EssentiaEndpoints.insert(
                 container, key.getId(), wanted, accessSide);
     }
 
@@ -73,7 +68,7 @@ public final class EssentiaTransfer {
             @Nullable Direction accessSide, Predicate<ResourceLocation> filter) {
         if (container == null || rate <= 0) return Pull.NONE;
         // 多要素容器不能因首项被过滤或网络已满而饿死后续可接收项。
-        for (var available : thaumicenergistics.common.integration.tc.EssentiaEndpoints.contents(container, accessSide)) {
+        for (var available : EssentiaEndpoints.contents(container, accessSide)) {
             if (available.isEmpty() || !filter.test(available.aspectId())) continue;
             var key = AEssentiaKey.of(available.aspectId());
             long acceptable = grid.getStorageService().getInventory().insert(
@@ -91,7 +86,7 @@ public final class EssentiaTransfer {
         int toExtract = (int) Math.min(rate, Math.min(available.amount(), acceptable));
         AspectStack[] leftover = {AspectStack.EMPTY};
         long injected = EssentiaEnergy.transfer(grid, toExtract, allowed -> {
-            var extracted = thaumicenergistics.common.integration.tc.EssentiaEndpoints.extract(
+            var extracted = EssentiaEndpoints.extract(
                     container, available.aspectId(), (int) allowed, accessSide);
             if (extracted == null || extracted.isEmpty()) return 0;
             long inserted = grid.getStorageService().getInventory().insert(

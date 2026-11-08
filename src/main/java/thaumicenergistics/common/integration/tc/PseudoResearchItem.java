@@ -4,24 +4,17 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.research.ResearchCategories;
 import thaumcraft.api.research.ResearchItem;
 import thaumcraft.api.research.ResearchPage;
 import thaumcraft.common.research.TCResearchIndex;
-import net.minecraft.world.item.Items;
 import thaumicenergistics.ThaumicEnergistics;
 
 /**
- * 伪前置桩节点。在 ThE 的研究 tab 中创建一个占位节点，
- * 其图标、名称、页面全部指向 TC 原版研究，使得 ThE 节点可以跨分类连线。
- *
- * 关键实现细节：
- * - key 仍使用 PSEUDO_ 前缀（如 PSEUDO_VISPOWER），避免与原版研究在 TCResearchManager 的 CompoundTag 中冲突。
- * - 图标（icon_item/icon_resource）直接使用原版研究的图标，在 registerApiResearch 时会被正确拷贝到 TCResearchIndex.Entry。
- * - 页面（pages）直接使用原版研究的页面，使点击伪前置时能展示原版研究的内容。
- * - 名称翻译通过 ThE 的 lang 文件中添加 tc.research_name.PSEUDO_* 条目指向原版翻译 key 来解决。
- * - 解锁同步通过 ResearchCompletedEvent 事件监听实现，见 ThEThaumcraft.registerPseudoSync()。
+ * 跨分类研究占位节点，委托原版研究的图标、名称和页面。
+ * 使用 PSEUDO_ 前缀隔离存档键，解锁状态由研究完成事件同步。
  */
 public class PseudoResearchItem extends ResearchItem {
 
@@ -92,7 +85,7 @@ public class PseudoResearchItem extends ResearchItem {
                     realKey, realCategory);
         }
 
-        // 保存真实研究引用：内容（名称/文字/页面）通过方法委托到真实研究（TC port 渲染调 getPages()）
+        // 保存真实研究引用：内容（名称/文字/页面）通过方法委托到真实研究（TC port 渲染调 getPages）
         pseudo.realResearch = realResearch;
 
         return pseudo;
@@ -121,8 +114,6 @@ public class PseudoResearchItem extends ResearchItem {
     public String realKey() { return realKey; }
 
     public String realCategory() { return realCategory; }
-
-    // ===== 内容委托：TC port 渲染研究时调用 getName/getText/getPages，全部转发到真实研究 =====
 
     @Override
     public String getName() {

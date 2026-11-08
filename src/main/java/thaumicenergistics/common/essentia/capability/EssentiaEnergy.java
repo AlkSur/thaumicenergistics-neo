@@ -1,9 +1,9 @@
 package thaumicenergistics.common.essentia.capability;
 
-import java.util.function.LongUnaryOperator;
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGrid;
+import java.util.function.LongUnaryOperator;
 import thaumicenergistics.common.integration.tc.EssentiaConversionHelper;
 
 public final class EssentiaEnergy {

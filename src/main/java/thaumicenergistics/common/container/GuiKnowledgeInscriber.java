@@ -1,5 +1,6 @@
 package thaumicenergistics.common.container;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -8,7 +9,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import thaumicenergistics.ThaumicEnergistics;
-import net.minecraft.client.Minecraft;
 
 /**
  * 知识记录仪 GUI。
@@ -53,7 +53,7 @@ public class GuiKnowledgeInscriber extends AbstractContainerScreen<ContainerKnow
                 b -> Component.empty()) {
             @Override
             protected void renderWidget(GuiGraphics g, int mx, int my, float pt) {
-                // 仅鼠标悬停/按下显示第二帧；用 isHovered() 而非 isHoveredOrFocused()——
+                // 仅鼠标悬停/按下显示第二帧；用 isHovered 而非 isHoveredOrFocused——
                 // 后者在按钮获得键盘焦点（点击后）时也 true，会导致写入配方后一直保持蓝色
                 int v = this.isHovered() ? 15 : 0;
                 g.blit(BUTTON_TEX, this.getX(), this.getY(), 0, v, this.width, this.height, 32, 32);

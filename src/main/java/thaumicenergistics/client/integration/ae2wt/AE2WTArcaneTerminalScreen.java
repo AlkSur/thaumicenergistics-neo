@@ -1,16 +1,15 @@
 package thaumicenergistics.client.integration.ae2wt;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Inventory;
-
 import appeng.client.gui.style.ScreenStyle;
 import de.mari_023.ae2wtlib.api.AE2wtlibAPI;
 import de.mari_023.ae2wtlib.api.gui.ScrollingUpgradesPanel;
 import de.mari_023.ae2wtlib.api.terminal.IUniversalTerminalCapable;
 import de.mari_023.ae2wtlib.api.terminal.WTMenuHost;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
+import org.anti_ad.mc.ipn.api.IPNIgnore;
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
 import thaumicenergistics.common.container.GuiArcaneCraftingTerminal;
-import org.anti_ad.mc.ipn.api.IPNIgnore;
 
 /** 通用终端切换入口属于屏幕 API；仅接入物品和宿主不会自动创建切换按钮。 */
 @IPNIgnore

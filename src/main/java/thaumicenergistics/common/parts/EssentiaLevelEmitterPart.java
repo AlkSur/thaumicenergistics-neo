@@ -1,16 +1,5 @@
 package thaumicenergistics.common.parts;
 
-import java.util.List;
-import java.util.Set;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
-
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IStackWatcher;
@@ -20,6 +9,7 @@ import appeng.api.networking.storage.IStorageWatcherNode;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.helpers.IConfigInvHost;
 import appeng.hooks.ticking.TickHandler;
@@ -29,13 +19,20 @@ import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
 import appeng.parts.automation.AbstractLevelEmitterPart;
 import appeng.util.ConfigInventory;
+import java.util.List;
+import java.util.Set;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModMenuTypes;
-import appeng.api.stacks.GenericStack;
 
 /**
  * 源质发信器：与 AE2 原版 StorageLevelEmitterPart 逻辑一致，
@@ -213,7 +210,7 @@ public class EssentiaLevelEmitterPart extends AbstractLevelEmitterPart
                 }
             }
         } else {
-            // KeyCounter.get() 用 Reference2LongMap（引用比较），自定义 AEKey 需要 equals() 遍历
+            // KeyCounter.get 用 Reference2LongMap（引用比较），自定义 AEKey 需要 equals 遍历
             this.lastReportedValue = 0;
             for (var st : allStacks) {
                 if (st.getKey() instanceof AEssentiaKey ek && ek.equals(myStack)) {
@@ -261,8 +258,6 @@ public class EssentiaLevelEmitterPart extends AbstractLevelEmitterPart
             return this.isLevelEmitterOn() ? MODEL_ON_OFF : MODEL_OFF_OFF;
         }
     }
-
-    // ========== 向后兼容方法（供 Container/GUI 使用） ==========
 
     /**
      * 获取网络中当前存储量（= lastReportedValue）。

@@ -1,10 +1,9 @@
 package thaumicenergistics.api.grid;
 
-import net.minecraft.resources.ResourceLocation;
 import appeng.api.networking.IGridService;
-import thaumicenergistics.api.storage.IAspectStack;
-
 import java.util.List;
+import net.minecraft.resources.ResourceLocation;
+import thaumicenergistics.api.storage.IAspectStack;
 
 /**
  * AE2 Grid 网络的源质网格服务。

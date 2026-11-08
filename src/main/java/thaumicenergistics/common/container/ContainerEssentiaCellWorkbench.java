@@ -1,7 +1,11 @@
 package thaumicenergistics.common.container;
 
+import appeng.api.upgrades.IUpgradeInventory;
+import appeng.api.upgrades.UpgradeInventories;
+import appeng.core.definitions.AEItems;
 import java.util.List;
-
+import java.util.function.Supplier;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -12,9 +16,6 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
-import appeng.api.upgrades.IUpgradeInventory;
-import appeng.api.upgrades.UpgradeInventories;
-import appeng.core.definitions.AEItems;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IEssentiaContainerItem;
@@ -22,7 +23,6 @@ import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.items.ItemEssentiaCell;
 import thaumicenergistics.common.tiles.TileEssentiaCellWorkbench;
 import thaumicenergistics.init.ModMenuTypes;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 
 /**
  * 源质元件工作台容器：cell 槽绑定到方块实体（持久化），并提供分区编辑操作。
@@ -111,9 +111,9 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
 
     /** 把 AE2 InternalInventory（IUpgradeInventory）适配成 NeoForge 可写句柄；SlotItemHandler.set 强转 Modifiable，缺它则客户端开 GUI 同步即 CCE。 */
     private static final class CellUpgradeHandler implements IItemHandlerModifiable {
-        private final java.util.function.Supplier<IUpgradeInventory> supplier;
+        private final Supplier<IUpgradeInventory> supplier;
 
-        CellUpgradeHandler(java.util.function.Supplier<IUpgradeInventory> supplier) {
+        CellUpgradeHandler(Supplier<IUpgradeInventory> supplier) {
             this.supplier = supplier;
         }
 
@@ -162,8 +162,6 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
     public ContainerEssentiaCellWorkbench(int id, Inventory inv, RegistryFriendlyByteBuf buf) {
         this(id, inv);
     }
-
-    // ===== 分区操作（由 GUI / 网络调用，服务端执行） =====
 
     public boolean hasCell() {
         return slots.get(SLOT_CELL).getItem().getItem() instanceof ItemEssentiaCell;
@@ -221,8 +219,6 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
         }
         return null;
     }
-
-    // ===== 快捷移动 / 生命周期 =====
 
     @Override
     public ItemStack quickMoveStack(Player player, int idx) {

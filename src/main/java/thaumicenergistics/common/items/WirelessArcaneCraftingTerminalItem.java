@@ -1,17 +1,14 @@
 package thaumicenergistics.common.items;
 
-import java.util.function.DoubleSupplier;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.phys.BlockHitResult;
-
 import appeng.helpers.WirelessTerminalMenuHost;
 import appeng.items.tools.powered.WirelessTerminalItem;
 import appeng.menu.locator.ItemMenuHostLocator;
-
+import java.util.function.DoubleSupplier;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.Nullable;
+import thaumicenergistics.init.ModMenuTypes;
 
 /**
  * 无线奥术合成终端物品：绑定/能量/安全复用 AE2 无线终端基类，
@@ -25,7 +22,7 @@ public class WirelessArcaneCraftingTerminalItem extends WirelessTerminalItem {
 
     @Override
     public MenuType<?> getMenuType() {
-        return thaumicenergistics.init.ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL_TYPE;
+        return ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL_TYPE;
     }
 
     @Override

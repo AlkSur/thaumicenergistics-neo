@@ -1,12 +1,10 @@
 package thaumicenergistics.integration.jei;
 
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
+import mezz.jei.api.ingredients.IIngredientType;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
-
-import mezz.jei.api.ingredients.IIngredientType;
-
-import appeng.api.stacks.GenericStack;
-import appeng.api.stacks.AEKey;
 import tamaized.ae2jeiintegration.api.integrations.jei.IngredientConverter;
 import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;

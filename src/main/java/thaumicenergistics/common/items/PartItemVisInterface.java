@@ -1,13 +1,12 @@
 package thaumicenergistics.common.items;
 
 import appeng.items.parts.PartItem;
+import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.common.parts.VisInterfacePart;
-
-import java.util.List;
 
 public class PartItemVisInterface extends PartItem<VisInterfacePart> {
 

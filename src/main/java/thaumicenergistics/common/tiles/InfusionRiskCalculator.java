@@ -1,22 +1,21 @@
 package thaumicenergistics.common.tiles;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import thaumcraft.api.aspects.Aspect;
-import thaumcraft.api.aspects.AspectList;
-import thaumcraft.api.aspects.IAspectContainer;
-import thaumcraft.common.blockentities.InfusionMatrixBlockEntity;
-import thaumcraft.common.blockentities.PedestalBlockEntity;
-import thaumicenergistics.common.tiles.TileInfusionMonitor.RiskData;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import thaumcraft.api.ThaumcraftApi;
+import thaumcraft.api.aspects.Aspect;
+import thaumcraft.api.aspects.AspectList;
+import thaumcraft.api.aspects.IAspectContainer;
 import thaumcraft.api.crafting.InfusionRecipe;
+import thaumcraft.common.blockentities.InfusionMatrixBlockEntity;
+import thaumcraft.common.blockentities.PedestalBlockEntity;
+import thaumicenergistics.common.tiles.TileInfusionMonitor.RiskData;
 
 /**
  * 注魔风险计算：扫描附近的注魔矩阵，按 5 档风险显示。
@@ -64,7 +63,7 @@ public final class InfusionRiskCalculator {
 
     /**
      * 计算风险数据。若祭坛正在注魔，用实时 instability；否则估算：
-     * 复制 matches() 匹配当前祭坛布局的配方（忽略研究门禁），得出配方基础不稳定 + 祭坛对称度。
+     * 复制 matches 匹配当前祭坛布局的配方（忽略研究门禁），得出配方基础不稳定 + 祭坛对称度。
      */
     public static RiskData computeRisk(Level level, InfusionMatrixInfo info) {
         InfusionMatrixBlockEntity matrix = info.matrix();
@@ -74,7 +73,7 @@ public final class InfusionRiskCalculator {
         int instability;
 
         if (crafting) {
-            // 注魔中：instability() 实时（可能被源质不足推高）
+            // 注魔中：instability 实时（可能被源质不足推高）
             instability = Math.min(25, matrix.instability());
             recipeInstability = Math.max(0, instability - symmetry);
         } else {

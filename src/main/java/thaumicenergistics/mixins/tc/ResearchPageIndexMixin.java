@@ -1,11 +1,10 @@
 package thaumicenergistics.mixins.tc;
 
+import java.util.Set;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import thaumcraft.common.research.ResearchPageIndex;
-
-import java.util.Set;
 
 @Mixin(value = ResearchPageIndex.class, remap = false)
 public abstract class ResearchPageIndexMixin {

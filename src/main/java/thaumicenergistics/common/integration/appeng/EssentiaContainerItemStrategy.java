@@ -3,6 +3,7 @@ package thaumicenergistics.common.integration.appeng;
 import appeng.api.behaviors.ContainerItemStrategy;
 import appeng.api.config.Actionable;
 import appeng.api.stacks.GenericStack;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -106,12 +107,12 @@ public final class EssentiaContainerItemStrategy
 
     @Override
     public void playFillSound(Player player, AEssentiaKey key) {
-        player.playSound(net.minecraft.sounds.SoundEvents.BOTTLE_FILL, 1, 1);
+        player.playSound(SoundEvents.BOTTLE_FILL, 1, 1);
     }
 
     @Override
     public void playEmptySound(Player player, AEssentiaKey key) {
-        player.playSound(net.minecraft.sounds.SoundEvents.BOTTLE_EMPTY, 1, 1);
+        player.playSound(SoundEvents.BOTTLE_EMPTY, 1, 1);
     }
 
     @Override

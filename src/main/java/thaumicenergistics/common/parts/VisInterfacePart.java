@@ -13,6 +13,7 @@ import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.parts.p2p.P2PModels;
 import appeng.parts.p2p.P2PTunnelPart;
+import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -26,8 +27,6 @@ import thaumcraft.common.blockentities.VisRelayBlockEntity;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.api.grid.IDigiVisSource;
 import thaumicenergistics.common.integration.tc.VisProviderProxy;
-
-import java.util.List;
 
 /**
  * 桥接 AE2 ME 网络与 TC vis 网络。作为 P2P 隧道成对连接两端：
@@ -126,8 +125,6 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
         return this.getMainNode().getGrid();
     }
 
-    // ===== IDigiVisSource =====
-
     @Override
     public boolean isActive() {
         return super.isActive();
@@ -158,8 +155,6 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
         }
     }
 
-    // ===== Relay 检测与 vis 抽取 =====
-
     /** Inspect the loaded route without extracting vis, spending power, or loading chunks. */
     public boolean hasAvailableRelay() {
         if (!isActive()) return false;
@@ -188,7 +183,7 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
 
     /**
      * 找到面对中继的隧道端：优先 P2P 输入端，其次任一输出端，最后自身。
-     * 注意：内部使用 super.getOutputs() 而非 getOutputs()，避免覆写导致递归。
+     * 注意：内部使用 super.getOutputs 而非 getOutputs，避免覆写导致递归。
      */
     private VisInterfacePart findRelayEnd() {
         VisInterfacePart input = getInput();
@@ -252,8 +247,6 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
         return amountReceived;
     }
 
-    // ===== Provider（VisNetHandler 源）管理 =====
-
     /**
      * 该端自身不面对中继、但隧道另一端面对时，作为 TC4 网络的 vis 源。
      */
@@ -315,8 +308,6 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
         }
     }
 
-    // ===== Ticking =====
-
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
         return new TickingRequest(TICK_RATE, TICK_RATE, false);
@@ -336,8 +327,6 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
         return TickRateModulation.SAME;
     }
 
-    // ===== NBT =====
-
     @Override
     public void readFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
         super.readFromNBT(tag, registries);
@@ -351,8 +340,6 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
         tag.putLong(NBT_KEY_UID, this.uid);
         tag.putBoolean(NBT_KEY_IS_PROVIDER, this.isProvider);
     }
-
-    // ===== Aspect <-> ResourceLocation 辅助 =====
 
     private static Aspect rlToAspect(ResourceLocation rl) {
         return Aspect.get(rl.getPath());

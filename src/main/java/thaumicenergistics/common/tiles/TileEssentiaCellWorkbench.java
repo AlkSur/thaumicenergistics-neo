@@ -3,6 +3,7 @@ package thaumicenergistics.common.tiles;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -55,7 +56,7 @@ public class TileEssentiaCellWorkbench extends ThETileBase {
     public void onBreakBlock() {
         if (level == null || level.isClientSide()) return;
         ItemStack cell = cellInventory.extractItem(SLOT_CELL, Integer.MAX_VALUE, false);
-        if (!cell.isEmpty()) net.minecraft.world.Containers.dropItemStack(level,
+        if (!cell.isEmpty()) Containers.dropItemStack(level,
                 worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), cell);
     }
 

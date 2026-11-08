@@ -1,10 +1,10 @@
 package thaumicenergistics.mixins.compat.aae;
 
-import java.util.List;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
+import java.util.List;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;

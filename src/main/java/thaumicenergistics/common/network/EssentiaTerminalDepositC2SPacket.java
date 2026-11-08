@@ -1,13 +1,14 @@
 package thaumicenergistics.common.network;
 
+import appeng.menu.me.common.MEStorageMenu;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import thaumicenergistics.ThaumicEnergistics;
-import appeng.menu.me.common.MEStorageMenu;
-import net.minecraft.world.item.ItemStack;
 import thaumicenergistics.common.container.EssentiaFillHelper;
 import thaumicenergistics.common.container.MenuResources;
 
@@ -84,7 +85,7 @@ public record EssentiaTerminalDepositC2SPacket(int containerId, int slotIndex,
                             if (carried) {
                                 menu.setCarried(result);
                             } else {
-                                player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, result);
+                                player.setItemInHand(InteractionHand.MAIN_HAND, result);
                             }
                         }
                     }

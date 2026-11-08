@@ -1,17 +1,17 @@
 package thaumicenergistics.common.entities;
 
+import appeng.items.parts.FacadeItem;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import appeng.items.parts.FacadeItem;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * AE2 Facade → 背包皮肤映射。
- * 1.7.10 通过 ItemFacade.getBlock()/getMeta() 判断；1.21.1 解析 Facade 物品的底层方块。
+ * 1.7.10 通过 ItemFacade.getBlock/getMeta 判断；1.21.1 解析 Facade 物品的底层方块。
  * 支持：Thaumium/Tallow/Wood/Flesh/Stone/Straw/Clay/Iron/Gold/Diamond（与 1.7.10 一致）。
  */
 public final class FacadeToSkinMapping {

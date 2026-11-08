@@ -1,0 +1,15 @@
+{
+  "$schema": "../schema.json",
+  "includes": ["arcane_crafting_terminal.json"],
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.thaumicenergistics.wireless_arcane_crafting_terminal"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    }
+  }
+}

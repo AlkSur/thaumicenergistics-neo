@@ -1,19 +1,53 @@
 package thaumicenergistics.init;
 
+import appeng.core.AEConfig;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.SmithingTemplateItem;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.ae2wt.AE2WTCompat;
-import thaumicenergistics.common.items.*;
-import appeng.core.AEConfig;
+import thaumicenergistics.common.items.ItemEssentiaCell;
+import thaumicenergistics.common.items.ItemEssentiaUpgradeCard;
+import thaumicenergistics.common.items.ItemFocusAEWrench;
+import thaumicenergistics.common.items.ItemGolemWirelessBackpack;
+import thaumicenergistics.common.items.PartItemArcaneCraftingTerminal;
+import thaumicenergistics.common.items.PartItemEssentiaLevelEmitter;
+import thaumicenergistics.common.items.PartItemVisInterface;
+import thaumicenergistics.common.items.ProbabilityAcceleratorCardItem;
+import thaumicenergistics.common.items.ThaumicCrystalTools;
+import thaumicenergistics.common.items.VisConnectorCardItem;
+import thaumicenergistics.common.items.WirelessArcaneCraftingTerminalItem;
 import thaumicenergistics.common.items.WirelessConnectorItem;
 
 public final class ModItems {
     private ModItems() {}
     public static final DeferredRegister.Items REGISTRY = DeferredRegister.createItems(ThaumicEnergistics.MODID);
+    public static final DeferredItem<Item> MYSTIC_CRYSTAL = REGISTRY.registerSimpleItem("mystic_crystal");
+    public static final DeferredItem<Item> MYSTIC_CRYSTAL_DUST = REGISTRY.registerSimpleItem("mystic_crystal_dust");
+    public static final DeferredItem<Item> MYSTIC_CIRCUIT_BOARD = REGISTRY.registerSimpleItem("mystic_circuit_board");
+    public static final DeferredItem<Item> MYSTIC_PROCESSOR = REGISTRY.registerSimpleItem("mystic_processor");
+    public static final DeferredItem<Item> THAUMIC_PROCESSOR_PRESS = REGISTRY.registerSimpleItem("thaumic_processor_press");
+    public static final DeferredItem<SmithingTemplateItem> THAUMIC_UPGRADE_TEMPLATE =
+            REGISTRY.register("thaumic_upgrade_smithing_template", ThaumicCrystalTools::template);
+    public static final DeferredItem<ThaumicCrystalTools.Pickaxe> THAUMIC_CRYSTAL_PICKAXE = REGISTRY.registerItem("thaumic_crystal_pickaxe", ThaumicCrystalTools.Pickaxe::new);
+    public static final DeferredItem<ThaumicCrystalTools.Sword> THAUMIC_CRYSTAL_SWORD = REGISTRY.registerItem("thaumic_crystal_sword", ThaumicCrystalTools.Sword::new);
+    public static final DeferredItem<ThaumicCrystalTools.Axe> THAUMIC_CRYSTAL_AXE = REGISTRY.registerItem("thaumic_crystal_axe", ThaumicCrystalTools.Axe::new);
+    public static final DeferredItem<ThaumicCrystalTools.Shovel> THAUMIC_CRYSTAL_SHOVEL = REGISTRY.registerItem("thaumic_crystal_shovel", ThaumicCrystalTools.Shovel::new);
+    public static final DeferredItem<ThaumicCrystalTools.Hoe> THAUMIC_CRYSTAL_HOE = REGISTRY.registerItem("thaumic_crystal_hoe", ThaumicCrystalTools.Hoe::new);
+    public static final DeferredItem<ThaumicCrystalTools.Wrench> THAUMIC_CRYSTAL_WRENCH = REGISTRY.registerItem("thaumic_crystal_wrench", ThaumicCrystalTools.Wrench::new);
+    public static final DeferredItem<ThaumicCrystalTools.Knife> THAUMIC_CRYSTAL_KNIFE = REGISTRY.registerItem("thaumic_crystal_cutting_knife", ThaumicCrystalTools.Knife::new);
+    public static final DeferredItem<BlockItem> MYSTIC_CRYSTAL_BLOCK = REGISTRY.registerSimpleBlockItem(ModBlocks.MYSTIC_CRYSTAL_BLOCK);
+    public static final DeferredItem<BlockItem> FLAWLESS_BUDDING_THAUMIC_CRYSTAL = REGISTRY.registerSimpleBlockItem(ModBlocks.FLAWLESS_BUDDING_THAUMIC_CRYSTAL);
+    public static final DeferredItem<BlockItem> FLAWED_BUDDING_THAUMIC_CRYSTAL = REGISTRY.registerSimpleBlockItem(ModBlocks.FLAWED_BUDDING_THAUMIC_CRYSTAL);
+    public static final DeferredItem<BlockItem> CHIPPED_BUDDING_THAUMIC_CRYSTAL = REGISTRY.registerSimpleBlockItem(ModBlocks.CHIPPED_BUDDING_THAUMIC_CRYSTAL);
+    public static final DeferredItem<BlockItem> DAMAGED_BUDDING_THAUMIC_CRYSTAL = REGISTRY.registerSimpleBlockItem(ModBlocks.DAMAGED_BUDDING_THAUMIC_CRYSTAL);
+    public static final DeferredItem<BlockItem> SMALL_MYSTIC_CRYSTAL_BUD = REGISTRY.registerSimpleBlockItem(ModBlocks.SMALL_MYSTIC_CRYSTAL_BUD);
+    public static final DeferredItem<BlockItem> MEDIUM_MYSTIC_CRYSTAL_BUD = REGISTRY.registerSimpleBlockItem(ModBlocks.MEDIUM_MYSTIC_CRYSTAL_BUD);
+    public static final DeferredItem<BlockItem> LARGE_MYSTIC_CRYSTAL_BUD = REGISTRY.registerSimpleBlockItem(ModBlocks.LARGE_MYSTIC_CRYSTAL_BUD);
+    public static final DeferredItem<BlockItem> MYSTIC_CRYSTAL_CLUSTER = REGISTRY.registerSimpleBlockItem(ModBlocks.MYSTIC_CRYSTAL_CLUSTER);
 
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_1K = REGISTRY.registerItem("essentia_cell_1k", ItemEssentiaCell::create1k);
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_4K = REGISTRY.registerItem("essentia_cell_4k", ItemEssentiaCell::create4k);
@@ -26,6 +60,7 @@ public final class ModItems {
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_64M = REGISTRY.registerItem("essentia_cell_64m", ItemEssentiaCell::create64m);
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_256M = REGISTRY.registerItem("essentia_cell_256m", ItemEssentiaCell::create256m);
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_CREATIVE = REGISTRY.registerItem("essentia_cell_creative", ItemEssentiaCell::createCreative);
+    public static final DeferredItem<Item> ADVANCED_STORAGE_CASING = REGISTRY.registerSimpleItem("advanced_storage_casing");
     public static final DeferredItem<Item> STORAGE_COMPONENT_1K = REGISTRY.registerSimpleItem("storage_component_1k");
     public static final DeferredItem<Item> STORAGE_COMPONENT_4K = REGISTRY.registerSimpleItem("storage_component_4k");
     public static final DeferredItem<Item> STORAGE_COMPONENT_16K = REGISTRY.registerSimpleItem("storage_component_16k");
@@ -98,9 +133,9 @@ public final class ModItems {
             REGISTRY.registerSimpleBlockItem(ModBlocks.BRAIN_OF_PROBABILITY_TOP);
 
     /** 无线连接器：右键接收器选中，再右键源质供应器建立连接。 */
-    public static final DeferredItem<net.minecraft.world.item.Item> WIRELESS_CONNECTOR =
+    public static final DeferredItem<Item> WIRELESS_CONNECTOR =
             REGISTRY.register("wireless_connector",
-                    () -> new WirelessConnectorItem(new net.minecraft.world.item.Item.Properties()));
+                    () -> new WirelessConnectorItem(new Item.Properties()));
 
     /**
      * 源质访问卡：插入 AE2 原版输入/输出/存储总线与 ME 接口后，使其获得源质能力。

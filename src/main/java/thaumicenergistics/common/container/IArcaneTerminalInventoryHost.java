@@ -1,12 +1,10 @@
 package thaumicenergistics.common.container;
 
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.resources.ResourceLocation;
-
 import appeng.api.inventories.ISegmentedInventory;
 import appeng.api.networking.IGridNode;
 import appeng.api.upgrades.IUpgradeInventory;
+import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * 奥术终端宿主契约：统一独立无线奥术终端与 AE2WT 通用终端奥术模式两种宿主，

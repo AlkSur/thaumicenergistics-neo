@@ -1,10 +1,5 @@
 package thaumicenergistics.common.container;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Inventory;
-import thaumcraft.api.aspects.Aspect;
 import appeng.api.config.RedstoneMode;
 import appeng.api.config.Settings;
 import appeng.client.gui.NumberEntryType;
@@ -13,6 +8,11 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.NumberEntryWidget;
 import appeng.client.gui.widgets.ServerSettingToggleButton;
 import appeng.client.gui.widgets.SettingToggleButton;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.ThaumicEnergistics;
 
 /**

@@ -144,10 +144,7 @@ dependencies {
     compileOnly("maven.modrinth:advancedae:ablTMAjP") {
         transitive = false
     }
-    // AE2 Lightning Tech：过载样板供应器独立派发路径源质门控 Mixin 编译。
-    compileOnly("maven.modrinth:ae2-lightning-tech:AosdXlfS") {
-        transitive = false
-    }
+    // AE2LT target integration uses AE2; no implementation compile dependency.
 
     // EAE-COMPAT 联调开关：仅指定 -PenableExtendedAeCompatTest=true 时加载 Extended AE
     // （1.21-2.2.35-neoforge，Modrinth bC302UUP）作运行时依赖；兼容代码零 EAE 编译引用，

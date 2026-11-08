@@ -1,22 +1,18 @@
 package thaumicenergistics.common.integration.ae2wt;
 
-import java.util.function.BiConsumer;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
-
 import appeng.api.ids.AEComponents;
 import appeng.api.inventories.InternalInventory;
 import appeng.menu.ISubMenu;
 import appeng.menu.locator.ItemMenuHostLocator;
 import appeng.util.inv.AppEngInternalInventory;
-
 import de.mari_023.ae2wtlib.api.terminal.ItemWT;
 import de.mari_023.ae2wtlib.api.terminal.WTMenuHost;
-
+import java.util.function.BiConsumer;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.common.container.IArcaneTerminalInventoryHost;
+import thaumicenergistics.common.inventory.PersistedTerminalInventories;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
 import thaumicenergistics.init.ModComponents;
 
@@ -44,9 +40,9 @@ public class AE2WTArcaneTerminalMenuHost extends WTMenuHost implements IArcaneTe
             BiConsumer<Player, ISubMenu> returnToMainMenu) {
         super(item, player, locator, returnToMainMenu);
         // WTMenuHost 构造器会触发连接状态更新，但只依赖终端物品；子库存在此之后创建。
-        this.craftingGrid = thaumicenergistics.common.inventory.PersistedTerminalInventories.createPersistedInv(
+        this.craftingGrid = PersistedTerminalInventories.createPersistedInv(
                 player, this.getItemStack(), 9, AEComponents.CRAFTING_INV);
-        this.wandInv = thaumicenergistics.common.inventory.PersistedTerminalInventories.createPersistedInv(
+        this.wandInv = PersistedTerminalInventories.createPersistedInv(
                 player, this.getItemStack(), 1, ModComponents.WAND_INV.get());
     }
 

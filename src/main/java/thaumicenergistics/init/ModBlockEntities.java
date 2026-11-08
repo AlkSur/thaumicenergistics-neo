@@ -1,14 +1,22 @@
 package thaumicenergistics.init;
 
+import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import thaumicenergistics.ThaumicEnergistics;
-import thaumicenergistics.common.tiles.*;
 import thaumicenergistics.common.integration.tc.VisProviderProxy;
-import java.util.function.Supplier;
 import thaumicenergistics.common.parts.VisInterfacePart;
 import thaumicenergistics.common.tiles.BrainOfProbabilityBlockEntity;
+import thaumicenergistics.common.tiles.TileArcaneAssembler;
+import thaumicenergistics.common.tiles.TileDistillationPatternEncoder;
+import thaumicenergistics.common.tiles.TileEssentiaCellWorkbench;
+import thaumicenergistics.common.tiles.TileEssentiaProvider;
+import thaumicenergistics.common.tiles.TileEssentiaProviderConnection;
+import thaumicenergistics.common.tiles.TileEssentiaVibrationChamber;
+import thaumicenergistics.common.tiles.TileInfusionMonitor;
+import thaumicenergistics.common.tiles.TileInfusionProvider;
+import thaumicenergistics.common.tiles.TileKnowledgeInscriber;
 
 public final class ModBlockEntities {
     private ModBlockEntities() {}

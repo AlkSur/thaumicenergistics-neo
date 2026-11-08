@@ -1,12 +1,12 @@
 package thaumicenergistics.common.integration.appeng;
 
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.AEKeyType;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
-import appeng.api.stacks.AEKey;
-import appeng.api.stacks.AEKeyType;
 import thaumicenergistics.ThaumicEnergistics;
 
 public final class AEssentiaKeyType extends AEKeyType {
@@ -23,7 +23,6 @@ public final class AEssentiaKeyType extends AEKeyType {
         return AEssentiaKey.MAP_CODEC;
     }
 
-
     public StreamCodec<RegistryFriendlyByteBuf, ? extends AEKey> streamCodec() {
         return AEssentiaKey.STREAM_CODEC;
     }
@@ -32,7 +31,6 @@ public final class AEssentiaKeyType extends AEKeyType {
     public AEKey readFromPacket(RegistryFriendlyByteBuf input) {
         return AEssentiaKey.fromPacket(input);
     }
-
 
     public String formatAmount(long amount, boolean large) {
         if (large) {

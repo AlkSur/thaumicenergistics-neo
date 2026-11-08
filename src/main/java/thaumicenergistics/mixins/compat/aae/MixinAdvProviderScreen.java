@@ -1,7 +1,5 @@
 package thaumicenergistics.mixins.compat.aae;
 
-import java.util.ArrayList;
-import java.util.List;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.Upgrades;
 import appeng.client.gui.AEBaseScreen;
@@ -9,6 +7,8 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.core.localization.GuiText;
 import appeng.menu.SlotSemantics;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.pedroksl.advanced_ae.client.gui.AdvPatternProviderScreen;

@@ -1,12 +1,10 @@
 package thaumicenergistics.common.items;
 
+import appeng.items.materials.UpgradeCardItem;
 import java.util.List;
-
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-
-import appeng.items.materials.UpgradeCardItem;
 
 /**
  * 概率加速卡（M6）：手持右键概率之脑直接插入（上限 4 张），缩短产出周期。

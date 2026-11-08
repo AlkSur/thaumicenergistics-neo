@@ -1,23 +1,22 @@
 package thaumicenergistics.client;
 
 import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import thaumcraft.client.renderers.entity.ThaumcraftGolemRenderer;
 import thaumcraft.common.registry.TCEntityTypes;
 import thaumicenergistics.ThaumicEnergistics;
-import thaumicenergistics.client.render.layer.GolemBackpackLayer;
-import thaumicenergistics.client.render.model.GolemBackpackModels;
 import thaumicenergistics.client.render.RenderTileArcaneAssembler;
 import thaumicenergistics.client.render.RenderTileBrainOfProbability;
 import thaumicenergistics.client.render.RenderTileEVC;
+import thaumicenergistics.client.render.layer.GolemBackpackLayer;
+import thaumicenergistics.client.render.model.GolemBackpackModels;
 import thaumicenergistics.init.ModBlockEntities;
-import thaumicenergistics.init.ModItems;
 
 /** 客户端渲染注册的事件处理器。 */
 @EventBusSubscriber(modid = ThaumicEnergistics.MODID, value = Dist.CLIENT)
@@ -47,6 +46,6 @@ public final class ClientSetup {
 
     @SubscribeEvent
     public static void registerItemColors(RegisterColorHandlersEvent.Item event) {
-        // T-M2-REMOVE：源质终端与无线源质终端已删除，原两段紫色着色注册随之移除。
+
     }
 }

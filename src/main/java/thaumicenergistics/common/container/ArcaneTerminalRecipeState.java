@@ -1,9 +1,9 @@
 package thaumicenergistics.common.container;
 
+import appeng.api.inventories.InternalInventory;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import appeng.api.inventories.InternalInventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingInput;
@@ -30,7 +30,7 @@ public final class ArcaneTerminalRecipeState {
         }
         var items = new ArrayList<ItemStack>(grid.size());
         for (int i = 0; i < grid.size(); i++) items.add(grid.getStackInSlot(i).copy());
-        var input = CraftingInput.of(3, 3, items);
+        var input = CraftingInput.ofPositioned(3, 3, items).input();
         var recipe = level.getRecipeManager().getRecipeFor(RecipeType.CRAFTING, input, level);
         return new Match(recipe.map(holder -> holder.value().assemble(input, level.registryAccess()))
                 .orElse(ItemStack.EMPTY), null, false);

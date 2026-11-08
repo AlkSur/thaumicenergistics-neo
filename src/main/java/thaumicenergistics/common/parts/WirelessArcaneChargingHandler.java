@@ -1,15 +1,14 @@
 package thaumicenergistics.common.parts;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import appeng.helpers.WirelessTerminalMenuHost;
 import appeng.integration.modules.curios.CuriosIntegration;
 import appeng.items.tools.powered.WirelessTerminalItem;
 import appeng.menu.AEBaseMenu;
-import appeng.menu.locator.MenuLocators;
 import appeng.menu.locator.ItemMenuHostLocator;
+import appeng.menu.locator.MenuLocators;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemContainerContents;

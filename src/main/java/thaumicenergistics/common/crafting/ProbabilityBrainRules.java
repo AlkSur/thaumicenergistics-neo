@@ -6,7 +6,6 @@ import net.minecraft.util.RandomSource;
 public final class ProbabilityBrainRules {
     private ProbabilityBrainRules() { }
 
-    // ===== 骰子数值（CE GachaOdds 定稿，用户可调） =====
     /** 最快的一次转动，也是赔率最好的一次。 */
     public static final int MIN_SECONDS = 30;
     /** 无加速卡时最慢的转动。 */

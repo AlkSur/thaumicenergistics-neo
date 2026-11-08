@@ -1,17 +1,18 @@
 package thaumicenergistics.common.integration.ae2wt;
 
-import java.util.Objects;
-import com.mojang.datafixers.util.Unit;
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.ItemContainerContents;
 import appeng.api.config.Actionable;
 import appeng.api.ids.AEComponents;
+import com.mojang.datafixers.util.Unit;
 import de.mari_023.ae2wtlib.api.AE2wtlibAPI;
 import de.mari_023.ae2wtlib.api.AE2wtlibComponents;
 import de.mari_023.ae2wtlib.api.registration.WTDefinition;
 import de.mari_023.ae2wtlib.api.terminal.ItemWT;
 import de.mari_023.ae2wtlib.api.terminal.ItemWUT;
+import java.util.Objects;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemContainerContents;
 
 /** 在副本中完整预演合并；组件冲突或卡片不能全部安装时拒绝，绝不丢弃尾量。 */
 public final class SafeTerminalMerge {
@@ -105,7 +106,7 @@ public final class SafeTerminalMerge {
         if (value == null) return true;
         if (value instanceof ItemStack stack) return stack.isEmpty();
         if (value instanceof ItemContainerContents contents) return contents.stream().allMatch(ItemStack::isEmpty);
-        if (value instanceof net.minecraft.nbt.CompoundTag tag) return tag.isEmpty();
+        if (value instanceof CompoundTag tag) return tag.isEmpty();
         return false;
     }
 

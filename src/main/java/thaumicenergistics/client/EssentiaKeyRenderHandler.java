@@ -1,6 +1,10 @@
 package thaumicenergistics.client;
 
+import appeng.api.client.AEKeyRenderHandler;
+import appeng.util.Platform;
 import com.mojang.blaze3d.vertex.PoseStack;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -8,14 +12,10 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
+import org.joml.Vector3f;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.gui.AspectGuiRenderer;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
-
-import java.util.ArrayList;
-import java.util.List;
-import appeng.api.client.AEKeyRenderHandler;
-import appeng.util.Platform;
 
 public class EssentiaKeyRenderHandler implements AEKeyRenderHandler<AEssentiaKey> {
 
@@ -43,7 +43,7 @@ public class EssentiaKeyRenderHandler implements AEKeyRenderHandler<AEssentiaKey
             poseStack.translate(0, 0, 0.01f);
             var pose = poseStack.last();
             var buffer = buffers.getBuffer(RenderType.entityTranslucent(aspect.getImage()));
-            var normal = new org.joml.Vector3f(0, 0, 1);
+            var normal = new Vector3f(0, 0, 1);
             pose.normal().transform(normal).normalize();
             buffer.addVertex(pose, -half, -half, 0).setColor(color).setUv(0, 1)
                     .setOverlay(OverlayTexture.NO_OVERLAY).setLight(combinedLight)
@@ -64,7 +64,7 @@ public class EssentiaKeyRenderHandler implements AEKeyRenderHandler<AEssentiaKey
 
     @Override
     public Component getDisplayName(AEssentiaKey stack) {
-        return stack.getDisplayName(); // 由 AEssentiaKey.computeDisplayName() 返回源质真实名称
+        return stack.getDisplayName(); // 由 AEssentiaKey.computeDisplayName 返回源质真实名称
     }
 
     @Override

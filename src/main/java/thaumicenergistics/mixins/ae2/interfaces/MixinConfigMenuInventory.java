@@ -1,5 +1,10 @@
 package thaumicenergistics.mixins.ae2.interfaces;
 
+import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.GenericStack;
+import appeng.helpers.externalstorage.GenericStackInv;
+import appeng.util.ConfigMenuInventory;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -7,14 +12,9 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import net.minecraft.world.item.ItemStack;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
 import thaumcraft.api.aspects.IEssentiaContainerItem;
-import appeng.api.stacks.GenericStack;
-import appeng.helpers.externalstorage.GenericStackInv;
-import appeng.util.ConfigMenuInventory;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 import thaumicenergistics.common.integration.tc.TCReflection;
@@ -51,7 +51,7 @@ public abstract class MixinConfigMenuInventory {
         // 如果 AE2 原生逻辑已经成功转换，不做任何事
         if (GenericStack.unwrapItemStack(stack) != null
                 || (cir.getReturnValue() != null
-                    && !(cir.getReturnValue().what() instanceof appeng.api.stacks.AEItemKey))) {
+                    && !(cir.getReturnValue().what() instanceof AEItemKey))) {
             return;
         }
 

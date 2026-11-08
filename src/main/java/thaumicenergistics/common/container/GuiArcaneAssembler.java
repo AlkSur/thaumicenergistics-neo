@@ -1,5 +1,6 @@
 package thaumicenergistics.common.container;
 
+import appeng.client.gui.Icon;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
@@ -8,9 +9,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import appeng.client.gui.Icon;
-import thaumicenergistics.ThaumicEnergistics;
 import org.anti_ad.mc.ipn.api.IPNIgnore;
+import thaumicenergistics.ThaumicEnergistics;
 
 /**
  * 奥术装配器 GUI。标 @IPNIgnore：IPN 一键整理完全跳过此界面（不渲染排序按钮、不执行整理）。
@@ -64,7 +64,6 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
         // 整图渲染（0~196，含右侧右上角附加），主区 0~175 已居中
         g.blit(TEX, left, top, 0, 0, 196, imageHeight);
 
-        // ===== 空槽图标：加速卡（4 格） =====
         for (int i = 0; i < 4; i++) {
             Slot slot = this.menu.getUpgradeSlot(i);
             if (!slot.hasItem()) {
@@ -72,7 +71,6 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
             }
         }
 
-        // ===== 配方预览：3×3 材料 + 预产物（数据由 AssemblerPreviewSyncPacket 同步到菜单） =====
         if (this.menu.clientPreviewActive) {
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = this.menu.clientPreviewGrid[i];
@@ -87,7 +85,6 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
             }
         }
 
-        // ===== 进度条：6 要素 + 1 合成条（填充材质 y=240，按比例从底部向上裁剪） =====
         ContainerData data = this.menu.visData;
         final int maxCvis = 187 * 10;
         for (int i = 0; i < BARS.length; i++) {

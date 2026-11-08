@@ -1,55 +1,83 @@
 package thaumicenergistics;
-//
+
 //AlkSur
+import appeng.api.AECapabilities;
+import appeng.api.behaviors.ContainerItemStrategy;
+import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.features.GridLinkables;
 import appeng.api.features.P2PTunnelAttunement;
+import appeng.api.networking.GridServices;
+import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.parts.PartModels;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.AEKeyTypesInternal;
 import appeng.api.upgrades.Upgrades;
+import appeng.blockentity.AEBaseBlockEntity;
 import appeng.client.gui.style.StyleManager;
+import appeng.core.definitions.AEBlockEntities;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
 import appeng.core.localization.GuiText;
+import appeng.items.tools.powered.WirelessTerminalItem;
+import appeng.parts.automation.ExportBusPart;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Items;
-import appeng.api.AECapabilities;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import net.neoforged.neoforge.registries.RegisterEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import thaumicenergistics.common.container.*;
+import thaumcraft.api.aspects.EssentiaCapabilities;
+import thaumicenergistics.api.grid.IEssentiaGrid;
+import thaumicenergistics.client.ClientInit;
+import thaumicenergistics.client.integration.ae2wt.AE2WTClientCompat;
+import thaumicenergistics.common.blocks.ThEWrenchHandler;
+import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
+import thaumicenergistics.common.container.ContainerEssentiaLevelEmitter;
+import thaumicenergistics.common.container.GuiArcaneAssembler;
+import thaumicenergistics.common.container.GuiArcaneCraftingTerminal;
+import thaumicenergistics.common.container.GuiDistillationPatternEncoder;
+import thaumicenergistics.common.container.GuiEssentiaCellWorkbench;
+import thaumicenergistics.common.container.GuiEssentiaLevelEmitter;
+import thaumicenergistics.common.container.GuiEssentiaVibrationChamber;
+import thaumicenergistics.common.container.GuiKnowledgeInscriber;
+import thaumicenergistics.common.crafting.ArcanePatternDecoder;
+import thaumicenergistics.common.essentia.capability.ExportBusEssentiaTransport;
+import thaumicenergistics.common.features.ArchaeologyTemplateModifier;
 import thaumicenergistics.common.features.RecipeRegistration;
-import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
-import thaumicenergistics.common.integration.ae2wt.AE2WTCompat;
-import thaumicenergistics.common.integration.ae2lt.AE2LTCompat;
+import thaumicenergistics.common.grid.EssentiaGridService;
 import thaumicenergistics.common.integration.advancedae.AdvancedAECompat;
+import thaumicenergistics.common.integration.ae2lt.AE2LTCompat;
+import thaumicenergistics.common.integration.ae2wt.AE2WTCompat;
+import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
+import thaumicenergistics.common.integration.appeng.EssentiaContainerItemStrategy;
 import thaumicenergistics.common.integration.extendedae.ThEExtendedAE;
 import thaumicenergistics.common.integration.tc.ThEThaumcraft;
+import thaumicenergistics.common.items.ItemEssentiaCell;
 import thaumicenergistics.common.items.ItemGolemWirelessBackpack;
 import thaumicenergistics.common.items.WirelessArcaneCraftingTerminalMenuHost;
+import thaumicenergistics.common.network.ThENetworking;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
 import thaumicenergistics.common.parts.EssentiaLevelEmitterPart;
 import thaumicenergistics.common.parts.VisInterfacePart;
-import thaumicenergistics.init.*;
-import appeng.api.networking.GridServices;
-import appeng.blockentity.AEBaseBlockEntity;
-import appeng.items.tools.powered.WirelessTerminalItem;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLLoader;
-import net.neoforged.neoforge.registries.RegisterEvent;
-import thaumicenergistics.api.grid.IEssentiaGrid;
-import thaumicenergistics.client.ClientInit;
-import thaumicenergistics.common.blocks.ThEWrenchHandler;
-import thaumicenergistics.common.grid.EssentiaGridService;
-import thaumicenergistics.common.network.ThENetworking;
+import thaumicenergistics.init.ModBlockEntities;
+import thaumicenergistics.init.ModBlocks;
+import thaumicenergistics.init.ModComponents;
+import thaumicenergistics.init.ModCreativeTab;
+import thaumicenergistics.init.ModItems;
+import thaumicenergistics.init.ModMenuTypes;
+import thaumicenergistics.init.ModRecipeSerializers;
 
 @Mod(ThaumicEnergistics.MODID)
 public final class ThaumicEnergistics {
@@ -65,6 +93,9 @@ public final class ThaumicEnergistics {
         ModCreativeTab.REGISTRY.register(modBus);
         ModComponents.REGISTRY.register(modBus);
         ModRecipeSerializers.REGISTRY.register(modBus);
+        modBus.addListener((RegisterEvent event) -> event.register(
+                NeoForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS,
+                id("archaeology_template"), () -> ArchaeologyTemplateModifier.CODEC));
         modBus.addListener(this::registerScreens);
         modBus.addListener(this::commonSetup);
         modBus.addListener(this::registerKeyTypes);
@@ -74,9 +105,7 @@ public final class ThaumicEnergistics {
             modBus.addListener(ClientInit::onClientSetup);
         }
 
-        // COMPAT-PLAN：AE2WT 通用终端奥术功能注册——必须在此（模组构造阶段）登记，
-        // AddTerminalEvent 的一次性回调在 RegisterEvent(ITEM) 由 API 统一执行；
-        // ae2wtlib 缺席时兼容类不加载，独立无线奥术终端照常运行。
+            // 在构造阶段登记 AE2WT 终端功能；缺少库时保留独立终端。
         if (ModList.get().isLoaded("ae2wtlib")) {
             AE2WTCompat.registerArcaneTerminal();
         }
@@ -118,16 +147,14 @@ public final class ThaumicEnergistics {
 
         event.enqueueWork(() -> {
             RecipeRegistration.registerAll();
-            appeng.api.crafting.PatternDetailsHelper.registerDecoder(
-                    new thaumicenergistics.common.crafting.ArcanePatternDecoder());
-            appeng.api.behaviors.ContainerItemStrategy.register(AEssentiaKeyType.INSTANCE,
-                    thaumicenergistics.common.integration.appeng.AEssentiaKey.class,
-                    new thaumicenergistics.common.integration.appeng.EssentiaContainerItemStrategy());
+            PatternDetailsHelper.registerDecoder(new ArcanePatternDecoder());
+            ContainerItemStrategy.register(AEssentiaKeyType.INSTANCE,
+                    AEssentiaKey.class,
+                    new EssentiaContainerItemStrategy());
             ThEThaumcraft.init();
             P2PTunnelAttunement.registerAttunementTag(ModItems.VIS_INTERFACE.get());
             GridLinkables.register(ModItems.GOLEM_WIFI_BACKPACK.get(), ItemGolemWirelessBackpack.LINKABLE_HANDLER);
-            // T-FIX-BATCH ①：无线访问点链接槽按 GridLinkables 表过滤（RestrictedInputSlot.GRID_LINKABLE_ITEM
-            // → GridLinkables.get(item) != null），漏注册则终端放不进访问点槽位。
+            // 注册无线访问点的可绑定物品。
             GridLinkables.register(ModItems.WIRELESS_ARCANE_CRAFTING_TERMINAL.get(),
                     WirelessTerminalItem.LINKABLE_HANDLER);
         });
@@ -135,40 +162,26 @@ public final class ThaumicEnergistics {
 
     private void registerUpgrades(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            // 神秘装配台：加速卡（AEItems.SPEED_CARD = Acceleration Card，tooltip 名单 + 装配台升级槽可装——加快合成）
+            // 装配器最多安装四张加速卡。
             Upgrades.add(AEItems.SPEED_CARD, ModItems.ARCANE_ASSEMBLER_ITEM.get(), 4);
 
-            // T-M1-006-①：源质访问卡关联 AE2 原版四宿主——
-            // 使卡可被四宿主的升级卡槽容许插入，且卡 tooltip 的「Supported By」行非空。
-            // 四宿主（清单口径）：输入总线 / 输出总线 / 存储总线 / ME 接口。
-            // ME 接口 = 1 个宿主概念、2 种形态（部件 AEParts.INTERFACE + 方块 AEBlocks.INTERFACE）；
-            // AE2 官方 InitUpgrades 对两形态都注册（InitUpgrades.java:44-47），漏方块形态会导致其无法插卡。
+            // 注册源质卡宿主；方块与部件分别登记。
             var essentiaCard = ModItems.ESSENTIA_UPGRADE_CARD.get();
             Upgrades.add(essentiaCard, AEParts.IMPORT_BUS, 1);
             Upgrades.add(essentiaCard, AEParts.EXPORT_BUS, 1);
             Upgrades.add(essentiaCard, AEParts.STORAGE_BUS, 1);
-            // MGMT-TOOLTIP：part/block 两形态翻译键不同但显示名相同（"ME接口"），AE2 tooltip 去重按
-            // 翻译键 Component 比较——须传官方组键合并（对齐 InitUpgrades.java:44-47 自家卡写法）。
+            // 使用同一提示分组，合并接口的方块与部件条目。
             var interfaceGroup = GuiText.Interface.getTranslationKey();
             Upgrades.add(essentiaCard, AEParts.INTERFACE, 1, interfaceGroup);
             Upgrades.add(essentiaCard, AEBlocks.INTERFACE, 1, interfaceGroup);
 
-            // T-M1-003 P3：源质卡关联 AE2 原版样板供应器两形态（部件 + 方块）。
-            // 卡槽本身由 mixins/ae2/provider/ 组注入（AppFlux 存在时由 AppFlux 提供）；
-            // 本注册只负责「让卡能插进该宿主的升级槽 + Supported By 行含供应器」。
-            // 对齐 AE2 官方 InitUpgrades 对 interface 两形态成对注册的先例（InitUpgrades.java:44-47）。
-            // MGMT-TOOLTIP：GuiText 无 PatternProvider 常量，取官方 CraftingInterface（显示文本
-            // 即 "ME Pattern Provider"/"ME样板供应器"，AE2 lang 双语实证）作组键。
+            // 卡槽由本模组或 AppFlux 提供；两种形态使用同一官方提示分组。
             var patternProviderGroup = GuiText.CraftingInterface.getTranslationKey();
             Upgrades.add(essentiaCard, AEParts.PATTERN_PROVIDER, 1, patternProviderGroup);
             Upgrades.add(essentiaCard, AEBlocks.PATTERN_PROVIDER, 1, patternProviderGroup);
 
-            // EAE-COMPAT：Extended AE 扩展样板供应器/超大接口准入（可选软依赖）——
-            // 两类宿主复用 AE2 PatternProviderLogic / InterfaceLogic，本项目的卡槽与源质
-            // Mixin 对其自动生效，此处只补 Upgrades.add 准入；缺席时整体跳过。
+            // 可选附属仅在存在时注册宿主。
             ThEExtendedAE.registerEssentiaUpgrades();
-            // COMPAT-PLAN：AdvancedAE / AE2 Lightning Tech 源质访问卡准入（可选软依赖，
-            // ID 软查注册；其独立逻辑层的卡槽与源质 Mixin 由各自兼容配置另行挂载）。
             AdvancedAECompat.registerEssentiaUpgrades();
             AE2LTCompat.registerEssentiaUpgrades();
 
@@ -184,13 +197,12 @@ public final class ThaumicEnergistics {
                 }
             }
 
-            // T-M6-IMPL：概率加速卡关联概率之脑（白名单 + Supported By 行；
-            // 实际装填走方块右键直插，上限 4 由 BE 记账）。
+            // 概率之脑最多安装四张加速卡。
             Upgrades.add(ModItems.PROBABILITY_ACCELERATOR_CARD.get(), ModItems.BRAIN_OF_PROBABILITY_ITEM.get(), 4);
 
             // Keep AE2's per-item limits while grouping every capacity under one tooltip entry.
             for (var entry : ModItems.REGISTRY.getEntries()) {
-                if (entry.get() instanceof thaumicenergistics.common.items.ItemEssentiaCell cell) {
+                if (entry.get() instanceof ItemEssentiaCell cell) {
                     String group = "tooltip.thaumicenergistics.upgrade_host.essentia_storage_cell";
                     Upgrades.add(AEItems.INVERTER_CARD, cell, 1, group);
                     Upgrades.add(AEItems.VOID_CARD, cell, 1, group);
@@ -215,7 +227,7 @@ public final class ThaumicEnergistics {
 
         // AE2WT 宿主使用可切换的屏幕；独立终端保持原屏幕。
         if (ModList.get().isLoaded("ae2wtlib")) {
-            thaumicenergistics.client.integration.ae2wt.AE2WTClientCompat.registerScreen(event);
+            AE2WTClientCompat.registerScreen(event);
         } else {
             event.register(ModMenuTypes.WIRELESS_ARCANE_CRAFTING_TERMINAL.get(),
                     (ContainerArcaneCraftingTerminal menu, Inventory inv, Component title)
@@ -239,38 +251,38 @@ public final class ThaumicEnergistics {
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(
-                thaumcraft.api.aspects.EssentiaCapabilities.TRANSPORT,
-                appeng.core.definitions.AEBlockEntities.CABLE_BUS.get(),
-                (be, side) -> side == null || !(be.getPart(side) instanceof appeng.parts.automation.ExportBusPart) ? null
-                        : new thaumicenergistics.common.essentia.capability.ExportBusEssentiaTransport(be, side));
+                EssentiaCapabilities.TRANSPORT,
+                AEBlockEntities.CABLE_BUS.get(),
+                (be, side) -> side == null || !(be.getPart(side) instanceof ExportBusPart) ? null
+                        : new ExportBusEssentiaTransport(be, side));
         LOG.info("Registering AE2 grid node capabilities...");
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.ESSENTIA_PROVIDER.get(),
-                (be, context) -> (appeng.api.networking.IInWorldGridNodeHost) be);
+                (be, context) -> (IInWorldGridNodeHost) be);
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.INFUSION_PROVIDER.get(),
-                (be, context) -> (appeng.api.networking.IInWorldGridNodeHost) be);
+                (be, context) -> (IInWorldGridNodeHost) be);
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.ESSENTIA_VIBRATION_CHAMBER.get(),
-                (be, context) -> (appeng.api.networking.IInWorldGridNodeHost) be);
+                (be, context) -> (IInWorldGridNodeHost) be);
         // 装配器也实现 IInWorldGridNodeHost，必须注册 capability，否则 AE2 线缆连不上 →
         // 装配器孤立成自己的网格，ME 终端看不到它提供的可合成配方。
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.ARCANE_ASSEMBLER.get(),
-                (be, context) -> (appeng.api.networking.IInWorldGridNodeHost) be);
+                (be, context) -> (IInWorldGridNodeHost) be);
         // 注魔监视器：连接 AE 网络（network 状态）需要网格节点 capability
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.INFUSION_MONITOR.get(),
-                (be, context) -> (appeng.api.networking.IInWorldGridNodeHost) be);
-        // M6 概率之脑：ME 网络节点 capability（扣 cognitio/能量、周期 tick 依赖）
+                (be, context) -> (IInWorldGridNodeHost) be);
+        // 概率之脑：ME 网络节点 capability（扣 cognitio/能量、周期 tick 依赖）
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.BRAIN_OF_PROBABILITY.get(),
-                (be, context) -> (appeng.api.networking.IInWorldGridNodeHost) be);
+                (be, context) -> (IInWorldGridNodeHost) be);
     }
 }

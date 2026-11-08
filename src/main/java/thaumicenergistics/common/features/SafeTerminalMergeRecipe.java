@@ -1,5 +1,6 @@
 package thaumicenergistics.common.features;
 
+import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.HolderLookup;
@@ -11,12 +12,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
-import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 import net.neoforged.fml.ModList;
-import thaumicenergistics.common.integration.ae2wt.SafeTerminalMerge;
 import thaumicenergistics.common.integration.ae2wt.AE2WTCompat;
+import thaumicenergistics.common.integration.ae2wt.SafeTerminalMerge;
 import thaumicenergistics.init.ModItems;
 import thaumicenergistics.init.ModRecipeSerializers;
 
@@ -99,7 +100,7 @@ public final class SafeTerminalMergeRecipe extends CustomRecipe {
 
     public static final class Serializer implements RecipeSerializer<SafeTerminalMergeRecipe> {
         private static final MapCodec<SafeTerminalMergeRecipe> CODEC = RecordCodecBuilder.mapCodec(instance ->
-                instance.group(com.mojang.serialization.Codec.STRING.optionalFieldOf("partner", "")
+                instance.group(Codec.STRING.optionalFieldOf("partner", "")
                         .forGetter(recipe -> recipe.partner)).apply(instance, SafeTerminalMergeRecipe::new));
         private static final StreamCodec<RegistryFriendlyByteBuf, SafeTerminalMergeRecipe> STREAM_CODEC =
                 StreamCodec.composite(ByteBufCodecs.STRING_UTF8, recipe -> recipe.partner,

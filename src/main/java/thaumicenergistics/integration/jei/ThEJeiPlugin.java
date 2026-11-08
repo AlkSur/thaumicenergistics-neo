@@ -1,34 +1,31 @@
 package thaumicenergistics.integration.jei;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-
+import java.util.ArrayList;
+import java.util.List;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
+import mezz.jei.api.gui.ingredient.ICraftingGridHelper;
+import mezz.jei.api.recipe.IFocusGroup;
+import mezz.jei.api.recipe.category.extensions.vanilla.crafting.ICraftingCategoryExtension;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IModIngredientRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
 import mezz.jei.api.registration.IVanillaCategoryExtensionRegistration;
-import mezz.jei.api.recipe.category.extensions.vanilla.crafting.ICraftingCategoryExtension;
-import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
-import mezz.jei.api.gui.ingredient.ICraftingGridHelper;
-import mezz.jei.api.recipe.IFocusGroup;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import thaumicenergistics.common.features.SafeTerminalMergeRecipe;
-
-import static mezz.jei.api.constants.RecipeTypes.CRAFTING;
 import net.minecraft.resources.ResourceLocation;
-
+import net.minecraft.world.item.crafting.RecipeHolder;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.integration.jei.ThaumcraftJeiPlugin;
 import thaumicenergistics.ThaumicEnergistics;
-import thaumicenergistics.common.container.GuiEssentiaCellWorkbench;
-import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.container.GuiDistillationPatternEncoder;
+import thaumicenergistics.common.container.GuiEssentiaCellWorkbench;
 import thaumicenergistics.common.container.GuiKnowledgeInscriber;
+import thaumicenergistics.common.features.SafeTerminalMergeRecipe;
+import thaumicenergistics.common.integration.tc.TCReflection;
+
+import static mezz.jei.api.constants.RecipeTypes.CRAFTING;
 
 /**
  * JEI 插件：将源质注册为自定义 IIngredient 类型显示在 JEI 成分列表中。

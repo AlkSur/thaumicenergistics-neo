@@ -1,17 +1,5 @@
 package thaumicenergistics.common.container;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Container;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ItemStack;
-
 import appeng.api.inventories.ISegmentedInventory;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.energy.IEnergySource;
@@ -20,24 +8,35 @@ import appeng.api.storage.ITerminalHost;
 import appeng.api.storage.StorageHelper;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.ICraftingGridMenu;
+import appeng.me.storage.LinkStatusRespectingInventory;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.me.common.MEStorageMenu;
 import appeng.menu.me.crafting.CraftConfirmMenu;
 import appeng.menu.slot.AppEngSlot;
 import appeng.menu.slot.CraftingMatrixSlot;
-import appeng.me.storage.LinkStatusRespectingInventory;
 import appeng.util.inv.PlayerInternalInventory;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
-import thaumicenergistics.common.network.ArcaneTerminalClearC2SPacket;
 import thaumcraft.api.aspects.AspectList;
-import net.minecraft.world.item.crafting.Ingredient;
 import thaumcraft.common.items.TCFunctionalItems;
 import thaumcraft.common.lib.crafting.ThaumcraftCraftingManager;
 import thaumicenergistics.common.container.slot.ArcaneCraftingResultSlot;
 import thaumicenergistics.common.integration.ae2wt.AE2WTCompat;
+import thaumicenergistics.common.network.ArcaneTerminalClearC2SPacket;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
 import thaumicenergistics.init.ModMenuTypes;
 
@@ -136,7 +135,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         // 类型一致故槽集一致。
         // ae2wtlib 缺席时准入拦截（组件无处写回，防放入即丢）；ae2 原生缠绕奇点直接编译引用。
         // 语义分支：AE2WT 宿主挂官方 SINGULARITY 组——AE2WT 滚动升级面板取槽 =
-        // SINGULARITY + UPGRADE 两组拼接且要求奇点居首（slots.getFirst()），面板还自带
+        // SINGULARITY + UPGRADE 两组拼接且要求奇点居首（slots.getFirst），面板还自带
         // 量子桥卡门控显隐；独立无线（无 ae2wtlib）保持 UPGRADE 组并入普通升级面板。
         // AE2wtlibSlotSemantics 仅 ae2wtlib 在场时存在，经 AE2WTCompat.singularitySemantic
         // 隔离解析；分支条件为契约虚调用，无需菜单侧加载 ae2wtlib 类型。
@@ -167,8 +166,6 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         registerClientAction(ACTION_CLEAR_TO_PLAYER, this::clearToPlayerInventory);
     }
 
-    // ========== ICraftingGridMenu 实现 ==========
-
     @Override
     public InternalInventory getCraftingMatrix() {
         return this.craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_CRAFTING);
@@ -186,7 +183,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
 
     /**
      * 清空合成网格，材料一键存入 ME 网络（对应终端 S_STASH 按钮与"关闭时自动清理合成槽"设置）。
-     * 仅客户端调用：发送专用 C2S 包，服务端直接执行 {@link #clearGridToNetworkOnServer()}
+     * 仅客户端调用：发送专用 C2S 包，服务端直接执行 {@link #clearGridToNetworkOnServer}
      * （不走 AE2 quickMove/MOVE_REGION 语义链，任何环境下都可靠）。
      */
     public void clearCraftingGrid() {
@@ -240,7 +237,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
      * 不依赖 GUI onClose 是否触发——这是最可靠的兜底。
      */
     @Override
-    public void removed(net.minecraft.world.entity.player.Player player) {
+    public void removed(Player player) {
         if (!isClientSide() && clearOnClose) {
             clearGridToNetworkOnServer();
         }
@@ -285,8 +282,6 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         }
     }
 
-    // ========== 配方检测 ==========
-
     @Override
     public void slotsChanged(Container inventory) {
         if (!isCraftingResultBeingTaken) {
@@ -323,8 +318,6 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
     public Map<String, Integer> getParsedAspects() {
         return ArcaneTerminalRecipeState.parseCosts(requiredAspectsData);
     }
-
-    // ========== JEI 配方转移支持 ==========
 
     /**
      * 确定给定 slot→ingredient 映射中哪些槽位无法从 ME 网络或玩家背包填充。

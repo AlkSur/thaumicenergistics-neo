@@ -1,16 +1,15 @@
 package thaumicenergistics.integration.jei;
 
+import appeng.menu.SlotSemantics;
 import java.util.List;
 import java.util.Optional;
-
+import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.transfer.IRecipeTransferInfo;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.crafting.CraftingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
-
-import mezz.jei.api.constants.RecipeTypes;
-import mezz.jei.api.recipe.transfer.IRecipeTransferInfo;
-
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;
 import thaumicenergistics.init.ModMenuTypes;
 
@@ -33,7 +32,7 @@ public class ArcaneCraftingTransferInfo
     }
 
     @Override
-    public mezz.jei.api.recipe.RecipeType<RecipeHolder<CraftingRecipe>> getRecipeType() {
+    public RecipeType<RecipeHolder<CraftingRecipe>> getRecipeType() {
         return RecipeTypes.CRAFTING;
     }
 
@@ -44,11 +43,11 @@ public class ArcaneCraftingTransferInfo
 
     @Override
     public List<Slot> getRecipeSlots(ContainerArcaneCraftingTerminal menu, RecipeHolder<CraftingRecipe> recipe) {
-        return menu.getSlots(appeng.menu.SlotSemantics.CRAFTING_GRID);
+        return menu.getSlots(SlotSemantics.CRAFTING_GRID);
     }
 
     @Override
     public List<Slot> getInventorySlots(ContainerArcaneCraftingTerminal menu, RecipeHolder<CraftingRecipe> recipe) {
-        return menu.getSlots(appeng.menu.SlotSemantics.PLAYER_INVENTORY);
+        return menu.getSlots(SlotSemantics.PLAYER_INVENTORY);
     }
 }

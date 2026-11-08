@@ -1,9 +1,10 @@
 package thaumicenergistics.common.container;
 
+import appeng.api.client.AEKeyRendering;
+import appeng.client.gui.Icon;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -11,9 +12,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import appeng.api.client.AEKeyRendering;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.items.ItemEssentiaCell;
 import thaumicenergistics.common.network.CellWorkbenchC2SPacket;
 
 /**
@@ -59,10 +60,10 @@ public class GuiEssentiaCellWorkbench extends AbstractContainerScreen<ContainerE
         int x = (width - imageWidth) / 2, y = (height - imageHeight) / 2;
         g.blit(TEX, x, y, 0, 0, imageWidth, imageHeight);
 
-        for (int i = 0; i < thaumicenergistics.common.items.ItemEssentiaCell.UPGRADE_SLOTS; i++) {
+        for (int i = 0; i < ItemEssentiaCell.UPGRADE_SLOTS; i++) {
             var slot = menu.getUpgradeSlot(i);
             g.blit(TEX, x + slot.x - 1, y + slot.y - 1, 151, 7, 18, 18);
-            if (!slot.hasItem()) appeng.client.gui.Icon.BACKGROUND_UPGRADE.getBlitter()
+            if (!slot.hasItem()) Icon.BACKGROUND_UPGRADE.getBlitter()
                     .dest(x + slot.x, y + slot.y).blit(g);
         }
 

@@ -2,19 +2,15 @@ package thaumicenergistics.integration.jei;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.world.item.ItemStack;
-
 import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
 import mezz.jei.api.ingredients.ITypedIngredient;
-
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
-
+import thaumicenergistics.common.container.ContainerKnowledgeInscriber;
 import thaumicenergistics.common.container.GuiKnowledgeInscriber;
 import thaumicenergistics.common.container.slot.GhostSlot;
 import thaumicenergistics.common.network.KnowledgeInscriberGhostSlotPacket;
-import thaumicenergistics.common.container.ContainerKnowledgeInscriber;
 
 /**
  * 知识记录仪 JEI 拖拽：从 JEI 拉取物品到 3×3 合成网格（ghost 槽）。

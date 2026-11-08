@@ -2,12 +2,10 @@ package thaumicenergistics.integration.jei;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import mezz.jei.api.ingredients.IIngredientRenderer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
-
-import mezz.jei.api.ingredients.IIngredientRenderer;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.client.gui.AspectGuiRenderer;
 

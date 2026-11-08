@@ -1,7 +1,6 @@
 package thaumicenergistics.common.grid;
 
 import appeng.api.networking.IGrid;
-
 import java.util.Map;
 import java.util.WeakHashMap;
 

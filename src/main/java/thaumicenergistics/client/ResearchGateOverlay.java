@@ -1,18 +1,15 @@
 package thaumicenergistics.client;
 
+import appeng.client.gui.me.crafting.CraftConfirmScreen;
+import appeng.client.gui.me.crafting.CraftErrorScreen;
+import appeng.menu.me.crafting.CraftConfirmMenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
-
-import appeng.client.gui.me.crafting.CraftConfirmScreen;
-import appeng.client.gui.me.crafting.CraftErrorScreen;
-import appeng.menu.me.crafting.CraftConfirmMenu;
-
 import thaumicenergistics.ThaumicEnergistics;
 
 /**
@@ -20,7 +17,7 @@ import thaumicenergistics.ThaumicEnergistics;
  *
  * 服务端拦截合成提交后，通过 ResearchGateErrorPacket 发送研究键；
  * 本类在合成屏（确认屏/错误屏）之上绘制提示文字（最上层，不被 GUI 遮挡），
- * 并暴露 hasResearchGateError() 供 MixinCraftConfirmScreen 判断是否拦截 CPU 忙错误屏。
+ * 并暴露 hasResearchGateError 供 MixinCraftConfirmScreen 判断是否拦截 CPU 忙错误屏。
  */
 @EventBusSubscriber(modid = ThaumicEnergistics.MODID, value = Dist.CLIENT)
 public final class ResearchGateOverlay {

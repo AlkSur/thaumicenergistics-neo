@@ -1,9 +1,23 @@
 package thaumicenergistics.common.items;
 
+import appeng.api.config.Actionable;
+import appeng.api.config.FuzzyMode;
+import appeng.api.ids.AEComponents;
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.AEKeyType;
+import appeng.api.stacks.GenericStack;
+import appeng.api.stacks.KeyCounter;
+import appeng.api.storage.cells.IBasicCellItem;
+import appeng.api.upgrades.IUpgradeInventory;
+import appeng.api.upgrades.UpgradeInventories;
+import appeng.core.localization.PlayerMessages;
+import appeng.items.contents.CellConfig;
+import appeng.me.cells.BasicCellInventory;
+import appeng.util.ConfigInventory;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
@@ -13,26 +27,12 @@ import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import appeng.api.config.Actionable;
-import appeng.api.config.FuzzyMode;
-import appeng.api.stacks.AEKeyType;
-import appeng.api.stacks.GenericStack;
-import appeng.api.stacks.KeyCounter;
-import appeng.api.storage.cells.IBasicCellItem;
-import appeng.api.upgrades.IUpgradeInventory;
-import appeng.api.upgrades.UpgradeInventories;
-import appeng.items.contents.CellConfig;
-import appeng.me.cells.BasicCellInventory;
-import appeng.util.ConfigInventory;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 import thaumicenergistics.config.ThEConfig;
-import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.init.ModItems;
-
-import java.util.List;
-import appeng.api.stacks.AEKey;
 
 public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
@@ -87,7 +87,7 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
     @Override
     public boolean isBlackListed(ItemStack cellItem, AEKey requestedAddition) {
-        if (requestedAddition instanceof thaumicenergistics.common.integration.appeng.AEssentiaKey) {
+        if (requestedAddition instanceof AEssentiaKey) {
             return false;
         }
         return true;
@@ -105,12 +105,12 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
     @Override
     public FuzzyMode getFuzzyMode(ItemStack is) {
-        return is.getOrDefault(appeng.api.ids.AEComponents.STORAGE_CELL_FUZZY_MODE, FuzzyMode.IGNORE_ALL);
+        return is.getOrDefault(AEComponents.STORAGE_CELL_FUZZY_MODE, FuzzyMode.IGNORE_ALL);
     }
 
     @Override
     public void setFuzzyMode(ItemStack is, FuzzyMode fzMode) {
-        is.set(appeng.api.ids.AEComponents.STORAGE_CELL_FUZZY_MODE, fzMode);
+        is.set(AEComponents.STORAGE_CELL_FUZZY_MODE, fzMode);
     }
 
     @Override
@@ -125,8 +125,6 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
     }
 
     public String getTier() { return tier; }
-
-    // ===== 分区辅助（基于 AE2 CellConfig，与 ME 终端分区互通） =====
 
     @Nullable
     private static ItemEssentiaCell getCellItem(ItemStack stack) {
@@ -242,12 +240,16 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
             BasicCellInventory inventory = BasicCellInventory.createInventory(held, null);
             // Fail closed if the storage handler could not read the cell.
             if (inventory == null || inventory.getStoredItemCount() != 0) {
-                player.displayClientMessage(appeng.core.localization.PlayerMessages.OnlyEmptyCellsCanBeDisassembled.text(), true);
+                player.displayClientMessage(PlayerMessages.OnlyEmptyCellsCanBeDisassembled.text(), true);
                 return InteractionResultHolder.fail(held);
             }
             List<ItemStack> returned = new ArrayList<>();
             returned.add(new ItemStack(componentItem));
-            returned.add(new ItemStack(ModItems.STORAGE_CASING.get()));
+            Item casing = switch (tier) {
+                case "1m", "4m", "16m", "64m", "256m" -> ModItems.ADVANCED_STORAGE_CASING.get();
+                default -> ModItems.STORAGE_CASING.get();
+            };
+            returned.add(new ItemStack(casing));
             getUpgrades(held).forEach(upgrade -> {
                 if (!upgrade.isEmpty()) returned.add(upgrade.copy());
             });
@@ -257,8 +259,6 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
         return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
     }
 
-
-    // ===== 工厂方法 =====
     public static ItemEssentiaCell create1k(Item.Properties props) {
         return new ItemEssentiaCell(props, "1k", 1, 8, ThEConfig.CELL_MAX_TYPES, 0.5);
     }

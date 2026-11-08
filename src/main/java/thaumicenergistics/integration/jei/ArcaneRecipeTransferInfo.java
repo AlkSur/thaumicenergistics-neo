@@ -1,15 +1,13 @@
 package thaumicenergistics.integration.jei;
 
+import appeng.menu.SlotSemantics;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.inventory.Slot;
-
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferInfo;
-import appeng.menu.SlotSemantics;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
 import thaumcraft.integration.jei.JeiArcaneRecipe;
 import thaumcraft.integration.jei.ThaumcraftJeiPlugin;
 import thaumicenergistics.common.container.ContainerArcaneCraftingTerminal;

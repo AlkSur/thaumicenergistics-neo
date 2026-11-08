@@ -1,21 +1,5 @@
 package thaumicenergistics.mixins.ae2.interfaces;
 
-import java.util.List;
-
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.ItemStack;
-
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
@@ -24,60 +8,65 @@ import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.helpers.InterfaceLogic;
 import appeng.util.ConfigInventory;
-
+import java.util.List;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import thaumcraft.api.aspects.Aspect;
-
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.integration.appeng.EssentiaInterfaceState;
 import thaumicenergistics.common.integration.appeng.IEssentiaInterfaceLogic;
 import thaumicenergistics.common.integration.appeng.InterfaceEssentiaInventory;
 import thaumicenergistics.init.ModItems;
 
 /**
- * 原版 ME 接口的源质卡门控与生命周期接入，覆盖方块及部件共用的 InterfaceLogic。
- * 无卡时阻止新增源质存储和自动补货；已有资源仍可取回。
- * 转移、模拟和缓冲持久化委托给 EssentiaInterfaceState；拆除余量转成可恢复掉落。
+ * 为 ME 接口方块与部件添加源质卡门控、容量策略和持久化传输缓冲。
+ * 无卡时禁止新增源质和自动补货，已有资源仍可取回。
  */
 @Mixin(InterfaceLogic.class)
 public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
 
-    /** 升级卡清单（@see InterfaceLogic.java:81，private final IUpgradeInventory upgrades）。 */
+    /** 升级卡清单。 */
     @Shadow
     @Final
     private IUpgradeInventory upgrades;
 
-    /** 计划工作表（@see InterfaceLogic.java:87，正/负分别表示需从网络补/向网络送）。 */
+    /** 计划工作表。 */
     @Shadow
     @Final
     private GenericStack[] plannedWork;
 
     @Shadow
     @Final
-    @Mutable
     private ConfigInventory config;
 
     /** 接口本体存储槽；附属可能在原版构造完成后替换整个库存。 */
     @Shadow
     @Final
-    @Mutable
     private ConfigInventory storage;
 
-    /** 网络存储视图（@see InterfaceLogic.java:73-74，gridChanged() 时赋值，可空）。 */
+    /** 网络存储视图 时赋值，可空）。 */
     @Shadow
     private MEStorage networkStorage;
 
-    /** 接口作为机器自身的操作源（@see InterfaceLogic.java:78，MachineSource）。 */
+    /** 接口作为机器自身的操作源。 */
     @Shadow
     @Final
     protected IActionSource actionSource;
 
     @Unique
     private void thE$ensureBoundedInventories() {
-        if (config != null && !(config instanceof InterfaceEssentiaInventory)) {
-            config = new InterfaceEssentiaInventory(config);
-        }
-        if (storage != null && !(storage instanceof InterfaceEssentiaInventory)) {
-            storage = new InterfaceEssentiaInventory(storage);
-        }
+        // Mark in place without reading slots: addons may install live network proxies.
+        if (config != null) ((InterfaceEssentiaInventory) config).thE$markInterfaceInventory();
+        if (storage != null) ((InterfaceEssentiaInventory) storage).thE$markInterfaceInventory();
     }
 
     @Inject(method = {"getConfig", "getStorage"}, at = @At("HEAD"))
@@ -101,15 +90,9 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
         }
     }
 
-    // ------------------------------------------------------------------
     // ⑦c（路径 A）：卡门控——无卡时只抑制「写入/计划」路径，不动取出
-    // ------------------------------------------------------------------
 
-    /**
-     * 无卡时丢弃源质计划：原版 {@code updatePlan(int)} 会依 config/storage 差异把源质计划写进
-     * {@code plannedWork}，从而被 tick 循环搬进/搬出网络。无卡时置 null 即抑制这条自动搬运。
-     * 不主动把已滞留在 storage 槽的源质推回网络（拔卡后留待手动取出或重插卡恢复）。
-     */
+    /** 无卡时取消源质自动补货计划，已有库存保留，等待取出或重新插卡。 */
     @Inject(method = "updatePlan(I)V", at = @At("RETURN"))
     private void thE$gateEssentiaPlan(int slot, CallbackInfo ci) {
         if (thE$hasEssentiaCard()) {
@@ -121,15 +104,7 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
         }
     }
 
-    /**
-     * 无卡时拒绝源质键写入 storage 槽。
-     * <p>
-     * {@code isAllowedInStorageSlot} 是 storage 槽的写入过滤器：经 {@code GenericStackInv.filter}
-     * 只在 {@code insert(int,…)}（GenericStackInv.java:156）与菜单放置校验
-     * （{@code AppEngSlot.mayPlace}，AppEngSlot.java:94-99）中被消费，<b>不约束取出</b>
-     * （取出走 {@code GenericStackInv.extract}:181-213 / {@code InternalInventory.extractItem}:366+，
-     * 经 {@code setItemDirect} 绕过过滤器）。
-     */
+    /** 无卡时拒绝源质写入；过滤器不限制已有资源的取出。 */
     @Inject(method = "isAllowedInStorageSlot(ILappeng/api/stacks/AEKey;)Z", at = @At("HEAD"), cancellable = true)
     private void thE$refuseEssentiaInsert(int slot, AEKey what, CallbackInfoReturnable<Boolean> cir) {
         if (what instanceof AEssentiaKey && !thE$hasEssentiaCard()) {
@@ -137,14 +112,9 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
         }
     }
 
-    // ------------------------------------------------------------------
     // ⑦c：破坏救援——不卡门控，插不插卡一律执行
-    // ------------------------------------------------------------------
 
-    /**
-     * AE2 的 {@code addDrops}（InterfaceLogic.java:537-552）会把 storage 槽内每个键转成掉落物，
-     * 而源质键没有物品形态，会在此被直接损毁。故在转掉落物之前把槽内源质推回网络。
-     */
+    /** 拆除前尝试将本地源质退回网络，未回收缓冲保留为可恢复掉落。 */
     @Inject(method = "addDrops(Ljava/util/List;)V", at = @At("HEAD"))
     private void thE$rescueEssentiaOnDrop(List<ItemStack> drops, CallbackInfo ci) {
         thE$rescueEssentiaToNetwork();
@@ -154,7 +124,9 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
     /** 优先退回网络；槽中残留由 AEssentiaKey.addDrops 转成可回收的包装物品。 */
     @Unique
     private void thE$rescueEssentiaToNetwork() {
-        if (this.networkStorage == null) {
+        // Only the concrete AE2 inventory is known to own these local resources.
+        // Addon subclasses may project the network; never refund a virtual view.
+        if (this.networkStorage == null || this.storage.getClass() != ConfigInventory.class) {
             return;
         }
         for (int i = 0; i < this.storage.size(); i++) {
@@ -176,27 +148,22 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
         return this.upgrades.isInstalled(ModItems.ESSENTIA_UPGRADE_CARD.get());
     }
 
-    // ------------------------------------------------------------------
-    // T-M2-001：TC 对接面的桥接实现（缓冲 + tick 冲刷 + 持久化）
-    // ------------------------------------------------------------------
+    // TC 对接面的桥接实现（缓冲 + tick 冲刷 + 持久化）
 
     @Unique
-    private thaumicenergistics.common.integration.appeng.EssentiaInterfaceState thE$state;
+    private EssentiaInterfaceState thE$state;
 
     @Unique
-    private thaumicenergistics.common.integration.appeng.EssentiaInterfaceState thE$state() {
+    private EssentiaInterfaceState thE$state() {
         if (thE$state == null) {
-            thE$state = new thaumicenergistics.common.integration.appeng.EssentiaInterfaceState(
+            thE$state = new EssentiaInterfaceState(
                     () -> networkStorage, () -> storage, () -> upgrades, () -> actionSource,
                     () -> ((InterfaceLogic) (Object) this).getActionableNode());
         }
         return thE$state;
     }
 
-    /**
-     * 主冲刷：挂在 {@code updateStorage()}（private，每 tick 由 Ticker 调用）TAIL——原版 item/fluid
-     * 计划搬运一行不改，仅追加源质缓冲入网；返回值只在 false→true 单方向提升，让 ticker 维持 URGENT。
-     */
+    /** 原生库存更新后冲刷源质缓冲；发生传输时保持 ticker 活跃。 */
     @Inject(method = "updateStorage", at = @At("TAIL"), cancellable = true)
     private void thE$flushEssentiaOnTick(CallbackInfoReturnable<Boolean> cir) {
         boolean flushed = thE$state().thE$flushEssentiaBuffer() > 0;
@@ -205,10 +172,7 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
         }
     }
 
-    /**
-     * 防睡死滞留：原版 {@code Ticker.getTickingRequest} 用 {@code !hasWorkToDo()} 决定 sleeping——
-     * 缓冲非空（网络暂满，待重试）却不报告工作会让装置睡死、缓冲永不冲刷，故提升为 true。
-     */
+    /** 缓冲非空时保持唤醒，网络恢复容量后继续重试。 */
     @Inject(method = "hasWorkToDo", at = @At("RETURN"), cancellable = true)
     private void thE$keepAwakeForEssentia(CallbackInfoReturnable<Boolean> cir) {
         if (!cir.getReturnValueZ() && thE$state().hasBuffered()) {
@@ -230,7 +194,6 @@ public abstract class MixinInterfaceLogic implements IEssentiaInterfaceLogic {
     private void thE$clearEssentiaBuffer(CallbackInfo ci) {
         thE$state().clear();
     }
-
 
     @Override
     public boolean thE$essentiaActive() { return thE$state().thE$essentiaActive(); }

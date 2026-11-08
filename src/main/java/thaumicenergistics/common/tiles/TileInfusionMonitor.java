@@ -1,13 +1,21 @@
 package thaumicenergistics.common.tiles;
 
+import appeng.api.networking.GridFlags;
+import appeng.api.networking.GridHelper;
+import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
+import appeng.api.networking.IInWorldGridNodeHost;
+import appeng.api.networking.IManagedGridNode;
+import appeng.api.util.AECableType;
+import java.util.EnumSet;
+import java.util.Objects;
 import net.minecraft.core.BlockPos;
-import thaumicenergistics.common.monitor.InfusionMonitorDisplay;
-import thaumicenergistics.common.monitor.InfusionMonitorText;
-import static thaumicenergistics.common.monitor.InfusionMonitorText.*;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.Containers;
 import net.minecraft.world.SimpleContainer;
@@ -16,22 +24,16 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-
-import java.util.EnumSet;
-
-import appeng.api.networking.GridFlags;
-import appeng.api.networking.GridHelper;
-import appeng.api.networking.IGridNode;
-import appeng.api.networking.IGridNodeListener;
-import appeng.api.networking.IManagedGridNode;
-import appeng.api.networking.IInWorldGridNodeHost;
-import appeng.api.util.AECableType;
+import thaumcraft.common.blockentities.InfusionMatrixBlockEntity;
+import thaumicenergistics.common.monitor.InfusionMonitorDisplay;
+import thaumicenergistics.common.monitor.InfusionMonitorText;
 import thaumicenergistics.init.ModBlockEntities;
 import thaumicenergistics.init.ModBlocks;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import thaumcraft.common.blockentities.InfusionMatrixBlockEntity;
 import thaumicenergistics.init.ModItems;
+
+import static thaumicenergistics.common.monitor.InfusionMonitorText.tierColor;
+import static thaumicenergistics.common.monitor.InfusionMonitorText.tierDesc;
+import static thaumicenergistics.common.monitor.InfusionMonitorText.tierWord;
 
 /**
  * 注魔监视器（灵气观测器）方块实体。
@@ -74,7 +76,6 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
     /** 上次扫描到的祭坛注魔中状态（翻转时强制立即重算风险，抓住注魔启动瞬间的高不稳定度）。 */
     private boolean cachedCrafting = false;
 
-    // ===== M4：注魔结束红石脉冲 =====
     /** 脉冲剩余时长（tick）。仅运行期内存，不持久化——重载不回放（边界语义①）。 */
     private static final int PULSE_DURATION = 40; // 2 秒，裁决 #5
     private int pulseTicks = 0;
@@ -152,11 +153,9 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         }
     }
 
-    // ===== tick / 扫描 =====
-
     public static void tick(Level level, BlockPos pos, BlockState state, TileInfusionMonitor be) {
         if (level.isClientSide()) return;
-        // M4 脉冲计时：递减到 0 自动复位；counter 为 0 但方块仍为激活态（掉线重启残留）→ 自愈复位
+        // 脉冲计时：递减到 0 自动复位；counter 为 0 但方块仍为激活态（掉线重启残留）→ 自愈复位
         if (be.pulseTicks > 0) {
             be.pulseTicks--;
             if (be.pulseTicks == 0) {
@@ -188,7 +187,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
             if (level.getBlockEntity(found) instanceof InfusionMatrixBlockEntity matrix) {
                 boolean crafting = matrix.crafting();
                 craftingChanged = crafting != cachedCrafting;
-                // M4：忙碌→空闲跳变 = 注魔结束（成功/失败均触发；TC port.261 无完成事件，
+                // 忙碌→空闲跳变 = 注魔结束（成功/失败均触发；TC port.261 无完成事件，
                 // 故挂既有探测循环做下降沿检测，零额外扫描）。
                 // cachedCrafting 仅运行期内存 → 重载后从 false 起步，不会把已结束的旧注魔补发脉冲（边界语义①）；
                 // 每个 BE 独立检测，多观测器覆盖同一矩阵各自脉冲（边界语义②）。
@@ -227,13 +226,11 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
 
         boolean riskChanged = !newRisk.equals(this.cachedRisk);
         this.cachedRisk = newRisk;
-        if (riskChanged || !java.util.Objects.equals(found, this.matrixPos)) {
+        if (riskChanged || !Objects.equals(found, this.matrixPos)) {
             this.matrixPos = found;
             markForUpdate();
         }
     }
-
-    // ===== M4：注魔结束红石脉冲 =====
 
     /** 触发单次脉冲：置激活态并计时，PULSE_DURATION tick 后由 tick 自动复位。 */
     private void startPulse() {
@@ -253,8 +250,6 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
             }
         }
     }
-
-    // ===== 网格节点 / 状态同步 =====
 
     private void updateNetworkState() {
         if (level == null || level.isClientSide() || unloading || isRemoved()) return;
@@ -282,8 +277,6 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
             }
         }
     }
-
-    // ===== 悬浮气泡（text_display 实体） =====
 
     /**
      * 每 tick 更新气泡：条件 = 放入魔导手册 且 连接 AE 网络 且 检测到注魔祭坛。
@@ -315,7 +308,7 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         ItemStack book = inventory.getItem(BOOK_SLOT);
         if (!book.isEmpty()) {
             if (!player.getInventory().add(book)) {
-                net.minecraft.world.Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), book);
+                Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), book);
             }
             inventory.setItem(BOOK_SLOT, ItemStack.EMPTY);
             setChanged();
@@ -360,8 +353,6 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
                 ResourceLocation.fromNamespaceAndPath("thaumcraft", "thaumonomicon")));
     }
 
-    // ===== 访问器 =====
-
     public Container getInventory() {
         return inventory;
     }
@@ -384,8 +375,6 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         return mainNode.isPowered();
     }
 
-    // ===== IInWorldGridNodeHost =====
-
     @Override
     public IGridNode getGridNode(Direction dir) {
         return mainNode.getNode();
@@ -403,8 +392,6 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         // blockEntityChanged → 触发 getUpdateTag 同步到客户端（悬浮弹窗数据依赖）
         level.blockEntityChanged(worldPosition);
     }
-
-    // ===== NBT =====
 
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider reg) {

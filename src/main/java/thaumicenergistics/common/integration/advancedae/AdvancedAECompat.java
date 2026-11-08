@@ -1,14 +1,11 @@
 package thaumicenergistics.common.integration.advancedae;
 
+import appeng.api.upgrades.Upgrades;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-
-import appeng.api.upgrades.Upgrades;
-
 import net.neoforged.fml.ModList;
-
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.init.ModItems;
 

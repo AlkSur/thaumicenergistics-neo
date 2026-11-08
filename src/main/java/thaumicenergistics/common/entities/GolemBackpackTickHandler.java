@@ -3,26 +3,26 @@ package thaumicenergistics.common.entities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
-import net.minecraft.world.Container;
-import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
+import thaumcraft.api.aspects.IEssentiaContainerItem;
 import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.network.GolemBackpackSyncPacket;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import thaumcraft.api.aspects.IEssentiaContainerItem;
 
 /**
  * 傀儡背包无线网络交互的 Tick 驱动 AI。
@@ -122,7 +122,7 @@ public final class GolemBackpackTickHandler {
 
     /**
      * FILL 核心 (ID=0): 从 AE 网络提取物品给傀儡，用于填充 home 容器（对应 1.7.10 AIGolemWifiFill）。
-     * 与 TC 原版 workFill() 的区别：原版从附近标记容器取物，无线背包版直接从 ME 网络取。
+     * 与 TC 原版 workFill 的区别：原版从附近标记容器取物，无线背包版直接从 ME 网络取。
      */
     private static void doFill(ThaumcraftGolemEntity golem, WirelessAELinkGolem link, int maxRate) {
         if (!golem.carried().isEmpty()) {
@@ -172,10 +172,8 @@ public final class GolemBackpackTickHandler {
         }
     }
 
-    // ==================== 辅助方法 ====================
-
     /**
-     * 获取傀儡 home 位置的容器（对应 TC 的 homeContainer()）。
+     * 获取傀儡 home 位置的容器（对应 TC 的 homeContainer）。
      */
     @Nullable
     private static Container getHomeContainer(ThaumcraftGolemEntity golem) {
@@ -201,7 +199,7 @@ public final class GolemBackpackTickHandler {
 
     /**
      * 计算容器中匹配物品的数量。
-     * 对应 TC 的 {@code count()} 方法。
+     * 对应 TC 的 {@code count} 方法。
      */
     private static int countInContainer(Container container, ItemStack match) {
         int count = 0;
@@ -215,7 +213,7 @@ public final class GolemBackpackTickHandler {
     }
 
     /**
-     * 检查容器是否还有空间放入指定物品（对应 TC 的 hasRoom()）。
+     * 检查容器是否还有空间放入指定物品（对应 TC 的 hasRoom）。
      */
     private static boolean hasRoom(Container container, ItemStack stack, Direction side) {
         for (int slot = 0; slot < container.getContainerSize(); slot++) {
@@ -229,8 +227,6 @@ public final class GolemBackpackTickHandler {
         }
         return false;
     }
-
-    // ==================== 网络同步 ====================
 
     /**
      * 每 SYNC_COOLDOWN tick 发送背包连接状态 S2C 包（替代 1.7.10 DataWatcher 同步）。
@@ -255,8 +251,6 @@ public final class GolemBackpackTickHandler {
                 golem.getId(), status, skin.ordinal());
         PacketDistributor.sendToPlayersTrackingEntity(golem, packet);
     }
-
-    // ==================== LIQUID 核心 (ID=5) ====================
 
     /**
      * LIQUID 核心 (ID=5): 从 AE 网络提取流体给傀儡（对应 1.7.10 AIGolemWifiLiquid）。
@@ -291,8 +285,6 @@ public final class GolemBackpackTickHandler {
             }
         }
     }
-
-    // ==================== ESSENTIA 核心 (ID=6) ====================
 
     /**
      * ESSENTIA 核心 (ID=6): 傀儡与 AE 源质网络交互（对应 1.7.10 AIGolemWifiEssentia）。

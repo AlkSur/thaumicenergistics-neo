@@ -4,10 +4,12 @@ import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.core.definitions.AEItems;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -18,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
+import net.neoforged.neoforge.network.PacketDistributor;
 import thaumcraft.api.ThaumcraftApiHelper;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
@@ -29,9 +32,6 @@ import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.network.DistillationEncoderSetSourceC2SPacket;
 import thaumicenergistics.common.tiles.TileDistillationPatternEncoder;
 import thaumicenergistics.init.ModMenuTypes;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
 
 public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
@@ -233,7 +233,7 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
     /**
      * Encode 按钮可用的条件：源物品已配置 + 已选要素 + 空白样板槽有样板 + 成品槽为空。
      * 服务端从 Tile 读（权威）；客户端 encoder 为 null，从同步的槽内容判断。
-     * 先执行 getSourceAspects()：重开 GUI 后源物品仍在 Tile 中，但本容器缓存为空，
+     * 先执行 getSourceAspects：重开 GUI 后源物品仍在 Tile 中，但本容器缓存为空，
      * 不先解析会误判"未选要素"导致按钮置灰/编码无效。
      */
     public boolean canEncode() {
@@ -257,7 +257,7 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
         }
 
         // 重开 GUI 后服务端缓存为空：先从 Tile 的源物品重新解析要素，
-        // 否则 getSelectedAspect() 恒为 null（客户端已选、服务端无缓存 → 点击 Encode 无效）。
+        // 否则 getSelectedAspect 恒为 null（客户端已选、服务端无缓存 → 点击 Encode 无效）。
         getSourceAspects();
         Aspect selected = getSelectedAspect();
         ItemStack source = getSourceItem();
@@ -270,7 +270,7 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
         if (blankSlot.isEmpty()) return;
 
-        // 验证必须是 AE2 空白样板，否则不消耗不编码（日志定位 is() 运行时行为）
+        // 验证必须是 AE2 空白样板，否则不消耗不编码（日志定位 is 运行时行为）
         if (!AEItems.BLANK_PATTERN.is(blankSlot)) {
             return;
         }

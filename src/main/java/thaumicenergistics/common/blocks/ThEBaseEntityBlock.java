@@ -1,7 +1,6 @@
 package thaumicenergistics.common.blocks;
 
 import java.util.List;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
@@ -16,9 +15,9 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
+import thaumicenergistics.common.tiles.ThETileBase;
 import thaumicenergistics.common.tiles.TileEssentiaProvider;
 import thaumicenergistics.common.tiles.TileInfusionProvider;
-import thaumicenergistics.common.tiles.ThETileBase;
 import thaumicenergistics.init.ModBlockEntities;
 
 public abstract class ThEBaseEntityBlock extends Block implements EntityBlock {

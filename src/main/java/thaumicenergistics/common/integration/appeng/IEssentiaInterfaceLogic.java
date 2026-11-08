@@ -4,13 +4,13 @@ import thaumcraft.api.aspects.Aspect;
 import thaumcraft.common.essentia.EssentiaTransport;
 
 /**
- * T-M2-001：ME 接口「源质对接逻辑」（{@code InterfaceLogic}）对外的桥接面。
+ * ME 接口「源质对接逻辑」（{@code InterfaceLogic}）对外的桥接面。
  * <p>
  * <b>为什么需要这层接口</b>：TC 的寻址以<b>方块实体</b>为单
  * （{@code level.getBlockEntity(pos) instanceof EssentiaTransport}），
  * 而源质卡的网络 I/O（缓冲、记账、卡门控）实现在逻辑类 {@code InterfaceLogic} 上——二者在 Mixin 层无法
  * 互访私有成员，故以本接口作显式契约：{@code MixinInterfaceLogic} 实现之，
- * {@code MixinInterfaceBlockEntity} 经 {@code getInterfaceLogic()} 取得后调用。
+ * {@code MixinInterfaceBlockEntity} 经 {@code getInterfaceLogic} 取得后调用。
  * <p>
  * <b>语义要点</b>：推入（外部 → 网络，进缓冲绝不丢弃）与拉取响应（<b>仅从缓存格 stock 槽取</b>，
  * 禁止直取网络）分列。广告的源质类型/数量一律取<b>缓存格</b>内容而非网络存量——这是与样板供应器

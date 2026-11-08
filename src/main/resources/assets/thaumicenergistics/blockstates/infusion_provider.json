@@ -1,1 +1,10 @@
-{"variants":{"":{"model":"thaumicenergistics:block/infusion_provider"}}}
+{
+  "variants": {
+    "online=false": {
+      "model": "thaumicenergistics:block/infusion_provider"
+    },
+    "online=true": {
+      "model": "thaumicenergistics:block/infusion_provider_on"
+    }
+  }
+}

@@ -1,17 +1,5 @@
 package thaumicenergistics.mixins.ae2.provider;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.player.Inventory;
-
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.Upgrades;
 import appeng.client.gui.AEBaseScreen;
@@ -21,18 +9,18 @@ import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.core.localization.GuiText;
 import appeng.menu.SlotSemantics;
 import appeng.menu.implementations.PatternProviderMenu;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Inventory;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * T-M1-003 P1：给样板供应器界面挂上升级槽面板（{@link UpgradesPanel}）。
- * <p>
- * 蓝本：AppFlux {@code MixinPatternProviderScreen}。其「手动补写 style（TOOLBOX 槽位 + 贴图 + WidgetStyle）」
- * 段<b>仅为 AppFlux 自己的工具箱面板</b>服务——升级面板无需补写：AE2 原生
- * {@code assets/ae2/screens/pattern_provider.json} 经 {@code includes} 引入 {@code common/common.json}，
- * 后者已内置 {@code "upgrades"} widget 条目（{@code right:2, top:0}）。
- * 故本类<b>丢弃</b>整段 style 补写与工具箱面板（AppFlux 私有件），只保留升级面板挂载。
- * <p>
- * 槽位来自 {@code PatternProviderMenu} 的 {@code SlotSemantics.UPGRADE}（由
- * {@link MixinPatternProviderMenu} 经 {@code setupUpgrades} 注入）。
+ * 为样板供应器界面添加升级面板。
  */
 @Mixin(PatternProviderScreen.class)
 public abstract class MixinPatternProviderScreen<C extends PatternProviderMenu> extends AEBaseScreen<C> {

@@ -1,13 +1,12 @@
 package thaumicenergistics.init;
 
+import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import thaumicenergistics.ThaumicEnergistics;
-
-import java.util.function.Supplier;
 
 public final class ModCreativeTab {
     private ModCreativeTab() {}
@@ -16,6 +15,28 @@ public final class ModCreativeTab {
             .title(Component.translatable("itemGroup.thaumicenergistics"))
             .icon(() -> new ItemStack(ModItems.ESSENTIA_CELL_64K.get()))
             .displayItems((params, output) -> {
+                output.accept(ModItems.MYSTIC_CRYSTAL.get());
+                output.accept(ModItems.MYSTIC_CRYSTAL_DUST.get());
+                output.accept(ModItems.MYSTIC_CIRCUIT_BOARD.get());
+                output.accept(ModItems.MYSTIC_PROCESSOR.get());
+                output.accept(ModItems.THAUMIC_PROCESSOR_PRESS.get());
+                output.accept(ModItems.THAUMIC_UPGRADE_TEMPLATE.get());
+                output.accept(ModItems.MYSTIC_CRYSTAL_BLOCK.get());
+                output.accept(ModItems.FLAWLESS_BUDDING_THAUMIC_CRYSTAL.get());
+                output.accept(ModItems.FLAWED_BUDDING_THAUMIC_CRYSTAL.get());
+                output.accept(ModItems.CHIPPED_BUDDING_THAUMIC_CRYSTAL.get());
+                output.accept(ModItems.DAMAGED_BUDDING_THAUMIC_CRYSTAL.get());
+                output.accept(ModItems.SMALL_MYSTIC_CRYSTAL_BUD.get());
+                output.accept(ModItems.MEDIUM_MYSTIC_CRYSTAL_BUD.get());
+                output.accept(ModItems.LARGE_MYSTIC_CRYSTAL_BUD.get());
+                output.accept(ModItems.MYSTIC_CRYSTAL_CLUSTER.get());
+                output.accept(ModItems.THAUMIC_CRYSTAL_SWORD.get());
+                output.accept(ModItems.THAUMIC_CRYSTAL_PICKAXE.get());
+                output.accept(ModItems.THAUMIC_CRYSTAL_AXE.get());
+                output.accept(ModItems.THAUMIC_CRYSTAL_SHOVEL.get());
+                output.accept(ModItems.THAUMIC_CRYSTAL_HOE.get());
+                output.accept(ModItems.THAUMIC_CRYSTAL_WRENCH.get());
+                output.accept(ModItems.THAUMIC_CRYSTAL_KNIFE.get());
                 output.accept(ModItems.ESSENTIA_CELL_1K.get()); output.accept(ModItems.ESSENTIA_CELL_4K.get());
                 output.accept(ModItems.ESSENTIA_CELL_16K.get()); output.accept(ModItems.ESSENTIA_CELL_64K.get());
                 output.accept(ModItems.ESSENTIA_CELL_256K.get());
@@ -34,6 +55,7 @@ public final class ModCreativeTab {
                 output.accept(ModItems.STORAGE_COMPONENT_64M.get());
                 output.accept(ModItems.STORAGE_COMPONENT_256M.get());
                 output.accept(ModItems.STORAGE_CASING.get());
+                output.accept(ModItems.ADVANCED_STORAGE_CASING.get());
                 output.accept(ModItems.COALESCENCE_CORE.get()); output.accept(ModItems.DIFFUSION_CORE.get());
                 output.accept(ModItems.KNOWLEDGE_CORE.get());
                 output.accept(ModItems.FOCUS_AEWRENCH.get()); output.accept(ModItems.GOLEM_WIFI_BACKPACK.get());
@@ -51,7 +73,7 @@ public final class ModCreativeTab {
                 output.accept(ModItems.PROBABILITY_ACCELERATOR_CARD.get());
                 output.accept(ModItems.BRAIN_OF_PROBABILITY_ITEM.get());
                 // 玩偶不进创造物品栏：使用切石机切割任意颜色羊毛获取
-                // output.accept(ModItems.ALKUSURE86_FUMO_ITEM.get());
+                // output.accept(ModItems.ALKUSURE86_FUMO_ITEM.get);
 
                 // 源质虚拟物品不再在创造标签页中注册（避免玩家拿到物品栏）
                 // 它们通过 JEI 插件注册，仅作为 ghost ingredient 可拖拽到 AE 筛选槽

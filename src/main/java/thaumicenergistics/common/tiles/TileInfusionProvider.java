@@ -30,8 +30,6 @@ public class TileInfusionProvider extends TileProviderBase implements IAspectSou
     public void serverTick() {
     }
 
-    // ===== IAspectSource =====
-
     @Override
     public AspectList getAspects() {
         // 注魔供应器不存储源质；返回空列表避免调用方（TC 管道 suction）NPE
@@ -86,8 +84,6 @@ public class TileInfusionProvider extends TileProviderBase implements IAspectSou
         if (!mainNode.isActive()) return 0;
         return (int) Math.min(getAspectAmountInNetwork(tag), Integer.MAX_VALUE);
     }
-
-    // ===== 粒子 =====
 
     private void doParticleFX(int aspectColor) {
         if (!(level instanceof ServerLevel serverLevel)) return;

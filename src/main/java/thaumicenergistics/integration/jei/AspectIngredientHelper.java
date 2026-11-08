@@ -1,10 +1,8 @@
 package thaumicenergistics.integration.jei;
 
-import net.minecraft.resources.ResourceLocation;
-
 import mezz.jei.api.ingredients.IIngredientHelper;
 import mezz.jei.api.ingredients.subtypes.UidContext;
-import thaumcraft.api.aspects.Aspect;
+import net.minecraft.resources.ResourceLocation;
 import thaumicenergistics.common.integration.tc.TCReflection;
 
 @SuppressWarnings("removal")

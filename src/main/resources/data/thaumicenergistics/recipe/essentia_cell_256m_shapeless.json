@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    { "item": "thaumicenergistics:storage_casing" },
+    { "item": "thaumicenergistics:advanced_storage_casing" },
     { "item": "thaumicenergistics:storage_component_256m" }
   ],
   "result": {

@@ -1,25 +1,27 @@
 package thaumicenergistics.common.integration.ae2wt;
 
-import net.neoforged.fml.ModList;
-
+import appeng.helpers.WirelessTerminalMenuHost;
+import appeng.menu.SlotSemantic;
+import appeng.menu.locator.ItemMenuHostLocator;
+import de.mari_023.ae2wtlib.api.AE2wtlibAPI;
+import de.mari_023.ae2wtlib.api.gui.AE2wtlibSlotSemantics;
 import de.mari_023.ae2wtlib.api.gui.Icon;
 import de.mari_023.ae2wtlib.api.registration.AddTerminalEvent;
 import de.mari_023.ae2wtlib.api.registration.UpgradeHelper;
+import de.mari_023.ae2wtlib.api.registration.WTDefinition;
 import de.mari_023.ae2wtlib.api.terminal.ItemWT;
-
+import de.mari_023.ae2wtlib.api.terminal.WUTHandler;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.fml.ModList;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.init.ModItems;
 import thaumicenergistics.init.ModMenuTypes;
 
 /**
- * AE2WT（无线终端库）可选兼容注册：把无线奥术终端注册为通用终端的奥术功能
- * （功能名 {@code thaumicenergistics_arcane}），合并进 ae2wtlib 无线通用终端后
- * 可切换奥术模式；模式切换、奇点库存与量子连接由 AE2WT 体系自理。
- * <p>
- * 注册时机为模组构造阶段——{@code AddTerminalEvent.register} 登记的一次性回调
- * 在 RegisterEvent(ITEM) 由 API 的入口监听器统一执行（随后 {@code UpgradeHelper.addUpgrades}
- * 应用全终端升级卡准入），构造期登记必然早于执行。完整 ae2wtlib 缺席时本类
- * 不被加载（唯一调用点在主类构造器 ModList 守护之后），不产生缺类问题。
+ * 在模组构造阶段登记通用终端的奥术功能，模式、奇点与量子连接沿用 AE2WT。
+ * 调用方必须先确认 ae2wtlib 已加载，避免可选 API 被提前解析。
  */
 public final class AE2WTCompat {
 
@@ -30,49 +32,45 @@ public final class AE2WTCompat {
     }
 
     /** Preserve the library's mode synchronization and its normal wireless opening checks. */
-    public static boolean openArcaneFromInventory(net.minecraft.server.level.ServerPlayer player,
-            appeng.menu.locator.ItemMenuHostLocator locator) {
-        if (!de.mari_023.ae2wtlib.api.registration.WTDefinition.exists(ARCANE_TERMINAL_NAME)) return false;
-        var definition = de.mari_023.ae2wtlib.api.registration.WTDefinition.of(ARCANE_TERMINAL_NAME);
+    public static boolean openArcaneFromInventory(ServerPlayer player,
+            ItemMenuHostLocator locator) {
+        if (!WTDefinition.exists(ARCANE_TERMINAL_NAME)) return false;
+        var definition = WTDefinition.of(ARCANE_TERMINAL_NAME);
         var stack = locator.locateItem(player);
-        if (!de.mari_023.ae2wtlib.api.terminal.WUTHandler.hasTerminal(stack, definition)) return false;
-        de.mari_023.ae2wtlib.api.terminal.WUTHandler.setCurrentTerminal(player, locator, stack, definition);
+        if (!WUTHandler.hasTerminal(stack, definition)) return false;
+        WUTHandler.setCurrentTerminal(player, locator, stack, definition);
         return definition.containerOpener().tryOpen(player, locator, false);
     }
 
     /** 返回公共 Item 类型，避免普通注册类的字节码验证提前解析 ItemWT 子类。 */
-    public static net.minecraft.world.item.Item createTerminalItem() {
+    public static Item createTerminalItem() {
         return new AE2WTArcaneTerminalItem();
     }
 
     /** 不切换通用终端当前模式，解析其奥术附件供后台充能。 */
-    public static appeng.helpers.WirelessTerminalMenuHost<?> createPassiveArcaneHost(
-            net.minecraft.server.level.ServerPlayer player, appeng.menu.locator.ItemMenuHostLocator locator) {
+    public static WirelessTerminalMenuHost<?> createPassiveArcaneHost(
+            ServerPlayer player, ItemMenuHostLocator locator) {
         var stack = locator.locateItem(player);
         if (!(stack.getItem() instanceof ItemWT item)
-                || !de.mari_023.ae2wtlib.api.registration.WTDefinition.exists(ARCANE_TERMINAL_NAME)) return null;
-        var definition = de.mari_023.ae2wtlib.api.registration.WTDefinition.of(ARCANE_TERMINAL_NAME);
+                || !WTDefinition.exists(ARCANE_TERMINAL_NAME)) return null;
+        var definition = WTDefinition.of(ARCANE_TERMINAL_NAME);
         if (item != definition.item() && !stack.has(definition.componentType())) return null;
         return new AE2WTArcaneTerminalMenuHost(item, player, locator, (p, menu) -> { });
     }
 
-    /**
-     * 返回官方奇点槽语义（{@code AE2wtlibSlotSemantics.SINGULARITY}）。菜单侧经本方法
-     * 隔离解析，防止 ae2wtlib 缺席时普通加载路径触发缺类；调用点均被宿主分支守护
-     * （仅 AE2WT 宿主可达，分支条件成立即证明 ae2wtlib 在场）。
-     */
-    public static appeng.menu.SlotSemantic singularitySemantic() {
-        return de.mari_023.ae2wtlib.api.gui.AE2wtlibSlotSemantics.SINGULARITY;
+    /** 仅在 AE2WT 宿主分支访问官方奇点槽语义，避免缺少可选模组时解析其类型。 */
+    public static SlotSemantic singularitySemantic() {
+        return AE2wtlibSlotSemantics.SINGULARITY;
     }
 
-    public static net.minecraft.world.item.ItemStack displayPartner(String partner) {
-        if (partner.isEmpty()) return new net.minecraft.world.item.ItemStack(
-                de.mari_023.ae2wtlib.api.AE2wtlibAPI.getWUT());
+    public static ItemStack displayPartner(String partner) {
+        if (partner.isEmpty()) return new ItemStack(
+                AE2wtlibAPI.getWUT());
         var name = partner;
-        var definition = de.mari_023.ae2wtlib.api.registration.WTDefinition.wirelessTerminals().stream()
+        var definition = WTDefinition.wirelessTerminals().stream()
                 .filter(terminal -> name.equals(terminal.terminalName())).findFirst().orElse(null);
-        if (definition == null) return net.minecraft.world.item.ItemStack.EMPTY;
-        return new net.minecraft.world.item.ItemStack(definition.item());
+        if (definition == null) return ItemStack.EMPTY;
+        return new ItemStack(definition.item());
     }
 
     public static void registerArcaneTerminal() {

@@ -1,8 +1,14 @@
 package thaumicenergistics.common.integration.appeng;
 
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.AEKeyType;
+import appeng.api.stacks.GenericStack;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -11,15 +17,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
-import appeng.api.stacks.AEKey;
-import appeng.api.stacks.AEKeyType;
-import appeng.api.stacks.GenericStack;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import thaumcraft.api.aspects.Aspect;
 
 public final class AEssentiaKey extends AEKey {
@@ -29,7 +28,7 @@ public final class AEssentiaKey extends AEKey {
 
     /**
      * 规范化 id 实例：所有同 id 的 AEssentiaKey 共享同一 ResourceLocation 实例。
-     * AE2 的 KeyCounter 内部按 {@code getPrimaryKey()} 的引用相等分组（Reference2ObjectMap），
+     * AE2 的 KeyCounter 内部按 {@code getPrimaryKey} 的引用相等分组（Reference2ObjectMap），
      * 存储（NBT 反序列化）与 config（TCReflection 生成）的 id 若不共享实例会导致 AE2 tooltip 去重失败（同方面重复显示）。
      */
     private static final Map<ResourceLocation, ResourceLocation> ID_CACHE = new ConcurrentHashMap<>();
@@ -65,7 +64,6 @@ public final class AEssentiaKey extends AEKey {
         return Component.translatable("tooltip.thaumicenergistics.unknown_essentia")
                 .append(" (" + id + ")");
     }
-
 
     @Override
     public void addDrops(long amount, List<ItemStack> drops, Level level, BlockPos pos) {
@@ -133,7 +131,6 @@ public final class AEssentiaKey extends AEKey {
     public Object getPrimaryKey(){
         return id;
     }
-
 
     public static AEssentiaKey of(ResourceLocation id) {
         return CACHE.computeIfAbsent(id, AEssentiaKey::new);

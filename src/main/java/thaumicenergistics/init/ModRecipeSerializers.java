@@ -1,9 +1,9 @@
 package thaumicenergistics.init;
 
+import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import java.util.function.Supplier;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.features.SafeTerminalMergeRecipe;
 

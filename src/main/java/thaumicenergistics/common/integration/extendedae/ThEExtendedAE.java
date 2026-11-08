@@ -6,7 +6,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.neoforged.fml.ModList;
-
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.init.ModItems;
 
@@ -18,9 +17,9 @@ import thaumicenergistics.init.ModItems;
  * 本项目对这两个 Logic 类的 Mixin（卡槽组 + 源质组）对其自动生效，
  * 唯一缺口是 {@code Upgrades.add} 宿主准入——此处补齐即可，零 EAE 编译引用。
  * <p>
- * 为什么升级库存宿主物品必然匹配：EAE 宿主的 {@code getTerminalIcon()} 覆写返回
+ * 为什么升级库存宿主物品必然匹配：EAE 宿主的 {@code getTerminalIcon} 覆写返回
  * EAE 自身物品（部件返回 part item、方块返回 EX_PATTERN_PROVIDER），超大接口走
- * AE2 {@code createLogic()} 传 {@code getItemFromBlockEntity()} / 构造器 partItem——
+ * AE2 {@code createLogic} 传 {@code getItemFromBlockEntity} / 构造器 partItem——
  * 与本类注册的四个 ID 一一对应，AE2 准入查询（{@code Upgrades.getMaxInstallable}）成立。
  */
 public final class ThEExtendedAE {
@@ -38,7 +37,7 @@ public final class ThEExtendedAE {
         Item card = ModItems.ESSENTIA_UPGRADE_CARD.get();
 
         // 同设备方块/部件显示名相同（EAE zh_cn/en_us lang 实证），tooltipGroup 传
-        // EAE 方块翻译键使「支持设备」列表合并显示，对齐本项目 MGMT-TOOLTIP 范式。
+        // EAE 方块翻译键使「支持设备」列表合并显示，对齐本项目 范式。
         registerHost(card, "ex_pattern_provider", "block.extendedae.ex_pattern_provider");
         registerHost(card, "ex_pattern_provider_part", "block.extendedae.ex_pattern_provider");
         registerHost(card, "oversize_interface", "block.extendedae.oversize_interface");

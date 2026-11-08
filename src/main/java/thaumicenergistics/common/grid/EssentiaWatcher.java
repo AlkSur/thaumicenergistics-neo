@@ -1,9 +1,14 @@
 package thaumicenergistics.common.grid;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
 import thaumicenergistics.api.grid.IEssentiaWatcher;
 import thaumicenergistics.api.grid.IEssentiaWatcherHost;
-import java.util.*;
 
 /**
  * 监听源质网格的变化并通知 host。

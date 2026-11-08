@@ -1,20 +1,20 @@
 package thaumicenergistics.common.blocks;
 
+import appeng.datagen.providers.tags.ConventionTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import thaumicenergistics.ThaumicEnergistics;
-import appeng.datagen.providers.tags.ConventionTags;
 
 /**
  * AE2 扳手拆卸处理。AE2 的 WrenchHook 只处理 AEBaseBlockEntity，ThE 方块 BE 不走该路径；

@@ -2,6 +2,7 @@ package thaumicenergistics.common.items;
 
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.PartHelper;
+import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
@@ -10,8 +11,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import org.jetbrains.annotations.Nullable;
 import thaumicenergistics.common.parts.ArcaneCraftingTerminalPart;
-
-import java.util.List;
 
 public class PartItemArcaneCraftingTerminal extends Item implements IPartItem<ArcaneCraftingTerminalPart> {
 

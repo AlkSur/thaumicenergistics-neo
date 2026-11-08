@@ -1,7 +1,22 @@
 package thaumicenergistics.common.tiles;
 
+import appeng.api.config.Actionable;
+import appeng.api.networking.GridFlags;
+import appeng.api.networking.GridHelper;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
+import appeng.api.networking.IInWorldGridNodeHost;
+import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.security.IActionHost;
+import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.storage.IStorageService;
+import appeng.api.networking.ticking.IGridTickable;
+import appeng.api.networking.ticking.TickRateModulation;
+import appeng.api.networking.ticking.TickingRequest;
+import appeng.api.stacks.AEKey;
+import appeng.api.storage.MEStorage;
 import java.util.ArrayList;
-import thaumicenergistics.common.crafting.ProbabilityBrainRules;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -9,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -26,29 +40,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
-
-import appeng.api.config.Actionable;
-import appeng.api.networking.GridFlags;
-import appeng.api.networking.GridHelper;
-import appeng.api.networking.IGrid;
-import appeng.api.networking.IGridNode;
-import appeng.api.networking.IGridNodeListener;
-import appeng.api.networking.IManagedGridNode;
-import appeng.api.networking.IInWorldGridNodeHost;
-import appeng.api.networking.security.IActionHost;
-import appeng.api.networking.security.IActionSource;
-import appeng.api.networking.storage.IStorageService;
-import appeng.api.networking.ticking.IGridTickable;
-import appeng.api.networking.ticking.TickRateModulation;
-import appeng.api.networking.ticking.TickingRequest;
-import appeng.api.stacks.AEKey;
-import appeng.api.storage.MEStorage;
-
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.common.research.TCResearchManager;
-
 import thaumicenergistics.common.blocks.BrainOfProbabilityBlock;
 import thaumicenergistics.common.blocks.BrainOfProbabilityTopBlock;
+import thaumicenergistics.common.crafting.ProbabilityBrainRules;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModBlockEntities;
@@ -102,7 +98,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         }
     };
 
-    // ===== 内容物与状态 =====
     private ItemStack brain = ItemStack.EMPTY;
     private final ItemStack[] cards = new ItemStack[MAX_CARDS];
     /** 绑定宿主（放入脑的玩家）；null = 未认领。 */
@@ -132,8 +127,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         mainNode.setIdlePowerUsage(AE_PER_TICK);
         actionSource = IActionSource.ofMachine(this);
     }
-
-    // ===== 生命周期 =====
 
     @Override
     public void onLoad() {
@@ -168,8 +161,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
     public IGridNode getActionableNode() {
         return mainNode.getNode();
     }
-
-    // ===== 周期主循环（CE BlockEntityGachaBox.tickingRequest 同构） =====
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
@@ -301,7 +292,7 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         this.turnPays = false;
         setChanged();
         if (!paid) {
-            // 白转：清掉上次成功出货的 Jade 残留（T-M6-JADE-FIX）
+            // 白转：清掉上次成功出货的 Jade 残留
             this.lastPayout.clear();
             setChanged();
             return;
@@ -314,7 +305,7 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
     }
 
     /**
-     * 产出结算（T-M6-GACHA-REV，用户拍板）：掷中后从候选池随机挑 5~7 个不重复要素、
+     * 产出结算（，用户拍板）：掷中后从候选池随机挑 5~7 个不重复要素、
      * 每要素 1~3 点，逐要素入池。候选池 = 全部元始要素 + 投放者已发现的复合要素
      * （未发现复合要素不进池，防剧透）；候选池不足时有多少给多少，至少 1 类也发。
      * 不保底认知——认知只当燃料（payForTurn 零触碰）；出货率公式（payoutChance）零触碰。
@@ -380,8 +371,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
                 parts, kinds, totalPoints);
     }
 
-    // ===== 骰子（CE GachaOdds 同构） =====
-
     /** 箱子为什么停着不动：blankScreen = 该修装置（死屏），其余为待机屏。 */
     private enum WaitReason {
         NO_STRUCTURE, NO_BRAIN, UNBOUND_BRAIN, NO_CHANNEL, OWNER_OFFLINE, NO_ESSENTIA;
@@ -400,8 +389,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         var id = TCReflection.getAspectId(aspect);
         return id == null ? null : AEssentiaKey.of(id);
     }
-
-    // ===== 状态查询 =====
 
     /** 最近一次出货明细（要素 tag → 点数，只读视图；Jade「本轮奖励」展示）。 */
     public Map<String, Integer> lastPayout() {
@@ -464,8 +451,6 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         }
         return server.getPlayerByUUID(owner) instanceof ServerPlayer bound && bound.isAlive() ? bound : null;
     }
-
-    // ===== 装填与取出（B3 批次由方块层调用） =====
 
     /** 放入一颗罐装脑（thaumcraft:brain_jar）并绑定宿主；作废上一任宿主的转动。 */
     public void addBrain(Player player, ItemStack held) {
@@ -579,8 +564,8 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
     }
 
     /** 空手右键状态反馈（actionbar 单行）。 */
-    public net.minecraft.network.chat.Component buildStatus() {
-        net.minecraft.network.chat.Component state;
+    public Component buildStatus() {
+        Component state;
         if (!hasBrain()) {
             state = Component.translatable("thaumicenergistics.brain_prob.status.idle");
         } else if (turnSeconds > 0) {
@@ -588,13 +573,11 @@ public class BrainOfProbabilityBlockEntity extends ThETileBase
         } else {
             state = Component.translatable("thaumicenergistics.brain_prob.status.waiting");
         }
-        net.minecraft.network.chat.Component ownerDisplay = isBound()
+        Component ownerDisplay = isBound()
                 ? Component.literal(ownerName)
                 : Component.translatable("thaumicenergistics.brain_prob.status.unbound");
         return Component.translatable("thaumicenergistics.brain_prob.status", state, cardCount(), ownerDisplay);
     }
-
-    // ===== NBT =====
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {

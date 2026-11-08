@@ -1,20 +1,5 @@
 package thaumicenergistics.mixins.ae2.bus;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionHost;
@@ -27,9 +12,21 @@ import appeng.parts.automation.IOBusPart;
 import appeng.parts.automation.ImportBusPart;
 import appeng.parts.automation.UpgradeablePart;
 import appeng.util.ConfigInventory;
-
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.api.storage.AspectStack;
+import thaumicenergistics.common.essentia.capability.EssentiaEnergy;
 import thaumicenergistics.common.essentia.capability.EssentiaTransfer;
 import thaumicenergistics.common.essentia.capability.EssentiaTransferBuffer;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
@@ -43,7 +40,7 @@ import thaumicenergistics.init.ModItems;
 public abstract class MixinImportBusPart {
 
     /**
-     * 原版总线的操作源。原版 {@code IOBusPart} 用 {@code new MachineSource(this)} 构造（IOBusPart.java:95），
+     * 原版总线的操作源。原版 {@code IOBusPart} 用 {@code new MachineSource(this)} 构造，
      * 该字段声明在父类、无法 {@code @Shadow}，故在此等价重建并缓存。
      */
     @Unique
@@ -64,7 +61,7 @@ public abstract class MixinImportBusPart {
     /**
      * 单次搬运量 = 基础速率 8 × 每 tick 操作次数（受加速卡影响），与本模组三总线一致。
      * <p>
-     * 公式照抄 {@code IOBusPart.getOperationsPerTick()}（IOBusPart.java:194-202）；原方法声明在父类、
+     * 公式照抄 {@code IOBusPart.getOperationsPerTick}；原方法声明在父类、
      * 无法 {@code @Shadow}，故经公开接口 {@code getInstalledUpgrades} 自算。仅计 AE2 加速卡，源质卡天然不计入。
      */
     @Unique
@@ -125,7 +122,7 @@ public abstract class MixinImportBusPart {
             return;
         }
 
-        // 卡路径过滤（T-M1-011）：宿主 config 配置了源质键 → 只搬选中的要素（配置外要素本轮跳过，留在容器里）
+        // 卡路径过滤：宿主 config 配置了源质键 → 只搬选中的要素（配置外要素本轮跳过，留在容器里）
         List<AEssentiaKey> configured = thE$configuredEssentia();
         EssentiaTransfer.Pull pull = EssentiaTransfer.pull(adjacentBE, grid, thE$source(), rate,
                 side.getOpposite(), id -> configured.isEmpty() || configured.contains(AEssentiaKey.of(id)));
@@ -141,7 +138,7 @@ public abstract class MixinImportBusPart {
     /**
      * 从宿主<b>原生 config</b>（物品/流体/源质共存一格）读出已配置的源质键。
      * <p>
-     * 经公开 getter {@code IOBusPart.getConfig()} 读取——{@code config} 字段声明在父类 {@code IOBusPart}
+     * 经公开 getter {@code IOBusPart.getConfig} 读取——{@code config} 字段声明在父类 {@code IOBusPart}
      * （:79），目标类 {@code ImportBusPart} 未声明，故禁 {@code @Shadow}（Mixin 只解析目标类自身声明的成员）。
      */
     @Unique
@@ -157,7 +154,7 @@ public abstract class MixinImportBusPart {
     }
 
     /**
-     * 把缓冲里的源质注入网络（沿用原 ThE 导入总线 flushBuffer 语义，该总线 T-M2-REMOVE 已删）。
+     * 把缓冲里的源质注入网络（沿用原 ThE 导入总线 flushBuffer 语义，该总线 已删）。
      *
      * @return 本次是否注入了任意数量
      */
@@ -172,7 +169,7 @@ public abstract class MixinImportBusPart {
             buffer.thE$setTransferBuffer(AspectStack.EMPTY);
             return false;
         }
-        long injected = thaumicenergistics.common.essentia.capability.EssentiaEnergy.transfer(grid, pending.amount(),
+        long injected = EssentiaEnergy.transfer(grid, pending.amount(),
                 allowed -> grid.getStorageService().getInventory().insert(key, allowed, Actionable.MODULATE, thE$source()));
         if (injected <= 0) {
             return false;
@@ -204,7 +201,7 @@ public abstract class MixinImportBusPart {
         return ((UpgradeablePart) (Object) this).getUpgrades().isInstalled(ModItems.ESSENTIA_UPGRADE_CARD.get());
     }
 
-    /** 能力缺失告警（一次性）：{@code MixinIOBusPart} 未应用时鸭子的源质接口不存在——禁止静默跳过（T-M1-010）。 */
+    /** 能力缺失告警（一次性）：{@code MixinIOBusPart} 未应用时鸭子的源质接口不存在——禁止静默跳过。 */
     @Unique
     private void thE$warnMissingCapability(String capability) {
         if (!thE$warnedMissingCapability) {

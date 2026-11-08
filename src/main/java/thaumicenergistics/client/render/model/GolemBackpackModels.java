@@ -3,21 +3,28 @@ package thaumicenergistics.client.render.model;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 import net.minecraft.client.renderer.FaceInfo;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.entities.BackpackSkins;
@@ -28,7 +35,7 @@ import thaumicenergistics.common.entities.BackpackSkins;
  * Full notice: META-INF/licenses/thaumicenergistics-ce-backpack.txt.
  * Uses direct texture coordinates; these vertices must not use the block atlas.
  */
-@net.neoforged.api.distmarker.OnlyIn(net.neoforged.api.distmarker.Dist.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public final class GolemBackpackModels {
     public static final ResourceLocation RESOURCE = ThaumicEnergistics.id("models/entity/golem_backpack.json");
     private static volatile GolemBackpackModels current = new GolemBackpackModels(
@@ -104,6 +111,7 @@ public final class GolemBackpackModels {
             var element = value.getAsJsonObject();
             var from = vector(element.getAsJsonArray("from"));
             var to = vector(element.getAsJsonArray("to"));
+            // Reversed bounds are intentional: the lamp outline is an inward-facing shell.
             var transform = elementTransform(element);
             for (var entry : element.getAsJsonObject("faces").entrySet()) {
                 var direction = Direction.byName(entry.getKey());
@@ -193,10 +201,13 @@ public final class GolemBackpackModels {
             boolean working, int light, int overlay) {
         poses.pushPose();
         poses.translate(translation.x, translation.y, translation.z);
-        poses.mulPose(new org.joml.Quaternionf().rotationXYZ(
+        poses.mulPose(new Quaternionf().rotationXYZ(
                 (float) Math.toRadians(rotation.x), (float) Math.toRadians(rotation.y), (float) Math.toRadians(rotation.z)));
         poses.scale(scale.x, scale.y, scale.z);
         var pose = poses.last();
+        // The attachment flips Y. Restore winding after any reflected pose, while
+        // preserving the outline's inward-facing geometry and its UV coordinates.
+        boolean reflected = pose.pose().determinant() < 0;
         var normal = new Vector3f();
         for (var quad : quads) {
             String key = working ? connectedTextures.getOrDefault(quad.texture(), quad.texture()) : quad.texture();
@@ -204,12 +215,13 @@ public final class GolemBackpackModels {
             boolean emissive = emissiveTextures.contains(texture);
             VertexConsumer buffer = buffers.getBuffer(renderTypes.computeIfAbsent(texture,
                     id -> emissiveTextures.contains(id)
-                            ? RenderType.entityTranslucentEmissive(id)
-                            : RenderType.entityCutoutNoCull(id)));
+                            ? emissiveWithCull(id)
+                            : RenderType.entityCutout(id)));
             normal.set(quad.normal());
             pose.normal().transform(normal).normalize();
-            int faceLight = emissive ? net.minecraft.client.renderer.LightTexture.FULL_BRIGHT : light;
-            for (var vertex : quad.vertices()) {
+            int faceLight = emissive ? LightTexture.FULL_BRIGHT : light;
+            for (int i = 0; i < 4; i++) {
+                var vertex = quad.vertices().get(reflected ? 3 - i : i);
                 var position = vertex.position();
                 buffer.addVertex(pose, position.x, position.y, position.z)
                         .setColor(255, 255, 255, 255).setUv(vertex.u(), vertex.v())
@@ -217,5 +229,20 @@ public final class GolemBackpackModels {
             }
         }
         poses.popPose();
+    }
+
+    private static RenderType emissiveWithCull(ResourceLocation texture) {
+        // Vanilla entityTranslucentEmissive disables culling, which exposes both
+        // sides of the negative-size outline and paints it over the lamp itself.
+        return RenderType.create("thaumicenergistics_backpack_emissive",
+                DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 1536, true, true,
+                RenderType.CompositeState.builder()
+                        .setShaderState(RenderStateShard.RENDERTYPE_ENTITY_TRANSLUCENT_EMISSIVE_SHADER)
+                        .setTextureState(new RenderStateShard.TextureStateShard(texture, false, false))
+                        .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+                        .setCullState(RenderStateShard.CULL)
+                        .setWriteMaskState(RenderStateShard.COLOR_WRITE)
+                        .setOverlayState(RenderStateShard.OVERLAY)
+                        .createCompositeState(true));
     }
 }

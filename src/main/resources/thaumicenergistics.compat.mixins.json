@@ -7,12 +7,13 @@
     "aae.MixinAdvProviderUpgrades",
     "aae.MixinAdvProviderHost",
     "aae.MixinAdvProviderMenu",
-    "aae.MixinAdvProviderEssentia",
-    "ae2lt.MixinOverloadedProviderTarget"
+    "aae.MixinAdvProviderEssentia"
   ],
   "client": [
     "aae.MixinAdvProviderScreen",
     "aae.MixinSmallAdvProviderScreen"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

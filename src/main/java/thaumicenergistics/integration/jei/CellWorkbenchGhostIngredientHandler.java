@@ -2,13 +2,10 @@ package thaumicenergistics.integration.jei;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.resources.ResourceLocation;
-
 import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
 import mezz.jei.api.ingredients.ITypedIngredient;
-
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.resources.ResourceLocation;
 import thaumicenergistics.common.container.GuiEssentiaCellWorkbench;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.common.network.CellWorkbenchC2SPacket;

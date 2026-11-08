@@ -1,7 +1,7 @@
 package thaumicenergistics.common.integration.tc;
 
-import thaumicenergistics.api.storage.IAspectStack;
 import java.util.Optional;
+import thaumicenergistics.api.storage.IAspectStack;
 
 /**
  * 源质类型与数量转换辅助。

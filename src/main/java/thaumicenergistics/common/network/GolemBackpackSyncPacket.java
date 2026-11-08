@@ -6,9 +6,9 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.entities.BackpackSkins;
-import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
 
 /**
  * 服务端→客户端 网络包：同步傀儡背包的连接状态和皮肤。

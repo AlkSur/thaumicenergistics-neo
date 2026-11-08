@@ -1,13 +1,12 @@
 package thaumicenergistics.common.network;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import thaumicenergistics.common.entities.BackpackSkins;
-import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
-
 import java.util.Map;
 import java.util.WeakHashMap;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import thaumcraft.common.entities.golem.ThaumcraftGolemEntity;
 import thaumicenergistics.client.render.layer.GolemBackpackLayer;
+import thaumicenergistics.common.entities.BackpackSkins;
 
 /**
  * 客户端侧缓存：存储每个傀儡的背包连接状态和皮肤。

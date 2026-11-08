@@ -1,22 +1,22 @@
 package thaumicenergistics.common.essentia.capability;
 
-import java.util.List;
-import java.util.function.Supplier;
-
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.block.entity.BlockEntity;
-
 import appeng.api.config.Actionable;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.MEStorage;
-
+import java.util.List;
+import java.util.function.Supplier;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import thaumcraft.api.aspects.Aspect;
+import thaumcraft.api.aspects.IAspectContainer;
 import thaumcraft.common.essentia.AspectContainer;
 import thaumcraft.common.essentia.AspectTank;
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.integration.tc.EssentiaEndpoints;
 import thaumicenergistics.common.integration.tc.TCReflection;
 
 /**
@@ -33,14 +33,14 @@ public class EssentiaContainerStorage implements MEStorage {
     /** 每次实时解析相邻方块实体（总线朝向方块可被替换/移除）。 */
     private final Supplier<BlockEntity> target;
     private final Component description;
-    private final Supplier<net.minecraft.core.Direction> accessSide;
+    private final Supplier<Direction> accessSide;
 
     public EssentiaContainerStorage(Supplier<BlockEntity> target, Component description) {
         this(target, description, () -> null);
     }
 
     public EssentiaContainerStorage(Supplier<BlockEntity> target, Component description,
-            Supplier<net.minecraft.core.Direction> accessSide) {
+            Supplier<Direction> accessSide) {
         this.target = target;
         this.description = description;
         this.accessSide = accessSide;
@@ -59,11 +59,11 @@ public class EssentiaContainerStorage implements MEStorage {
         if (aspect == null) {
             return 0;
         }
-        var side = thaumicenergistics.common.integration.tc.EssentiaEndpoints.accessSide(be, accessSide.get());
-        var transport = thaumicenergistics.common.integration.tc.EssentiaEndpoints.transport(be, side);
+        var side = EssentiaEndpoints.accessSide(be, accessSide.get());
+        var transport = EssentiaEndpoints.transport(be, side);
         if (transport != null && side != null
                 && (!transport.isConnectable(side) || !transport.canInputFrom(side))) return 0;
-        if (be instanceof thaumcraft.api.aspects.IAspectContainer container
+        if (be instanceof IAspectContainer container
                 && !container.doesContainerAccept(aspect)) return 0;
 
         // TC 内部 AspectContainer（要素罐子 / 奥术蒸馏器 等）：单方面储罐，容量可精确读取，
@@ -89,7 +89,7 @@ public class EssentiaContainerStorage implements MEStorage {
             if (mode == Actionable.SIMULATE) {
                 return request;
             }
-            int accepted = thaumicenergistics.common.integration.tc.EssentiaEndpoints.insert(be, key.getId(), request, side);
+            int accepted = EssentiaEndpoints.insert(be, key.getId(), request, side);
             if (accepted > 0) {
                 be.setChanged();
             }
@@ -101,7 +101,7 @@ public class EssentiaContainerStorage implements MEStorage {
         if (mode == Actionable.SIMULATE) {
             return amount;
         }
-        return thaumicenergistics.common.integration.tc.EssentiaEndpoints.insert(
+        return EssentiaEndpoints.insert(
                 be, key.getId(), (int) Math.min(amount, Integer.MAX_VALUE), side);
     }
 
@@ -117,14 +117,14 @@ public class EssentiaContainerStorage implements MEStorage {
         int request = (int) Math.min(amount, Integer.MAX_VALUE);
         if (mode == Actionable.SIMULATE) {
             // 只统计、不动容器
-            for (AspectStack stack : thaumicenergistics.common.integration.tc.EssentiaEndpoints.contents(be, accessSide.get())) {
+            for (AspectStack stack : EssentiaEndpoints.contents(be, accessSide.get())) {
                 if (stack.aspectId().equals(key.getId())) {
                     return Math.min(stack.amount(), request);
                 }
             }
             return 0;
         }
-        AspectStack extracted = thaumicenergistics.common.integration.tc.EssentiaEndpoints.extract(
+        AspectStack extracted = EssentiaEndpoints.extract(
                 be, key.getId(), request, accessSide.get());
         return extracted == null ? 0 : extracted.amount();
     }
@@ -135,7 +135,7 @@ public class EssentiaContainerStorage implements MEStorage {
         if (be == null) {
             return;
         }
-        List<AspectStack> stacks = thaumicenergistics.common.integration.tc.EssentiaEndpoints.contents(be, accessSide.get());
+        List<AspectStack> stacks = EssentiaEndpoints.contents(be, accessSide.get());
         for (AspectStack stack : stacks) {
             if (stack.amount() <= 0) continue;
             AEssentiaKey key = AEssentiaKey.of(stack.aspectId());

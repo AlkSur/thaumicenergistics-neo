@@ -1,19 +1,22 @@
 package thaumicenergistics.common.essentia.capability;
 
 import appeng.api.config.Actionable;
-import appeng.api.config.RedstoneMode;
 import appeng.api.config.PowerMultiplier;
+import appeng.api.config.RedstoneMode;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.security.IActionSource;
 import appeng.blockentity.networking.CableBusBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.parts.automation.ExportBusPart;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.IEssentiaTransport;
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
 import thaumicenergistics.common.integration.tc.AspectIds;
-import thaumicenergistics.common.integration.tc.EssentiaEndpoints;
 import thaumicenergistics.common.integration.tc.EssentiaConversionHelper;
+import thaumicenergistics.common.integration.tc.EssentiaEndpoints;
 import thaumicenergistics.init.ModItems;
 
 /**
@@ -53,8 +56,8 @@ public final class ExportBusEssentiaTransport implements IEssentiaTransport {
 
     /** Called only during the bus's normal, power/channel/redstone-controlled work tick. */
     public static boolean reserveForConsumer(ExportBusPart bus, AEssentiaKey key, int rate,
-            net.minecraft.world.level.block.entity.BlockEntity consumer, Direction consumerSide,
-            appeng.api.networking.IGrid grid, appeng.api.networking.security.IActionSource source) {
+            BlockEntity consumer, Direction consumerSide,
+            IGrid grid, IActionSource source) {
         if (!(bus instanceof EssentiaTransferBuffer buffer) || !buffer.thE$getTransferBuffer().isEmpty()) return false;
         var transport = EssentiaEndpoints.transport(consumer, consumerSide);
         var aspect = AspectIds.findAspectById(key.getId());
