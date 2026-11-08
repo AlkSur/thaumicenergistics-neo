@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "thaumicenergistics:flawless_budding_thaumic_crystal",
+    "thaumicenergistics:flawed_budding_thaumic_crystal",
+    "thaumicenergistics:chipped_budding_thaumic_crystal",
+    "thaumicenergistics:damaged_budding_thaumic_crystal"
+  ]
+}

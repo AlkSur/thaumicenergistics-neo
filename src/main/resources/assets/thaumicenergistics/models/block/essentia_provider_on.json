@@ -1,0 +1,6 @@
+{
+  "parent": "thaumicenergistics:block/essentia_provider",
+  "textures": {
+    "all": "thaumicenergistics:block/essentia_provider_on"
+  }
+}

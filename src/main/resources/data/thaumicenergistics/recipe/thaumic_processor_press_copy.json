@@ -1,0 +1,16 @@
+{
+  "type": "ae2:inscriber",
+  "ingredients": {
+    "top": {
+      "item": "thaumicenergistics:thaumic_processor_press"
+    },
+    "middle": {
+      "item": "minecraft:iron_block"
+    }
+  },
+  "mode": "inscribe",
+  "result": {
+    "id": "thaumicenergistics:thaumic_processor_press",
+    "count": 1
+  }
+}

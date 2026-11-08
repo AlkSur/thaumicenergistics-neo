@@ -1,0 +1,6 @@
+{
+  "parent": "thaumicenergistics:block/infusion_provider",
+  "textures": {
+    "all": "thaumicenergistics:block/infusion_provider_on"
+  }
+}

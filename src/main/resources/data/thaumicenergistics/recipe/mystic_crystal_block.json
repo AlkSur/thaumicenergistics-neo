@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CC",
+    "CC"
+  ],
+  "key": {
+    "C": {
+      "item": "thaumicenergistics:mystic_crystal"
+    }
+  },
+  "result": {
+    "id": "thaumicenergistics:mystic_crystal_block",
+    "count": 1
+  }
+}

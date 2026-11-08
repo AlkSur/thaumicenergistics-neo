@@ -1,0 +1,6 @@
+{
+  "parent": "thaumicenergistics:block/essentia_vibration_chamber",
+  "textures": {
+    "front": "thaumicenergistics:block/e_vibration_face_on"
+  }
+}

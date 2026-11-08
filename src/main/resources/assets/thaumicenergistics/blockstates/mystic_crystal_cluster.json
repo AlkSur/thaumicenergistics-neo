@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "thaumicenergistics:block/mystic_crystal_cluster"
+    },
+    "facing=down": {
+      "model": "thaumicenergistics:block/mystic_crystal_cluster",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "thaumicenergistics:block/mystic_crystal_cluster",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "thaumicenergistics:block/mystic_crystal_cluster",
+      "x": 90,
+      "y": 180
+    },
+    "facing=east": {
+      "model": "thaumicenergistics:block/mystic_crystal_cluster",
+      "x": 90,
+      "y": 90
+    },
+    "facing=west": {
+      "model": "thaumicenergistics:block/mystic_crystal_cluster",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

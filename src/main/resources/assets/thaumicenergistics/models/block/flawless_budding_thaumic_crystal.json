@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "thaumicenergistics:block/flawless_budding_thaumic_crystal"
+  }
+}

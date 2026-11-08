@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cross",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "cross": "thaumicenergistics:block/small_mystic_crystal_bud"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "ae2:inscriber",
+  "ingredients": {
+    "top": {
+      "item": "thaumicenergistics:mystic_circuit_board"
+    },
+    "middle": {
+      "item": "minecraft:redstone"
+    },
+    "bottom": {
+      "item": "ae2:printed_silicon"
+    }
+  },
+  "mode": "press",
+  "result": {
+    "id": "thaumicenergistics:mystic_processor",
+    "count": 1
+  }
+}

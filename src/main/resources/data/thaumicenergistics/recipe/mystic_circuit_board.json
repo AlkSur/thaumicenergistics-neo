@@ -1,0 +1,16 @@
+{
+  "type": "ae2:inscriber",
+  "ingredients": {
+    "top": {
+      "item": "thaumicenergistics:thaumic_processor_press"
+    },
+    "middle": {
+      "item": "thaumicenergistics:mystic_crystal"
+    }
+  },
+  "mode": "inscribe",
+  "result": {
+    "id": "thaumicenergistics:mystic_circuit_board",
+    "count": 1
+  }
+}

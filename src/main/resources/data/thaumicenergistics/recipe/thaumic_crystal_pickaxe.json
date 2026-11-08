@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:smithing_transform",
+  "template": {
+    "item": "thaumicenergistics:thaumic_upgrade_smithing_template"
+  },
+  "base": {
+    "item": "ae2:fluix_pickaxe"
+  },
+  "addition": {
+    "item": "thaumicenergistics:mystic_crystal_block"
+  },
+  "result": {
+    "id": "thaumicenergistics:thaumic_crystal_pickaxe"
+  }
+}

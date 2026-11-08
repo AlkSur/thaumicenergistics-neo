@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "thaumicenergistics:mystic_crystal_block"
+    }
+  ],
+  "result": {
+    "id": "thaumicenergistics:mystic_crystal",
+    "count": 4
+  }
+}
