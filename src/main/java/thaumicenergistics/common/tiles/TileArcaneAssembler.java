@@ -206,7 +206,8 @@ public class TileArcaneAssembler extends ThETileBase
             for (int i = 0; i < SLOT_COUNT; i++) {
                 if (i >= PATTERN_SLOT_START && i <= PATTERN_SLOT_END) continue;
                 if (i == TARGET_SLOT) continue;
-                ItemStack stack = internalInventory.getItem(i);
+                // removeItemNoUpdate：掉落的同时清空槽位，仍打开着的菜单无法再取出同一物品。
+                ItemStack stack = internalInventory.removeItemNoUpdate(i);
                 if (!stack.isEmpty()) {
                     Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
                 }

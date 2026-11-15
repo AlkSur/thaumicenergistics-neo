@@ -43,6 +43,7 @@ public class TileKnowledgeInscriber extends ThETileBase {
         super.onBreakBlock();
         if (level != null && !level.isClientSide) {
             ItemStack stack = inventory.getStackInSlot(KCORE_SLOT);
+            inventory.setStackInSlot(KCORE_SLOT, ItemStack.EMPTY);
             if (!stack.isEmpty()) {
                 Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
             }

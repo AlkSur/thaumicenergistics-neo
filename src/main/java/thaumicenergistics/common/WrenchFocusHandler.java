@@ -42,8 +42,19 @@ public final class WrenchFocusHandler {
         if (level.isClientSide()) {
             return;
         }
+        // 服务端对 START / STOP / ABORT 都会触发 LeftClickBlock：只在 START 处理，
+        // 否则一次点击旋转两次（180°）。
+        if (event.getAction() != PlayerInteractEvent.LeftClickBlock.Action.START) {
+            return;
+        }
 
         BlockPos pos = event.getPos();
+        // 只旋转 ME 设备。对任意方块调用 rotate 会把床、门、双箱等多格方块的单格转歪，
+        // 下一次形状更新整件消失且无掉落；同时遵守冒险模式与出生点保护。
+        if (!ItemFocusAEWrench.isRotationTarget(level, pos)
+                || !thaumicenergistics.common.blocks.ThEWrenchHandler.mayModify(player, level, pos)) {
+            return;
+        }
         BlockState state = level.getBlockState(pos);
         BlockState rotated = state.rotate(level, pos, Rotation.CLOCKWISE_90);
 

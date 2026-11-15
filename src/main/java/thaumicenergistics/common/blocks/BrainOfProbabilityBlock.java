@@ -55,6 +55,17 @@ public class BrainOfProbabilityBlock extends ThEBaseEntityBlock {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
+        // 两格高机器：上格必须在建筑高度内且可被替换，否则拒绝放置（原实现无条件覆盖上方方块）。
+        BlockPos above = context.getClickedPos().above();
+        Level level = context.getLevel();
+        if (level.isOutsideBuildHeight(above) || !level.getBlockState(above).canBeReplaced(context)) {
+            if (!level.isClientSide && context.getPlayer() != null) {
+                context.getPlayer().displayClientMessage(Component.translatableWithFallback(
+                        "thaumicenergistics.brain_prob.no_room",
+                        "The Brain of Probability needs a free block above it"), true);
+            }
+            return null;
+        }
         return this.defaultBlockState()
                 .setValue(FACING, context.getHorizontalDirection().getOpposite());
     }
@@ -62,7 +73,21 @@ public class BrainOfProbabilityBlock extends ThEBaseEntityBlock {
     /** 放置成功后补齐上格（上格 STACKED=true，见 BrainOfProbabilityTopBlock）。 */
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
-        level.setBlock(pos.above(), ModBlocks.BRAIN_OF_PROBABILITY_TOP.get()
+        placeTop(level, pos);
+    }
+
+    /**
+     * 只在上格为空气/可替换方块时补上格，绝不覆盖已有方块（基岩、容器、他人建筑）。
+     * 非玩家放置（setBlock/结构/自动化）走不到 getStateForPlacement 的检查，这里再守一次；
+     * 上格放不下时底座保持“结构不完整”（黑屏），不会损坏世界。
+     */
+    public static boolean placeTop(Level level, BlockPos pos) {
+        BlockPos above = pos.above();
+        if (level.isOutsideBuildHeight(above)) return false;
+        BlockState existing = level.getBlockState(above);
+        if (existing.getBlock() instanceof BrainOfProbabilityTopBlock) return true;
+        if (!existing.isAir() && !existing.canBeReplaced()) return false;
+        return level.setBlock(above, ModBlocks.BRAIN_OF_PROBABILITY_TOP.get()
                 .defaultBlockState()
                 .setValue(BrainOfProbabilityTopBlock.STACKED, true), 3);
     }

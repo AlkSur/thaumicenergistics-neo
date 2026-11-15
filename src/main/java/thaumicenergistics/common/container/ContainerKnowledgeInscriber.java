@@ -528,6 +528,19 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
         updateRecipe();
     }
 
+    /** 幽灵槽/图案槽内容不是真实物品：双击收集（PICKUP_ALL）不得从中取物。 */
+    @Override
+    public boolean canTakeItemForPickAll(ItemStack stack, Slot slot) {
+        return !(slot instanceof GhostSlot) && slot.container != craftingContainer
+                && super.canTakeItemForPickAll(stack, slot);
+    }
+
+    /** 幽灵槽不参与拖拽分发（QUICK_CRAFT），避免真实物品被“放进”模板格后丢失。 */
+    @Override
+    public boolean canDragTo(Slot slot) {
+        return !(slot instanceof GhostSlot) && super.canDragTo(slot);
+    }
+
     @Override
     public boolean clickMenuButton(Player player, int id) {
         if (!stillValid(player)) return false;
@@ -571,6 +584,10 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     @Override
     public boolean stillValid(Player player) {
         if (tile == null) return true; // Client menus do not carry the server block entity.
+        // 本菜单持有核心的副本并在每次修改后写回方块实体。若方块实体里的核心已被别的途径改动
+        //（另一名玩家同时打开并取走/改写了核心），本副本即过期：必须关闭菜单，
+        // 否则两名玩家可各取走一颗核心（复制），或把过期副本写回覆盖对方的修改。
+        if (!ItemStack.matches(tile.getKCore(), kCoreInventory.getStackInSlot(0))) return false;
         return !tile.isRemoved() && tile.getLevel() == player.level()
                 && player.level().getBlockEntity(tile.getBlockPos()) == tile
                 && player.distanceToSqr(tile.getBlockPos().getX() + 0.5,
@@ -580,7 +597,8 @@ public class ContainerKnowledgeInscriber extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         super.removed(player);
-        syncKCoreToTile();
+        // 每次修改（放/取核心、保存、删除）都已即时写回方块实体；关闭时不再写回，
+        // 以免过期副本（方块已拆、或核心已被他人取走）覆盖真实状态。
         kCoreHandler.close();
     }
 }

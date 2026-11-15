@@ -18,7 +18,6 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import thaumicenergistics.common.tiles.ThETileBase;
-import thaumicenergistics.common.tiles.TileEssentiaVibrationChamber;
 
 public abstract class OrientableEntityBlock extends Block implements EntityBlock {
 
@@ -48,10 +47,8 @@ public abstract class OrientableEntityBlock extends Block implements EntityBlock
      */
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (level.isClientSide()) return ItemInteractionResult.SUCCESS;
-        BlockEntity be = level.getBlockEntity(pos);
-        if (!(be instanceof TileEssentiaVibrationChamber chamber)) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        // 通配吸力：无需切换，直接放行
+        // 两端必须一致：原实现客户端返回 SUCCESS、服务端返回 PASS，手持方块对着谐振仓右键时
+        // 客户端不预测放置（只挥手），方块由服务端延迟同步出现。
         return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
