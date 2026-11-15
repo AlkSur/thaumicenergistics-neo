@@ -3,6 +3,7 @@ package thaumicenergistics.common.tiles;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
@@ -38,6 +39,24 @@ public class TileDistillationPatternEncoder extends ThETileBase {
     public boolean hasPatterns() {
         return !inventory.getStackInSlot(SLOT_ENCODED_PATTERN).isEmpty()
                 || !inventory.getStackInSlot(SLOT_BLANK_PATTERNS).isEmpty();
+    }
+
+    /**
+     * 拆除时掉落空白样板与已编码样板（原实现没有覆写，整组样板随方块消失）。
+     * 源物品槽是幽灵模板（不消耗玩家物品），不掉落。
+     */
+    @Override
+    public void onBreakBlock() {
+        super.onBreakBlock();
+        if (level == null || level.isClientSide) return;
+        for (int slot : new int[]{SLOT_BLANK_PATTERNS, SLOT_ENCODED_PATTERN}) {
+            ItemStack stack = inventory.getStackInSlot(slot);
+            inventory.setStackInSlot(slot, ItemStack.EMPTY);
+            if (!stack.isEmpty()) {
+                Containers.dropItemStack(level, worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), stack);
+            }
+        }
+        inventory.setStackInSlot(SLOT_SOURCE_ITEM, ItemStack.EMPTY);
     }
 
     @Override

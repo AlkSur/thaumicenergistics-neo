@@ -60,6 +60,8 @@ public final class FumoBlock extends Block {
 
     private void pickUp(Level level, BlockPos pos, Player player) {
         if (level.isClientSide) return;
+        // 冒险模式/出生点保护内不能把方块拿走。
+        if (!ThEWrenchHandler.mayModify(player, level, pos)) return;
         ItemStack item = new ItemStack(this);
         level.removeBlock(pos, false);
         if (player.getMainHandItem().isEmpty()) player.setItemInHand(InteractionHand.MAIN_HAND, item);

@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
 import thaumicenergistics.ThaumicEnergistics;
 
 /**
@@ -42,12 +43,35 @@ public final class ThEWrenchHandler {
      * 服务端掉落方块物品并移除方块，客户端播放拆卸音效。
      * 返回 true 表示目标为 ThE 方块且拆卸已执行。
      */
+    /**
+     * 基础权限：旁观/冒险模式（mayBuild=false）与出生点保护、世界边界（mayInteract）内不得拆卸或旋转。
+     * 客户端只做本地可判定的部分，最终以服务端为准。
+     */
+    public static boolean mayModify(Player player, Level level, BlockPos pos) {
+        return !player.isSpectator() && player.mayBuild() && level.mayInteract(player, pos);
+    }
+
+    /**
+     * 远程（法杖核心）操作的权限检查：除 {@link #mayModify} 外再广播一次方块破坏事件，
+     * 让领地/保护类模组有机会拒绝——核心从 24 格外施放，不经过 RightClickBlock，
+     * 不补这一步即可隔着领地边界拆走他人的 ME 设备。
+     */
+    public static boolean mayModifyRemotely(Player player, Level level, BlockPos pos) {
+        if (!mayModify(player, level, pos)) return false;
+        if (level.isClientSide) return true;
+        var event = new BlockEvent.BreakEvent(level, pos, level.getBlockState(pos), player);
+        return !NeoForge.EVENT_BUS.post(event).isCanceled();
+    }
+
     public static boolean disassembleThEBlock(Player player, Level level, BlockPos pos) {
         if (!isDisassemblyTarget(level, pos)) {
             return false;
         }
         BlockEntity be = level.getBlockEntity(pos);
         if (be == null) {
+            return false;
+        }
+        if (!mayModify(player, level, pos)) {
             return false;
         }
 

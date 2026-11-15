@@ -228,7 +228,8 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
 
     private static TileArcaneAssembler resolveTile(Inventory inv, RegistryFriendlyByteBuf buf) {
         var pos = buf.readBlockPos();
-        return (TileArcaneAssembler) inv.player.level().getBlockEntity(pos);
+        // 开包与方块更新存在竞态：位置上可能已不是装配器，不能强转（否则客户端崩溃）。
+        return inv.player.level().getBlockEntity(pos) instanceof TileArcaneAssembler tile ? tile : null;
     }
 
     private ItemStackHandler wrapMachineInventory() {
@@ -317,5 +318,12 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
         return result;
     }
 
-    @Override public boolean stillValid(Player player) { return true; }
+    @Override public boolean stillValid(Player player) {
+        if (assembler == null) return true; // 客户端兜底菜单不持有服务端方块实体
+        var pos = assembler.getBlockPos();
+        // 方块被拆/替换后必须关闭：onBreakBlock 已把核心、护甲、升级卡掉落，继续操作旧库存即复制物品。
+        return !assembler.isRemoved() && assembler.getLevel() == player.level()
+                && player.level().getBlockEntity(pos) == assembler
+                && player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
+    }
 }

@@ -511,5 +511,7 @@
   "tc.research_text.PSEUDO_COREGATHER": "让傀儡收集物品。",
   "tc.research_text.thaumicenergistics:PSEUDO_COREGATHER": "让傀儡收集物品。",
   "tc.research_text.thaumicenergistics:GOLEMWIFI": "让傀儡通过无线连接与 ME 网络交互。",
-  "thaumicenergistics.gui.knowledge_inscriber.unreadable_pattern": "无法读取的配方（选中后可删除）"
+  "thaumicenergistics.gui.knowledge_inscriber.unreadable_pattern": "无法读取的配方（选中后可删除）",
+  "thaumicenergistics.brain_prob.no_room": "概率之脑上方需要一格空位",
+  "thaumicenergistics.focus_aewrench.denied": "你没有权限改动这个方块"
 }

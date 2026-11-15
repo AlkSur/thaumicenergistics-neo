@@ -161,7 +161,9 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
     /** 服务端：设置源物品（JEI 拖拽）——写入 encoder 槽 0 + 刷新 aspects。 */
     public void setSourceItemOnServer(ItemStack stack) {
         if (encoder == null) return;
-        encoder.inventory.setStackInSlot(TileDistillationPatternEncoder.SLOT_SOURCE_ITEM, stack.copy());
+        // 客户端包里的数量不可信：幽灵模板恒为 1 个。
+        encoder.inventory.setStackInSlot(TileDistillationPatternEncoder.SLOT_SOURCE_ITEM,
+                stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(1));
         encoder.setChanged();
         updateAspects();
     }
@@ -277,17 +279,17 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
         if (!encodedSlot.isEmpty()) return;
 
-        blankSlot.shrink(1);
-        if (blankSlot.isEmpty()) {
-            encoder.inventory.setStackInSlot(TileDistillationPatternEncoder.SLOT_BLANK_PATTERNS, ItemStack.EMPTY);
-        }
-
+        // 先解析完所有可能失败的输入，再消耗空白样板：原实现先扣样板、后判 aspectId，
+        // 要素无法映射为网络键时白白吞掉一张空白样板。
         AEItemKey sourceKey = AEItemKey.of(source);
+        ResourceLocation aspectId = TCReflection.getAspectId(selected);
+        if (sourceKey == null || aspectId == null) return;
+
+        encoder.inventory.extractItem(TileDistillationPatternEncoder.SLOT_BLANK_PATTERNS, 1, false);
+
         GenericStack input = new GenericStack(sourceKey, 1);
 
         // 蒸馏语义：源物品 → 选中源质，输出数量 = 源物品中该要素的数量（如骨头食欲=2 → 输出食欲×2）
-        ResourceLocation aspectId = TCReflection.getAspectId(selected);
-        if (aspectId == null) return;
         AspectList objAspects = ThaumcraftApiHelper.getObjectAspects(source);
         long amount = (objAspects != null) ? objAspects.getAmount(selected) : 1;
         if (amount < 1) amount = 1;
@@ -373,13 +375,31 @@ public class ContainerDistillationPatternEncoder extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return true;
+        if (encoder == null) return true; // 客户端菜单不持有服务端方块实体
+        var pos = encoder.getBlockPos();
+        // 方块被拆后必须关闭：样板已随方块掉落，继续操作旧库存即复制物品。
+        return !encoder.isRemoved() && encoder.getLevel() == player.level()
+                && player.level().getBlockEntity(pos) == encoder
+                && player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
+    }
+
+    /** 源物品槽与要素展示槽都不是真实物品：双击收集不得从中取物。 */
+    @Override
+    public boolean canTakeItemForPickAll(ItemStack stack, Slot slot) {
+        return slot.index != SOURCE_SLOT && !(slot instanceof ReadOnlySlot)
+                && super.canTakeItemForPickAll(stack, slot);
+    }
+
+    @Override
+    public boolean canDragTo(Slot slot) {
+        return slot.index != SOURCE_SLOT && super.canDragTo(slot);
     }
 
     @Override
     public void removed(Player player) {
         super.removed(player);
-        if (encoder != null && !encoder.getLevel().isClientSide) {
+        if (encoder != null && encoder.getLevel() != null && !encoder.getLevel().isClientSide
+                && !encoder.isRemoved()) {
             encoder.setChanged();
         }
     }

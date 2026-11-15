@@ -126,6 +126,13 @@ public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
         if (!canDisassembleTarget(level, pos)) {
             return false;
         }
+        // 先过权限再扣 vis：受保护的目标既不拆也不收费。
+        if (!level.isClientSide && !ThEWrenchHandler.mayModifyRemotely(player, level, pos)) {
+            player.displayClientMessage(Component.translatableWithFallback(
+                    "thaumicenergistics.focus_aewrench.denied",
+                    "You are not allowed to modify that block"), true);
+            return false;
+        }
 
         AspectList cost = this.visCost(focusStack);
         if (!wand.consumeVisCost(wandStack, player, cost, false)) {
@@ -145,6 +152,13 @@ public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
         }
 
         return false;
+    }
+
+    /** 核心可旋转的目标：AE2 方块实体，或本模组带方块实体的方块（ME 设备）。 */
+    public static boolean isRotationTarget(Level level, BlockPos pos) {
+        var be = level.getBlockEntity(pos);
+        return be instanceof AEBaseBlockEntity
+                || (be != null && ThEWrenchHandler.isDisassemblyTarget(level, pos));
     }
 
     /** 拆卸资格预检：AE2 原生方块实体（disassembleWithWrench 路径）或 ThE 方块（公共拆卸路径）。 */

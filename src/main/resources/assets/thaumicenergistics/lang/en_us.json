@@ -316,5 +316,7 @@
   "tc.research_text.PSEUDO_COREGATHER": "Teach golems to gather items.",
   "tc.research_text.thaumicenergistics:PSEUDO_COREGATHER": "Teach golems to gather items.",
   "tc.research_text.thaumicenergistics:GOLEMWIFI": "Connect golems wirelessly to the ME network.",
-  "thaumicenergistics.gui.knowledge_inscriber.unreadable_pattern": "Unreadable recipe (select to delete)"
+  "thaumicenergistics.gui.knowledge_inscriber.unreadable_pattern": "Unreadable recipe (select to delete)",
+  "thaumicenergistics.brain_prob.no_room": "The Brain of Probability needs a free block above it",
+  "thaumicenergistics.focus_aewrench.denied": "You are not allowed to modify that block"
 }
