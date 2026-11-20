@@ -35,8 +35,6 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
     /** TC4 内部使用 centivis，1 vis = 100 centivis */
     private static final int CENTIVIS = 100;
 
-    private AspectList requiredAspects = null;
-    private ItemStack wandStack = ItemStack.EMPTY;
     private ContainerArcaneCraftingTerminal container = null;
     private final MEStorage storage;
     private final IEnergySource energySrc;
@@ -54,14 +52,6 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
         this.craftingGrid = craftingGridInv;
     }
 
-    public void setRequiredAspects(AspectList aspects) {
-        this.requiredAspects = aspects;
-    }
-
-    public void setWandStack(ItemStack wandStack) {
-        this.wandStack = wandStack;
-    }
-
     @Override
     public boolean mayPickup(Player player) {
         // AE2 原版：结果槽不可 vanilla 点按取走，所有取走走 doClick（含 vis 检查）
@@ -70,45 +60,19 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
 
     @Override
     public void doClick(InventoryAction action, Player who) {
-        // vis 检查：奥术配方需法杖有足够 vis，否则不合成
-        if (requiredAspects != null && !requiredAspects.isEmpty()) {
-            if (wandStack.isEmpty()) {
-                return;
-            }
-            if (!(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) {
-                return;
-            }
-            AspectList centivisCost = new AspectList();
-            for (Aspect aspect : requiredAspects.aspects()) {
-                centivisCost.add(aspect, requiredAspects.amount(aspect) * CENTIVIS);
-            }
-            if (!wand.consumeVisCost(wandStack, who, centivisCost, false, true)) {
-                return;
-            }
-        }
-
-        // 奥术配方（非 vanilla CRAFTING）不走 AE2 craftItem（findRecipe 只认 vanilla）
-        // 走自定义合成：从合成格读配方 → 产物 + 消耗材料 + 从网络补货
+        // Arcane recipes never go through AE2's craftItem (its findRecipe only knows vanilla recipes).
         if (container != null && container.hasValidRecipe) {
             doArcaneCraft(action, who);
             return;
         }
-
-        // vanilla 配方：严格 AE2（从网络提取材料填合成格）
         super.doClick(action, who);
-        // 消耗 vis（实际扣除）
-        if (requiredAspects != null && !requiredAspects.isEmpty() && !wandStack.isEmpty()) {
-            if (wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand) {
-                AspectList centivisCost = new AspectList();
-                for (Aspect aspect : requiredAspects.aspects()) {
-                    centivisCost.add(aspect, requiredAspects.amount(aspect) * CENTIVIS);
-                }
-                wand.consumeVisCost(wandStack, who, centivisCost, true, true);
-            }
-        }
     }
 
-    /** 奥术配方合成：从合成格读 Thaumcraft 奥术配方 → 产物 + 消耗材料 + 从网络补货。 */
+    /**
+     * Crafts an arcane recipe the way TC's arcane workbench settles it: everything that can fail is
+     * checked before the wand pays, each slot gives up one item and then takes back the recipe's
+     * remainder (empty bucket, retained primordial pearl), and the wand is persisted after paying.
+     */
     private void doArcaneCraft(InventoryAction action, Player who) {
         if (this.getItem().isEmpty() || isRemote()) {
             return;
@@ -117,106 +81,129 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
         var level = who.level();
         if (level.isClientSide()) return;
 
-        // 用 Thaumcraft 奥术配方匹配（取配方对象以支持 retainIngredient 保留原料）
-        var craftContainer = grid.toContainer();
-        IArcaneRecipe arcaneRecipe = ThaumcraftCraftingManager
-                .findMatchingArcaneRecipeEntry(craftContainer, who);
-        if (arcaneRecipe == null) {
+        IArcaneRecipe recipe = ThaumcraftCraftingManager.findMatchingArcaneRecipeEntry(grid.toContainer(), who);
+        if (recipe == null) {
             return;
         }
-        ItemStack arcaneResult = arcaneRecipe.getCraftingResult(craftContainer);
-        if (arcaneResult.isEmpty()) {
-            return;
-        }
-        // 保留原料（retainIngredient，如元始珍珠）：getRemainingItems 返回非空栈的槽位不消耗。
-        // 对应 TC 奥术工作台行为——珍珠作为"催化"留在合成格，仅消耗构材与虚空金属锭。
-        NonNullList<ItemStack> remainders =
-                arcaneRecipe.getRemainingItems(craftContainer);
 
-        // shift=整组到背包、普通=1 个到手
-        int maxTimesToCraft;
         InternalInventory target;
+        int maxTimesToCraft;
         if (action == InventoryAction.CRAFT_SHIFT || action == InventoryAction.CRAFT_ALL) {
             target = new PlayerInternalInventory(who.getInventory());
-            maxTimesToCraft = (int) Math.floor((double) arcaneResult.getMaxStackSize() / (double) arcaneResult.getCount());
+            ItemStack first = recipe.getCraftingResult(grid.toContainer());
+            if (first.isEmpty()) return;
+            maxTimesToCraft = Math.max(1, first.getMaxStackSize() / first.getCount());
             if (action == InventoryAction.CRAFT_ALL) {
                 maxTimesToCraft *= Inventory.INVENTORY_SIZE;
             }
+        } else if (action == InventoryAction.CRAFT_STACK) {
+            // AE2's "craft a stack into the hand" (TEA2-13): repeat until the carried stack is full.
+            target = new CarriedItemInventory(getMenu());
+            ItemStack first = recipe.getCraftingResult(grid.toContainer());
+            if (first.isEmpty()) return;
+            maxTimesToCraft = Math.max(1, first.getMaxStackSize() / first.getCount());
         } else {
             target = new CarriedItemInventory(getMenu());
             maxTimesToCraft = 1;
         }
 
-        int crafted = 0;
+        boolean wandPaid = false;
         for (int x = 0; x < maxTimesToCraft; x++) {
-            // 每轮 vis 检查 + 实际扣减（consume=true）：法杖 vis 不足则停
-            if (requiredAspects != null && !requiredAspects.isEmpty()) {
-                if (wandStack.isEmpty()) break;
-                if (!(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) break;
-                AspectList centivisCost = new AspectList();
-                for (Aspect aspect : requiredAspects.aspects()) {
-                    centivisCost.add(aspect, requiredAspects.amount(aspect) * CENTIVIS);
-                }
-                boolean ok = wand.consumeVisCost(wandStack, who, centivisCost, true, true);
-                if (!ok) {
+            var craftContainer = grid.toContainer();
+            // Research was checked once above; later rounds only re-check the grid.
+            if (x > 0 && !recipe.matches(craftContainer, level, who)) break;
+            ItemStack result = recipe.getCraftingResult(craftContainer);
+            if (result.isEmpty() || !target.simulateAdd(result).isEmpty()) break;
+
+            AspectList centivisCost = centivisCost(recipe, craftContainer);
+            TCFunctionalItems.WandCastingItem wand = null;
+            ItemStack wandStack = ItemStack.EMPTY;
+            if (!centivisCost.isEmpty()) {
+                wandStack = container.liveWand();
+                if (!(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem w)
+                        || !thaumcraft.common.blockentities.ArcaneWorkbenchBlockEntity.isValidWand(wandStack)
+                        || !w.consumeVisCost(wandStack, who, centivisCost, false, true)) {
                     break;
                 }
-            }
-            // 目标满或配方失效则停
-            if (!target.simulateAdd(arcaneResult).isEmpty()) {
-                break;
-            }
-            // 合成前检查奥术配方仍匹配
-            ItemStack currentResult = ThaumcraftCraftingManager
-                    .findMatchingArcaneRecipe(grid.toContainer(), who);
-            if (currentResult.isEmpty()) {
-                break;
+                wand = w;
             }
 
-            // 记录消耗前合成格（首次记录，后续每轮消耗后补货）
+            NonNullList<ItemStack> remainders = recipe.getRemainingItems(craftContainer);
+            if (wand != null) {
+                if (!wand.consumeVisCost(wandStack, who, centivisCost, true, true)) break;
+                wandPaid = true;
+            }
+
             var beforeItems = new HashMap<Integer, ItemStack>();
             for (int i = 0; i < grid.size(); i++) {
                 var s = grid.getStackInSlot(i);
                 if (!s.isEmpty()) beforeItems.put(i, s.copy());
             }
-            // 消耗合成格材料（每格 1 个）；保留原料槽（remainders 非空，如元始珍珠）不消耗
             for (int i = 0; i < grid.size(); i++) {
-                if (!grid.getStackInSlot(i).isEmpty() && remainders.get(i).isEmpty()) {
+                if (!grid.getStackInSlot(i).isEmpty()) {
                     grid.extractItem(i, 1, false);
                 }
+                returnRemainder(grid, i, i < remainders.size() ? remainders.get(i) : ItemStack.EMPTY, who);
             }
-            // 从网络补货（对齐 AE2 终端）
-            if (storage != null && energySrc != null && mySrc != null) {
-                for (var entry : beforeItems.entrySet()) {
-                    int slot = entry.getKey();
-                    var beforeItem = entry.getValue();
-                    var currentItem = grid.getStackInSlot(slot);
-                    if (currentItem.getCount() < beforeItem.getCount()) {
-                        long needed = beforeItem.getCount() - currentItem.getCount();
-                        var key = AEItemKey.of(beforeItem);
-                        if (key != null) {
-                            long extracted = StorageHelper.poweredExtraction(
-                                    energySrc, storage, key, needed, mySrc);
-                            if (extracted > 0) {
-                                grid.setItemDirect(slot, beforeItem.copyWithCount(
-                                        (int) (currentItem.getCount() + extracted)));
-                            }
-                        }
-                    }
-                }
-            }
+            refillFromNetwork(grid, beforeItems);
 
-            // 产物入目标
-            var extra = target.addItems(arcaneResult.copy());
+            result.onCraftedBy(level, who, result.getCount());
+            net.neoforged.neoforge.event.EventHooks.firePlayerCraftingEvent(who, result, craftContainer);
+            var extra = target.addItems(result.copy());
             if (!extra.isEmpty()) {
-                Platform.spawnDrops(who.level(), who.blockPosition(), List.of(extra));
+                Platform.spawnDrops(level, who.blockPosition(), List.of(extra));
                 break;
             }
-            crafted++;
         }
 
-        // 触发容器刷新（重算结果槽）
+        if (wandPaid) {
+            container.persistWand();
+        }
         container.slotsChanged(grid.toContainer());
+    }
+
+    private static AspectList centivisCost(IArcaneRecipe recipe, net.minecraft.world.Container craftContainer) {
+        AspectList aspects = recipe.getAspects();
+        if (aspects == null || aspects.isEmpty()) aspects = recipe.getAspects(craftContainer);
+        AspectList centivis = new AspectList();
+        if (aspects == null) return centivis;
+        for (Aspect aspect : aspects.aspects()) {
+            centivis.add(aspect, aspects.amount(aspect) * CENTIVIS);
+        }
+        return centivis;
+    }
+
+    /** TC ArcaneWorkbenchMenu.consumeCraftingGrid: remainder back into the slot, else to the player. */
+    private static void returnRemainder(InternalInventory grid, int slot, ItemStack remainder, Player who) {
+        if (remainder.isEmpty()) return;
+        ItemStack current = grid.getStackInSlot(slot);
+        if (current.isEmpty()) {
+            grid.setItemDirect(slot, remainder.copy());
+        } else if (ItemStack.isSameItemSameComponents(current, remainder)
+                && current.getCount() + remainder.getCount() <= current.getMaxStackSize()) {
+            grid.setItemDirect(slot, current.copyWithCount(current.getCount() + remainder.getCount()));
+        } else if (!who.getInventory().add(remainder.copy())) {
+            who.drop(remainder.copy(), false);
+        }
+    }
+
+    /** Top a slot back up from the network, but only with the item that was there before. */
+    private void refillFromNetwork(InternalInventory grid, Map<Integer, ItemStack> beforeItems) {
+        if (storage == null || energySrc == null || mySrc == null) return;
+        for (var entry : beforeItems.entrySet()) {
+            int slot = entry.getKey();
+            var beforeItem = entry.getValue();
+            var currentItem = grid.getStackInSlot(slot);
+            if (!currentItem.isEmpty() && !ItemStack.isSameItemSameComponents(currentItem, beforeItem)) continue;
+            if (currentItem.getCount() >= beforeItem.getCount()) continue;
+            var key = AEItemKey.of(beforeItem);
+            if (key == null) continue;
+            long extracted = StorageHelper.poweredExtraction(
+                    energySrc, storage, key, beforeItem.getCount() - currentItem.getCount(), mySrc);
+            if (extracted > 0) {
+                grid.setItemDirect(slot, beforeItem.copyWithCount((int) (currentItem.getCount() + extracted)));
+            }
+        }
     }
 
     @Override
@@ -234,16 +221,6 @@ public class ArcaneCraftingResultSlot extends CraftingTermSlot {
             }
 
             super.onTake(player, stack);
-
-            if (requiredAspects != null && !requiredAspects.isEmpty() && !wandStack.isEmpty()) {
-                if (wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand) {
-                    AspectList centivisCost = new AspectList();
-                    for (Aspect aspect : requiredAspects.aspects()) {
-                        centivisCost.add(aspect, requiredAspects.amount(aspect) * CENTIVIS);
-                    }
-                    wand.consumeVisCost(wandStack, player, centivisCost, true, true);
-                }
-            }
 
             // 自动补货：合成格材料被消耗后从 ME 存储补回
             if (!beforeItems.isEmpty()) {

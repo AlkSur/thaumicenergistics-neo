@@ -1,0 +1,17 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "MYSTICCRYSTALGROWTH",
+  "order": 264,
+  "instability": 1,
+  "aspects": {
+    "vitreus": 16,
+    "praecantatio": 16,
+    "terra": 8
+  },
+  "central": "ae2:damaged_budding_quartz",
+  "components": [
+    "thaumcraft:thaumium_ingot",
+    "thaumcraft:salis_mundus"
+  ],
+  "result": "thaumicenergistics:damaged_budding_thaumic_crystal"
+}

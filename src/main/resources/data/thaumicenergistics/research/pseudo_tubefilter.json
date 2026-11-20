@@ -1,0 +1,26 @@
+{
+  "item": "thaumcraft:essentia_filter",
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "col": -3,
+  "complexity": 1,
+  "key": "PSEUDO_TUBEFILTER",
+  "order": 202,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.TUBEFILTER.1"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.TUBEFILTER.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.TUBEFILTER.1",
+    "tc.research_page.TUBEFILTER.2"
+  ]
+}

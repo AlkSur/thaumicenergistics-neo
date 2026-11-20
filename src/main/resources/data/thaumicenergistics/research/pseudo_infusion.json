@@ -1,0 +1,41 @@
+{
+  "item": "thaumcraft:infusion_matrix",
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "col": -6,
+  "complexity": 1,
+  "key": "PSEUDO_INFUSION",
+  "order": 205,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.INFUSION.1"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.INFUSION.2"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.INFUSION.3"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.INFUSION.4"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.INFUSION.5"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.INFUSION.1",
+    "tc.research_page.INFUSION.2",
+    "tc.research_page.INFUSION.3",
+    "tc.research_page.INFUSION.4",
+    "tc.research_page.INFUSION.5"
+  ]
+}

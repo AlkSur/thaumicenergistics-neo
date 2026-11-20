@@ -84,8 +84,9 @@ public final class ThaumicEnergistics {
     public static final String MODID = "thaumicenergistics";
     public static final Logger LOG = LoggerFactory.getLogger("ThaumicEnergistics");
 
-    public ThaumicEnergistics(IEventBus modBus) {
+    public ThaumicEnergistics(IEventBus modBus, net.neoforged.fml.ModContainer container) {
         LOG.info("ThaumicEnergistics loading...");
+        container.registerConfig(net.neoforged.fml.config.ModConfig.Type.SERVER, thaumicenergistics.config.ThEConfig.SPEC);
         ModBlocks.REGISTRY.register(modBus);
         ModItems.REGISTRY.register(modBus);
         ModBlockEntities.REGISTRY.register(modBus);
@@ -93,6 +94,7 @@ public final class ThaumicEnergistics {
         ModCreativeTab.REGISTRY.register(modBus);
         ModComponents.REGISTRY.register(modBus);
         ModRecipeSerializers.REGISTRY.register(modBus);
+        thaumicenergistics.common.integration.neoecoae.NeoEcoItems.register(modBus);
         modBus.addListener((RegisterEvent event) -> event.register(
                 NeoForgeRegistries.Keys.GLOBAL_LOOT_MODIFIER_SERIALIZERS,
                 id("archaeology_template"), () -> ArchaeologyTemplateModifier.CODEC));
@@ -146,6 +148,9 @@ public final class ThaumicEnergistics {
                 ModBlockEntities.INFUSION_PROVIDER.get(), ModItems.INFUSION_PROVIDER_ITEM.get());
 
         event.enqueueWork(() -> {
+            thaumicenergistics.common.integration.appeng.ThEPartTooltips.register();
+            appeng.api.storage.StorageCells.addCellHandler(
+                    thaumicenergistics.common.items.ItemCreativeEssentiaCell.HANDLER);
             RecipeRegistration.registerAll();
             PatternDetailsHelper.registerDecoder(new ArcanePatternDecoder());
             ContainerItemStrategy.register(AEssentiaKeyType.INSTANCE,
@@ -179,6 +184,29 @@ public final class ThaumicEnergistics {
             var patternProviderGroup = GuiText.CraftingInterface.getTranslationKey();
             Upgrades.add(essentiaCard, AEParts.PATTERN_PROVIDER, 1, patternProviderGroup);
             Upgrades.add(essentiaCard, AEBlocks.PATTERN_PROVIDER, 1, patternProviderGroup);
+
+            // Packs can let more AE2-based devices take the essentia card through the item tag
+            // thaumicenergistics:essentia_card_hosts; tags load later, so they are applied on every tag update.
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+                    (net.neoforged.neoforge.event.TagsUpdatedEvent tags) -> {
+                        var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM,
+                                id("essentia_card_hosts"));
+                        for (var holder : BuiltInRegistries.ITEM.getTagOrEmpty(tag)) {
+                            Upgrades.add(ModItems.ESSENTIA_UPGRADE_CARD.get(), holder.value(), 1);
+                        }
+                    });
+
+            // Neo ECO AE Extension: parallel arcane assembly needs 21.2.10+ (ECOParallelCraftingProviders).
+            if (ModList.get().isLoaded("neoecoae")) {
+                try {
+                    Class.forName("cn.dancingsnow.neoecoae.api.me.provider.ECOParallelCraftingProviders");
+                    thaumicenergistics.common.integration.neoecoae.ThENeoEcoParallel.register();
+                    LOG.info("Neo ECOAE parallel arcane assembly enabled");
+                } catch (ClassNotFoundException older) {
+                    LOG.info("Neo ECOAE is older than 21.2.10: parallel arcane assembly is off");
+                }
+                thaumicenergistics.common.integration.neoecoae.NeoEcoItems.setup();
+            }
 
             // 可选附属仅在存在时注册宿主。
             ThEExtendedAE.registerEssentiaUpgrades();
@@ -217,6 +245,10 @@ public final class ThaumicEnergistics {
         event.register(ModMenuTypes.ESSENTIA_CELL_WORKBENCH.get(), GuiEssentiaCellWorkbench::new);
         event.register(ModMenuTypes.EVC.get(), GuiEssentiaVibrationChamber::new);
         event.register(ModMenuTypes.ARCANE_ASSEMBLER.get(), GuiArcaneAssembler::new);
+        if (thaumicenergistics.common.integration.neoecoae.NeoEcoItems.enabled()) {
+            event.register(thaumicenergistics.common.integration.neoecoae.NeoEcoItems.CHAMBER_MENU.get(),
+                    thaumicenergistics.common.container.GuiArcaneCraftingChamber::new);
+        }
         event.register(ModMenuTypes.KNOWLEDGE_INSCRIBER.get(), GuiKnowledgeInscriber::new);
         event.register(ModMenuTypes.DISTILLATION_ENCODER.get(), GuiDistillationPatternEncoder::new);
 
@@ -253,8 +285,18 @@ public final class ThaumicEnergistics {
         event.registerBlockEntity(
                 EssentiaCapabilities.TRANSPORT,
                 AEBlockEntities.CABLE_BUS.get(),
-                (be, side) -> side == null || !(be.getPart(side) instanceof ExportBusPart) ? null
-                        : new ExportBusEssentiaTransport(be, side));
+                (be, side) -> {
+                    if (side == null) return null;
+                    var part = be.getPart(side);
+                    if (part instanceof ExportBusPart) return new ExportBusEssentiaTransport(be, side);
+                    // Any interface part that runs AE2's InterfaceLogic (AE2's own, ExtendedAE's extended one).
+                    if (part instanceof appeng.helpers.InterfaceLogicHost iface
+                            && iface.getInterfaceLogic() instanceof
+                                    thaumicenergistics.common.integration.appeng.IEssentiaInterfaceLogic logic) {
+                        return new thaumicenergistics.common.essentia.capability.InterfaceEssentiaTransport(logic);
+                    }
+                    return null;
+                });
         LOG.info("Registering AE2 grid node capabilities...");
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
@@ -274,6 +316,12 @@ public final class ThaumicEnergistics {
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.ARCANE_ASSEMBLER.get(),
                 (be, context) -> (IInWorldGridNodeHost) be);
+        if (thaumicenergistics.common.integration.neoecoae.NeoEcoItems.enabled()) {
+            event.registerBlockEntity(
+                    AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                    thaumicenergistics.common.integration.neoecoae.NeoEcoItems.CHAMBER_TYPE.get(),
+                    (be, context) -> (IInWorldGridNodeHost) be);
+        }
         // 注魔监视器：连接 AE 网络（network 状态）需要网格节点 capability
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,

@@ -1,0 +1,20 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "ESSENTIAPROVIDER",
+  "order": 298,
+  "aspects": {
+    "ordo": 8,
+    "aer": 6,
+    "ignis": 3
+  },
+  "ingredients": [
+    "thaumicenergistics:coalescence_core",
+    "thaumicenergistics:diffusion_core",
+    "ae2:wireless_receiver",
+    "thaumcraft:balanced_shard"
+  ],
+  "result": {
+    "id": "thaumicenergistics:essentia_provider_connection",
+    "count": 2
+  }
+}

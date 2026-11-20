@@ -1,0 +1,42 @@
+{
+  "item": "thaumicenergistics:vis_interface",
+  "flags": [
+    "round"
+  ],
+  "col": 6,
+  "row": -4,
+  "complexity": 3,
+  "key": "VISINTERFACE",
+  "order": 220,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.VISINTERFACE.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.VISINTERFACE.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "auram",
+      "amount": 10
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 5
+    },
+    {
+      "aspect": "machina",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "ARCANECRAFTINGTERMINAL",
+    "PSEUDO_VISPOWER"
+  ]
+}

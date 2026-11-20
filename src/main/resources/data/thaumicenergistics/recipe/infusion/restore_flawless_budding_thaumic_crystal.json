@@ -1,0 +1,18 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "MYSTICCRYSTALGROWTH",
+  "order": 268,
+  "instability": 2,
+  "aspects": {
+    "vitreus": 16,
+    "praecantatio": 16,
+    "ordo": 8
+  },
+  "central": "thaumicenergistics:flawed_budding_thaumic_crystal",
+  "components": [
+    "thaumcraft:void_metal_ingot",
+    "thaumicenergistics:mystic_processor",
+    "thaumcraft:salis_mundus"
+  ],
+  "result": "thaumicenergistics:flawless_budding_thaumic_crystal"
+}

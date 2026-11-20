@@ -16,6 +16,7 @@ import thaumicenergistics.api.grid.IEssentiaGrid;
 import thaumicenergistics.api.storage.AspectStack;
 import thaumicenergistics.api.storage.IAspectStack;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.integration.appeng.EssentiaKeys;
 
 /**
  * 源质网格服务的实现。查询和提取源质时同时检查两个存储后端：
@@ -36,16 +37,11 @@ public class EssentiaGridService implements IEssentiaGrid, IGridServiceProvider 
     }
 
     private long getNativeAmount(ResourceLocation aspectId) {
-        var storage = getNativeStorage();
-        if (storage == null) return 0;
+        var service = grid.getService(IStorageService.class);
+        if (service == null) return 0;
         var key = AEssentiaKey.of(aspectId);
-        if (key == null) return 0;
-        for (var entry : storage.getAvailableStacks()) {
-            if (entry.getKey() instanceof AEssentiaKey ek && ek.equals(key)) {
-                return entry.getLongValue();
-            }
-        }
-        return 0;
+        // AE2's per-tick cached inventory: O(1) instead of walking every storage (TEC-02).
+        return key == null ? 0 : service.getCachedInventory().get(key);
     }
 
     private long extractNative(ResourceLocation aspectId, long amount, boolean simulate) {
@@ -130,12 +126,12 @@ public class EssentiaGridService implements IEssentiaGrid, IGridServiceProvider 
             merged.put(stack.aspectId(), stack.amount());
         }
 
-        var storage = getNativeStorage();
-        if (storage != null) {
-            for (var entry : storage.getAvailableStacks()) {
-                if (entry.getKey() instanceof AEssentiaKey ek) {
-                    merged.merge(ek.getId(), entry.getLongValue(), Long::sum);
-                }
+        var service = grid.getService(IStorageService.class);
+        if (service != null) {
+            var cached = service.getCachedInventory();
+            for (var key : EssentiaKeys.registered()) {
+                long amount = cached.get(key);
+                if (amount > 0) merged.merge(key.getId(), amount, Long::sum);
             }
         }
 

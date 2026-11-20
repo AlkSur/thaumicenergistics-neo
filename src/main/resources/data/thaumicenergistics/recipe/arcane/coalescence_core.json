@@ -1,0 +1,17 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "DIGISENTIA",
+  "order": 293,
+  "aspects": {
+    "aqua": 2,
+    "ordo": 2
+  },
+  "ingredients": [
+    "thaumicenergistics:mystic_crystal_dust",
+    "thaumcraft:quicksilver_drop",
+    "thaumcraft:quicksilver_drop",
+    "thaumcraft:order_shard",
+    "ae2:formation_core"
+  ],
+  "result": "thaumicenergistics:coalescence_core"
+}

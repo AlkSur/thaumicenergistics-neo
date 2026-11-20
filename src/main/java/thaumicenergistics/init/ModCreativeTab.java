@@ -46,6 +46,7 @@ public final class ModCreativeTab {
                 output.accept(ModItems.ESSENTIA_CELL_64M.get());
                 output.accept(ModItems.ESSENTIA_CELL_256M.get());
                 output.accept(ModItems.ESSENTIA_CELL_CREATIVE.get());
+                thaumicenergistics.common.integration.neoecoae.NeoEcoItems.addToTab(output);
                 output.accept(ModItems.STORAGE_COMPONENT_1K.get()); output.accept(ModItems.STORAGE_COMPONENT_4K.get());
                 output.accept(ModItems.STORAGE_COMPONENT_16K.get()); output.accept(ModItems.STORAGE_COMPONENT_64K.get());
                 output.accept(ModItems.STORAGE_COMPONENT_256K.get());

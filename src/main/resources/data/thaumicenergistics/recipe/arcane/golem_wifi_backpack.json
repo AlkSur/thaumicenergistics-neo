@@ -1,0 +1,24 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "GOLEMWIFIBACKPACK",
+  "order": 289,
+  "aspects": {
+    "aer": 6,
+    "ignis": 4,
+    "ordo": 3
+  },
+  "pattern": [
+    "ABA",
+    "CDC",
+    "EFE"
+  ],
+  "key": {
+    "A": "thaumcraft:thaumium_ingot",
+    "B": "ae2:interface",
+    "C": "thaumicenergistics:mystic_processor",
+    "D": "ae2:wireless_receiver",
+    "E": "ae2:fluix_crystal",
+    "F": "ae2:charger"
+  },
+  "result": "thaumicenergistics:golem_wifi_backpack"
+}

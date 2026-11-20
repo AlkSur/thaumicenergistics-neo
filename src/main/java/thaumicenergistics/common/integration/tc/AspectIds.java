@@ -30,6 +30,18 @@ public final class AspectIds {
         return null;
     }
 
+    /**
+     * The registered id for {@code id}, or null when it names no registered aspect or uses another
+     * namespace than the aspect's own (lookup ignores the namespace, so {@code evil:aer} would
+     * otherwise pass as Aer). Use it for ids that arrive from clients.
+     */
+    @Nullable
+    public static ResourceLocation canonicalId(@Nullable ResourceLocation id) {
+        Aspect aspect = findAspectById(id);
+        ResourceLocation canonical = aspect == null ? null : getAspectId(aspect);
+        return canonical != null && canonical.equals(id) ? canonical : null;
+    }
+
     /** tag(小写) → Aspect 反向缓存，避免每次调用 O(n) 遍历 Aspect.aspects。 */
     private static final Map<String, Aspect> ASPECT_BY_TAG = new ConcurrentHashMap<>();
     private static volatile boolean aspectCacheBuilt = false;

@@ -1,0 +1,27 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "ESSENTIAACCESSCARD",
+  "order": 306,
+  "instability": 2,
+  "aspects": {
+    "cognitio": 16,
+    "fabrico": 16,
+    "permutatio": 8,
+    "metallum": 8,
+    "praecantatio": 8
+  },
+  "central": "ae2:basic_card",
+  "components": [
+    "minecraft:iron_ingot",
+    "minecraft:iron_ingot",
+    "thaumcraft:thaumium_ingot",
+    "thaumcraft:thaumium_ingot",
+    "thaumcraft:salis_mundus",
+    "thaumicenergistics:mystic_processor",
+    "thaumicenergistics:diffusion_core"
+  ],
+  "result": {
+    "id": "thaumicenergistics:essentia_upgrade_card",
+    "count": 4
+  }
+}

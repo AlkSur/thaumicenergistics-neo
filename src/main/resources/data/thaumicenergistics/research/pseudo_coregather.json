@@ -1,0 +1,27 @@
+{
+  "item": "thaumcraft:golem_core_gather",
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "col": 1,
+  "row": -6,
+  "complexity": 1,
+  "key": "PSEUDO_COREGATHER",
+  "order": 210,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.COREGATHER.1"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.COREGATHER.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.COREGATHER.1",
+    "tc.research_page.COREGATHER.2"
+  ]
+}

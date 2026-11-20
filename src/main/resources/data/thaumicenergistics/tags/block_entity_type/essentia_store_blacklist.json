@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "thaumcraft:wand_recharge_pedestal",
+    { "id": "thaumichorizons:tilevat", "required": false },
+    { "id": "thaumichorizons:tilevatslave", "required": false },
+    { "id": "thaumicconcilium:quicksilver_crucible", "required": false },
+    { "id": "thaumic_tinkerer:essentia_funnel", "required": false }
+  ]
+}

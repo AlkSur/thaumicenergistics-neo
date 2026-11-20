@@ -1,0 +1,57 @@
+{
+  "item": "thaumicenergistics:essentia_provider",
+  "flags": [
+    "round"
+  ],
+  "col": -2,
+  "row": -4,
+  "complexity": 3,
+  "key": "ESSENTIAPROVIDER",
+  "order": 223,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ESSENTIAPROVIDER.stage.1"
+    },
+    {
+      "type": "INFUSION"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ESSENTIAPROVIDER.connection.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ESSENTIAPROVIDER.tool.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.ESSENTIAPROVIDER.stage.1",
+    "tc.research_text.ESSENTIAPROVIDER.connection.stage.1",
+    "tc.research_text.ESSENTIAPROVIDER.tool.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "machina",
+      "amount": 8
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 8
+    },
+    {
+      "aspect": "permutatio",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "ESSENTIAACCESSCARD"
+  ]
+}

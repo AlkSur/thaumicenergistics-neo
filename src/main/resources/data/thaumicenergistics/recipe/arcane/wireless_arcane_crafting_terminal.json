@@ -1,0 +1,16 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "WIRELESSARCANECRAFTINGTERMINAL",
+  "order": 301,
+  "aspects": {
+    "aer": 20,
+    "ignis": 10,
+    "perditio": 10
+  },
+  "ingredients": [
+    "ae2:wireless_receiver",
+    "ae2:dense_energy_cell",
+    "thaumicenergistics:arcane_crafting_terminal"
+  ],
+  "result": "thaumicenergistics:wireless_arcane_crafting_terminal"
+}

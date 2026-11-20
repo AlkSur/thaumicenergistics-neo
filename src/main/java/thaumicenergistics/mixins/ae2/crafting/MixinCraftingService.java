@@ -48,8 +48,19 @@ public abstract class MixinCraftingService {
             return;
         }
 
-        for (Map.Entry<IPatternDetails, Long> entry : job.patternTimes().entrySet()) {
-            IPatternDetails pattern = entry.getKey();
+        java.util.Collection<IPatternDetails> patterns = new java.util.ArrayList<>(job.patternTimes().keySet());
+        // A Neo ECOAE big order arrives as an empty carrier; check the patterns of everything it will craft (TEN-02).
+        if (patterns.isEmpty() && net.neoforged.fml.ModList.get().isLoaded("neoecoae")) {
+            try {
+                var service = (appeng.api.networking.crafting.ICraftingService) (Object) this;
+                for (var key : thaumicenergistics.common.integration.neoecoae.ThENeoEcoOrders.bigOrderKeys(job)) {
+                    patterns.addAll(service.getCraftingFor(key));
+                }
+            } catch (LinkageError incompatible) {
+                // An ECO version without the big-order API: nothing more to check.
+            }
+        }
+        for (IPatternDetails pattern : patterns) {
             String research = PatternResearchHelper.getResearch(pattern);
             if (research == null || research.isEmpty()) {
                 continue; // 无研究要求

@@ -93,9 +93,14 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
     /** 索引约定 */
     public static final int DATA_AIR = 0, DATA_WATER = 1, DATA_FIRE = 2, DATA_ORDER = 3,
             DATA_ENTROPY = 4, DATA_EARTH = 5, DATA_CRAFTING = 6, DATA_CRAFT_TICK = 7, DATA_TICKS_PER_CRAFT = 8;
-    public static final int DATA_COUNT = 9;
+    /** cvis the running order needs, per primal in DATA_AIR..DATA_EARTH order (bar tooltips). */
+    public static final int DATA_NEED_AIR = 9;
+    public static final int DATA_COUNT = 15;
 
     /** 服务端：每次 get 都从 tile 读实时值（broadcastChanges 每 tick 调用） */
+    /** The primal of each vis bar, in DATA_AIR..DATA_EARTH order. */
+    public static final Aspect[] BAR_ASPECTS = {Aspect.AIR, Aspect.WATER, Aspect.FIRE, Aspect.ORDER, Aspect.ENTROPY, Aspect.EARTH};
+
     private static class TileVisData implements ContainerData {
         private final TileArcaneAssembler tile;
         TileVisData(TileArcaneAssembler tile) { this.tile = tile; }
@@ -113,7 +118,8 @@ public class ContainerArcaneAssembler extends AbstractContainerMenu {
                 case DATA_CRAFTING -> tile.isCrafting() ? 1 : 0;
                 case DATA_CRAFT_TICK -> throttle(tile.getCraftTickCounter());
                 case DATA_TICKS_PER_CRAFT -> tile.getTicksPerCraft();
-                default -> 0;
+                default -> index >= DATA_NEED_AIR && index < DATA_NEED_AIR + 6
+                        ? Math.min(Short.MAX_VALUE, tile.requiredCvisForJob(BAR_ASPECTS[index - DATA_NEED_AIR])) : 0;
             };
         }
         @Override public void set(int index, int value) { /* 服务端只读 */ }

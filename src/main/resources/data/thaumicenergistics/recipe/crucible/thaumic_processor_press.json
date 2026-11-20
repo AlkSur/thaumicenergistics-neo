@@ -1,0 +1,12 @@
+{
+  "type": "thaumcraft:crucible",
+  "research": "MYSTICCRYSTALCIRCUIT",
+  "order": 269,
+  "aspects": {
+    "ordo": 8,
+    "cognitio": 8,
+    "praecantatio": 8
+  },
+  "catalyst": "#thaumicenergistics:inscriber_presses",
+  "result": "thaumicenergistics:thaumic_processor_press"
+}

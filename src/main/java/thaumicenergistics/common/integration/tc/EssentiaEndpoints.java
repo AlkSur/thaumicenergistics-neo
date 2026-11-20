@@ -32,7 +32,7 @@ public final class EssentiaEndpoints {
 
     /** Local observation for provider blocking; this never grants extraction permission. */
     public static List<AspectStack> storedContents(BlockEntity be, @Nullable Direction side) {
-        if (be instanceof IAspectContainer container) {
+        if (be instanceof IAspectContainer container && TCReflection.isEssentiaStore(be)) {
             var result = new ArrayList<AspectStack>();
             var aspects = container.getAspects();
             if (aspects != null) {
@@ -57,6 +57,8 @@ public final class EssentiaEndpoints {
 
     /** Exportable inventory for buses; consult the actual sided transfer simulation. */
     public static List<AspectStack> contents(BlockEntity be, @Nullable Direction side) {
+        var provider = thaumicenergistics.api.essentia.EssentiaEndpointProviders.find(be);
+        if (provider != null) return provider.contents(be, side);
         side = accessSide(be, side);
         var transport = transport(be, side);
         if (transport == null) return uniqueContents(TCReflection.listEssentia(be));
@@ -86,6 +88,8 @@ public final class EssentiaEndpoints {
 
     @Nullable
     public static AspectStack extract(BlockEntity be, ResourceLocation id, int amount, @Nullable Direction side) {
+        var provider = thaumicenergistics.api.essentia.EssentiaEndpointProviders.find(be);
+        if (provider != null) return provider.extract(be, id, amount, side);
         if (amount <= 0) return null;
         side = accessSide(be, side);
         var transport = transport(be, side);
@@ -110,6 +114,8 @@ public final class EssentiaEndpoints {
     }
 
     public static int insert(BlockEntity be, ResourceLocation id, int amount, @Nullable Direction side) {
+        var provider = thaumicenergistics.api.essentia.EssentiaEndpointProviders.find(be);
+        if (provider != null) return provider.insert(be, id, amount, side);
         if (amount <= 0 || (be instanceof JarBlockEntity jar
                 && !jar.doesContainerAccept(AspectIds.findAspectById(id)))) return 0;
         side = accessSide(be, side);

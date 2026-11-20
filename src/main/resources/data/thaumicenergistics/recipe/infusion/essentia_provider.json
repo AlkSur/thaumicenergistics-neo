@@ -1,0 +1,24 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "ESSENTIAPROVIDER",
+  "order": 302,
+  "instability": 1,
+  "aspects": {
+    "machina": 64,
+    "praecantatio": 32,
+    "ordo": 32,
+    "permutatio": 16
+  },
+  "central": "ae2:interface",
+  "components": [
+    "thaumcraft:water_shard",
+    "thaumcraft:water_shard",
+    "thaumicenergistics:mystic_processor",
+    "thaumcraft:salis_mundus",
+    "thaumicenergistics:diffusion_core",
+    "thaumicenergistics:coalescence_core",
+    "thaumcraft:essentia_filter",
+    "thaumcraft:essentia_filter"
+  ],
+  "result": "thaumicenergistics:essentia_provider"
+}

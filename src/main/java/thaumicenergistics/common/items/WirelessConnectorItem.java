@@ -1,5 +1,6 @@
 package thaumicenergistics.common.items;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -23,6 +24,14 @@ import thaumicenergistics.common.tiles.TileEssentiaProviderConnection;
  */
 public class WirelessConnectorItem extends Item {
 
+    private static final String KEY_SELECTED_DIMENSION = "SelectedDimension";
+
+    /** True when nothing is selected, or the selection was made in this dimension (old selections count as here). */
+    private static boolean sameDimension(CompoundTag tag, Level level) {
+        if (!tag.contains(KEY_SELECTED_DIMENSION)) return true;
+        return tag.getString(KEY_SELECTED_DIMENSION).equals(level.dimension().location().toString());
+    }
+
     private static final String KEY_SELECTED_RECEIVER = "SelectedReceiver";
     private static final String KEY_SELECTED_PROVIDER = "SelectedProvider";
 
@@ -45,20 +54,20 @@ public class WirelessConnectorItem extends Item {
     private static void showReceiverInfo(Player player, TileEssentiaProviderConnection receiver) {
         BlockPos lp = receiver.getLinkedProviderPos();
         if (lp != null) {
-            player.sendSystemMessage(Component.literal("§7[源质无线接收器] 已连接供应器: §a[" + lp.getX() + ", " + lp.getY() + ", " + lp.getZ() + "]"));
+            player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.receiver_linked", lp.getX(), lp.getY(), lp.getZ()).withStyle(ChatFormatting.GRAY));
         } else {
-            player.sendSystemMessage(Component.literal("§7[源质无线接收器] 未连接任何供应器"));
+            player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.receiver_unlinked").withStyle(ChatFormatting.GRAY));
         }
     }
 
     private static void showProviderInfo(Player player, TileEssentiaProvider provider) {
         var list = provider.getLinkedReceivers();
-        player.sendSystemMessage(Component.literal("§7[源质供应器] 已连接接收器 (" + list.size() + "/" + TileEssentiaProvider.MAX_LINKED_RECEIVERS + "):"));
+        player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.provider_receivers", list.size(), thaumicenergistics.config.ThEConfig.providerMaxReceivers()).withStyle(ChatFormatting.GRAY));
         if (list.isEmpty()) {
-            player.sendSystemMessage(Component.literal("§7  （无）"));
+            player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.none").withStyle(ChatFormatting.GRAY));
         } else {
             for (BlockPos rp : list) {
-                player.sendSystemMessage(Component.literal("§a  [" + rp.getX() + ", " + rp.getY() + ", " + rp.getZ() + "]"));
+                player.sendSystemMessage(Component.literal("  [" + rp.getX() + ", " + rp.getY() + ", " + rp.getZ() + "]").withStyle(ChatFormatting.GREEN));
             }
         }
     }
@@ -81,51 +90,66 @@ public class WirelessConnectorItem extends Item {
                 if (receiver.getLinkedProviderPos() != null) {
                     // 已连接 → 断开
                     receiver.clearLink();
-                    player.sendSystemMessage(Component.literal("§e已断开该源质无线接收器的连接"));
+                    player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.unlinked").withStyle(ChatFormatting.YELLOW));
                     return InteractionResult.SUCCESS;
                 }
                 CompoundTag tag = getSelectionTag(stack);
+                if (!sameDimension(tag, level)) {
+                    // The selection only stores a position; using it in another dimension would touch the
+                    // block at the same coordinates there (TEA2-15).
+                    clearSelection(stack);
+                    player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.other_dimension").withStyle(ChatFormatting.RED));
+                    return InteractionResult.SUCCESS;
+                }
                 if (tag.contains(KEY_SELECTED_PROVIDER)) {
                     // 已选中供应器 → 绑定到它
                     BlockPos providerPos = BlockPos.of(tag.getLong(KEY_SELECTED_PROVIDER));
-                    String error = receiver.setLinkedProvider(providerPos);
+                    var error = receiver.setLinkedProvider(providerPos);
                     if (error == null) {
-                        player.sendSystemMessage(Component.literal("§a绑定成功！无线接收器已连接至源质供应器"));
+                        player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.linked").withStyle(ChatFormatting.GREEN));
                     } else {
-                        player.sendSystemMessage(Component.literal(error));
+                        player.sendSystemMessage(error);
                     }
                     clearSelection(stack);
                 } else if (tag.contains(KEY_SELECTED_RECEIVER)) {
-                    player.sendSystemMessage(Component.literal("§c接收器不能互相绑定，只能绑定到源质供应器"));
+                    player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.receiver_to_receiver").withStyle(ChatFormatting.RED));
                 } else {
                     // 未选中 → 选中该接收器
                     tag.putLong(KEY_SELECTED_RECEIVER, pos.asLong());
+                    tag.putString(KEY_SELECTED_DIMENSION, level.dimension().location().toString());
                     setSelectionTag(stack, tag);
-                    player.sendSystemMessage(Component.literal("§a已选中源质无线接收器，请 shift+右键 源质供应器完成绑定"));
+                    player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.receiver_selected").withStyle(ChatFormatting.GREEN));
                 }
                 return InteractionResult.SUCCESS;
             }
             if (be instanceof TileEssentiaProvider) {
                 CompoundTag tag = getSelectionTag(stack);
+                if (!sameDimension(tag, level)) {
+                    clearSelection(stack);
+                    player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.other_dimension").withStyle(ChatFormatting.RED));
+                    return InteractionResult.SUCCESS;
+                }
                 if (tag.contains(KEY_SELECTED_RECEIVER)) {
                     // 已选中接收器 → 绑定到本供应器
                     BlockPos receiverPos = BlockPos.of(tag.getLong(KEY_SELECTED_RECEIVER));
-                    if (level.getBlockEntity(receiverPos) instanceof TileEssentiaProviderConnection receiver) {
-                        String error = receiver.setLinkedProvider(pos);
+                    if (level.isLoaded(receiverPos)
+                            && level.getBlockEntity(receiverPos) instanceof TileEssentiaProviderConnection receiver) {
+                        var error = receiver.setLinkedProvider(pos);
                         if (error == null) {
-                            player.sendSystemMessage(Component.literal("§a绑定成功！无线接收器已连接至源质供应器"));
+                            player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.linked").withStyle(ChatFormatting.GREEN));
                         } else {
-                            player.sendSystemMessage(Component.literal(error));
+                            player.sendSystemMessage(error);
                         }
                     } else {
-                        player.sendSystemMessage(Component.literal("§c选中的源质无线接收器不存在或已被移除"));
+                        player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.receiver_missing").withStyle(ChatFormatting.RED));
                     }
                     clearSelection(stack);
                 } else {
                     // 未选中 → 选中该供应器
                     tag.putLong(KEY_SELECTED_PROVIDER, pos.asLong());
+                    tag.putString(KEY_SELECTED_DIMENSION, level.dimension().location().toString());
                     setSelectionTag(stack, tag);
-                    player.sendSystemMessage(Component.literal("§a已选中源质供应器，请 shift+右键 源质无线接收器完成绑定"));
+                    player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.provider_selected").withStyle(ChatFormatting.GREEN));
                 }
                 return InteractionResult.SUCCESS;
             }
@@ -133,7 +157,7 @@ public class WirelessConnectorItem extends Item {
             if (getSelectionTag(stack).contains(KEY_SELECTED_RECEIVER)
                     || getSelectionTag(stack).contains(KEY_SELECTED_PROVIDER)) {
                 clearSelection(stack);
-                player.sendSystemMessage(Component.literal("§7已清除选中"));
+                player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.cleared").withStyle(ChatFormatting.GRAY));
                 return InteractionResult.SUCCESS;
             }
             return InteractionResult.PASS;
@@ -151,7 +175,7 @@ public class WirelessConnectorItem extends Item {
         if (getSelectionTag(stack).contains(KEY_SELECTED_RECEIVER)
                 || getSelectionTag(stack).contains(KEY_SELECTED_PROVIDER)) {
             clearSelection(stack);
-            player.sendSystemMessage(Component.literal("§7已清除选中"));
+            player.sendSystemMessage(Component.translatable("thaumicenergistics.connector.cleared").withStyle(ChatFormatting.GRAY));
             return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;

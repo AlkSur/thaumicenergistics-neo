@@ -78,11 +78,8 @@ public class TileArcaneAssembler extends ThETileBase
     /** 基础 vis 折扣（0.8 = 80% 成本）。calculateVisDiscounts 从该值起再减护甲折扣；无护甲时即此值。 */
     private static final float BASE_VIS_DISCOUNT = 0.8F;
     private static final int CVIS_MULTIPLIER = 10;
-    private static final int MAX_STORED_CVIS = 187 * CVIS_MULTIPLIER;
     private static final int BASE_TICKS_PER_CRAFT = 20;
     private static final double IDLE_POWER = 0.0;
-    private static final double ACTIVE_POWER = 1.5;
-    private static final double WARP_POWER_PERCENT = 0.15;
     private static final int MAX_SPEED_UPGRADES = 4;
     /** vis 充能间隔（tick）：每 5 tick 充一次，等效 20 cvis/tick，渐进但够快，避免合成长期卡"等待"。 */
     private static final int VIS_REPLENISH_INTERVAL = 5;
@@ -157,10 +154,16 @@ public class TileArcaneAssembler extends ThETileBase
     };
 
     public TileArcaneAssembler(BlockPos pos, BlockState state) {
-        super(ModBlockEntities.ARCANE_ASSEMBLER.get(), pos, state);
+        this(ModBlockEntities.ARCANE_ASSEMBLER.get(), pos, state, ModItems.ARCANE_ASSEMBLER_ITEM.get());
+    }
+
+    /** For machines that run arcane jobs the same way with other limits, such as the arcane crafting chamber. */
+    protected TileArcaneAssembler(net.minecraft.world.level.block.entity.BlockEntityType<?> type, BlockPos pos,
+            BlockState state, net.minecraft.world.level.ItemLike visual) {
+        super(type, pos, state);
 
         mainNode = GridHelper.createManagedNode(this, nodeListener)
-                .setVisualRepresentation(ModItems.ARCANE_ASSEMBLER_ITEM.get())
+                .setVisualRepresentation(visual)
                 .setInWorldNode(true)
                 .setTagName("proxy")
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
@@ -195,7 +198,7 @@ public class TileArcaneAssembler extends ThETileBase
         super.onBreakBlock();
         if (level != null && !level.isClientSide) {
             // 制作前退真实材料，制作后只掉落尚未输出的产物和催化剂。
-            var remaining = job.produced() ? job.outputs() : Arrays.asList(job.inputs());
+            var remaining = job.produced() ? job.outputs() : job.refund();
             if (isCrafting) {
                 for (ItemStack stack : remaining) {
                     if (!stack.isEmpty()) Containers.dropItemStack(level,
@@ -253,10 +256,11 @@ public class TileArcaneAssembler extends ThETileBase
             stalePatterns = false;
         }
 
-        visTickCounter++;
+        // Count ticks, not calls: at an idle interval of 20, counting calls charged 20x slower (TET-06).
+        visTickCounter += ticksSinceLast;
         // 配置了 vis 源（内存卡设了 VisInterface 频率）就持续充能：放置时要素条也显示充能过程，
         // 合成时直接用缓存，不会卡"等待"。未配置源不充能（要素条空）。
-        if ((isCrafting || visSourceFreq != 0) && visTickCounter >= VIS_REPLENISH_INTERVAL) {
+        if (visTickCounter >= VIS_REPLENISH_INTERVAL && (isCrafting || !storedVisFull())) {
             visTickCounter = 0;
             replenishVis(grid);
         }
@@ -265,13 +269,22 @@ public class TileArcaneAssembler extends ThETileBase
             return craftingTick(grid, ticksSinceLast);
         }
 
-        return TickRateModulation.IDLE;
+        // Keep charging at full speed until the vis cache is full; only then drift to the idle rate.
+        return !storedVisFull() && isVisSourceAvailable() ? TickRateModulation.URGENT : TickRateModulation.IDLE;
+    }
+
+    /**
+     * Cache limit for one primal: normally {@link #maxStoredCvis()}, raised to what the running order
+     * needs. A modpack recipe costing more than the cache could otherwise never start (TET-14).
+     */
+    private int visCap(Aspect primal) {
+        return isCrafting ? Math.max(maxStoredCvis(), getRequiredCvisForAspect(primal)) : maxStoredCvis();
     }
 
     /** 全部原质元素均已达到缓存上限。 */
     private boolean storedVisFull() {
         for (Aspect primal : PRIMALS) {
-            if (storedVis.getAmount(primal) < MAX_STORED_CVIS) {
+            if (storedVis.getAmount(primal) < visCap(primal)) {
                 return false;
             }
         }
@@ -279,18 +292,10 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     private void replenishVis(IGrid grid) {
-        // 充能前提：必须先用内存卡配置 vis 源（VisInterface P2P 频率）。
-        if (visSourceFreq == 0) {
+        // The bound interface, or with no binding every vis interface on the network (TEU-04).
+        var sources = thaumicenergistics.common.parts.ArcaneVisReplenish.sources(grid, visSourceFreq);
+        if (sources.isEmpty()) {
             return;
-        }
-
-        P2PService p2p = P2PService.get(grid);
-        if (p2p == null) {
-            return;
-        }
-        P2PTunnelPart<?> input = p2p.getInput(visSourceFreq);
-        if (!(input instanceof VisInterfacePart visSource)) {
-            return; // 频率设了但找不到 vis_interface P2P 输入 → 不抽
         }
 
         // 限速充能。
@@ -298,13 +303,17 @@ public class TileArcaneAssembler extends ThETileBase
         // 而装配器 storedVis 用 cvis（×CVIS_MULTIPLIER）。返回的 vis 必须 ×CVIS_MULTIPLIER 才等于 cvis，
         // 否则合成按 cvis 判定永远不够（之前少了 10 倍导致卡"等待"）。
         for (Aspect primal : PRIMALS) {
-            int needed = MAX_STORED_CVIS - storedVis.getAmount(primal);
+            int needed = visCap(primal) - storedVis.getAmount(primal);
             if (needed <= 0) continue;
             // 请求的 vis 数 = 需要补齐的 cvis 换算成 vis，且受每次上限约束
-            int wantVis = Math.max(1, Math.min(needed / CVIS_MULTIPLIER, MAX_CVIS_PER_REPLENISH / CVIS_MULTIPLIER));
+            int wantVis = Math.max(1, Math.min(needed / CVIS_MULTIPLIER, maxCvisPerReplenish() / CVIS_MULTIPLIER));
             ResourceLocation id = TCReflection.getAspectId(primal);
             if (id == null) continue;
-            int gotVis = visSource.consumeVis(id, wantVis);
+            int gotVis = 0;
+            for (VisInterfacePart visSource : sources) {
+                gotVis = visSource.consumeVis(id, wantVis);
+                if (gotVis > 0) break;
+            }
             if (gotVis > 0) {
                 storedVis.add(primal, gotVis * CVIS_MULTIPLIER);
                 maybeMarkVisDirty();
@@ -333,7 +342,7 @@ public class TileArcaneAssembler extends ThETileBase
 
         boolean enoughVis = hasEnoughVisForCraft();
         if (!enoughVis) {
-            return TickRateModulation.SAME;
+            return TickRateModulation.URGENT;
         }
 
         int ticksPerCraft = ticksPerCraft();
@@ -345,19 +354,23 @@ public class TileArcaneAssembler extends ThETileBase
             return flushCraftOutputs(grid);
         }
 
-        double powerRequired = (ACTIVE_POWER + (ACTIVE_POWER * speedUpgrades) / 2.0) * warpPowerMultiplier;
+        double powerRequired = activePowerPerTick();
         IEnergyService energy = grid.getService(IEnergyService.class);
         if (energy != null) {
             double need = powerRequired * ticksSinceLast;
-            double extracted = energy.extractAEPower(need, Actionable.MODULATE, PowerMultiplier.CONFIG);
-            if (extracted >= need * 0.9) {
+            // Check before taking: a short network used to lose the partial draw for no progress.
+            double available = energy.extractAEPower(need, Actionable.SIMULATE, PowerMultiplier.CONFIG);
+            if (available >= need * 0.9) {
+                energy.extractAEPower(need, Actionable.MODULATE, PowerMultiplier.CONFIG);
                 craftTickCounter += ticksSinceLast;
                 // 节流同步合成进度到客户端（GUI 第7格进度条动画）
                 maybeMarkVisDirty();
             }
         }
 
-        return TickRateModulation.SAME;
+        // Crafting runs at the fastest rate: at the idle interval of 20 the first order took at least
+        // 40 ticks whatever the speed cards (TET-06).
+        return TickRateModulation.URGENT;
     }
 
     private TickRateModulation flushCraftOutputs(IGrid grid) {
@@ -405,9 +418,100 @@ public class TileArcaneAssembler extends ThETileBase
         return true;
     }
 
+    /** Vis cache per primal, in cvis. */
+    protected int maxStoredCvis() {
+        return thaumicenergistics.config.ThEConfig.assemblerVisCache() * CVIS_MULTIPLIER;
+    }
+
+    /** Most cvis drawn per primal at each replenish. */
+    protected int maxCvisPerReplenish() {
+        return MAX_CVIS_PER_REPLENISH;
+    }
+
+    /** AE drawn per tick while a job runs. */
+    protected double activePowerPerTick() {
+        double base = thaumicenergistics.config.ThEConfig.assemblerActivePower();
+        return (base + (base * speedUpgrades) / 2.0) * warpPowerMultiplier;
+    }
+
+    /** Crafts in the running job; 0 when idle. */
+    protected int jobCount() {
+        return isCrafting ? job.count() : 0;
+    }
+
+    /** cvis the running order needs of {@code aspect} after discounts; 0 when idle. */
+    public int requiredCvisForJob(Aspect aspect) {
+        return isCrafting ? getRequiredCvisForAspect(aspect) : 0;
+    }
+
+    /** What the running order is waiting for: the first primal short of vis, or null (TEU-01). */
+    @org.jetbrains.annotations.Nullable
+    public VisWait visWait() {
+        if (!isCrafting || job.produced() || job.aspects() == null) return null;
+        for (Aspect primal : PRIMALS) {
+            int need = getRequiredCvisForAspect(primal);
+            int have = storedVis.getAmount(primal);
+            if (need > 0 && have < need) return new VisWait(primal, have, need);
+        }
+        return null;
+    }
+
+    public record VisWait(Aspect aspect, int haveCvis, int needCvis) { }
+
+    /** Whether the stored vis already pays for a pattern costing {@code aspects}, discounts included. */
+    private boolean storedVisCovers(AspectList aspects) {
+        return storedVisCovers(aspects, 1);
+    }
+
+    private boolean storedVisCovers(AspectList aspects, long crafts) {
+        for (Aspect aspect : aspects.getAspects()) {
+            long need = Math.max(0, Math.round(aspects.getAmount(aspect) * CVIS_MULTIPLIER
+                    * visDiscount.getOrDefault(aspect, BASE_VIS_DISCOUNT))) * crafts;
+            if (storedVis.getAmount(aspect) < need) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Crafts this assembler accepts in one batch from a Neo ECOAE crafting CPU (E2): 0 while busy or offline,
+     * otherwise 1 plus the configured number per acceleration card, capped by the configured maximum.
+     */
+    public int parallelSlots() {
+        if (isCrafting || !mainNode.isActive()) return 0;
+        return parallelCapacity();
+    }
+
+    /** Batch size this machine takes when idle and online. */
+    protected int parallelCapacity() {
+        return Math.max(1, Math.min(thaumicenergistics.config.ThEConfig.assemblerMaxParallel(),
+                1 + thaumicenergistics.config.ThEConfig.assemblerParallelPerCard() * speedUpgrades));
+    }
+
+    /**
+     * Takes a batch of {@code crafts} identical arcane crafts whose inputs arrive as one total, or nothing:
+     * the totals must split exactly into {@code crafts} copies of the pattern's inputs, and the vis for all of
+     * them must be available or stored. Vis is paid N times; the craft takes as long as one.
+     */
+    public boolean pushBatch(IPatternDetails details, KeyCounter[] inputTotal, long crafts) {
+        if (!(details instanceof ArcaneAssemblerPattern arcanePattern) || crafts < 1 || crafts > parallelSlots()) {
+            return false;
+        }
+        if (crafts == 1) return beginCrafting(arcanePattern, inputTotal);
+        var perCraft = new KeyCounter[inputTotal.length];
+        for (int i = 0; i < inputTotal.length; i++) {
+            perCraft[i] = new KeyCounter();
+            for (var entry : inputTotal[i]) {
+                if (entry.getLongValue() % crafts != 0) return false;
+                perCraft[i].add(entry.getKey(), entry.getLongValue() / crafts);
+            }
+        }
+        return beginCrafting(arcanePattern, perCraft, (int) crafts, inputTotal);
+    }
+
     private int getRequiredCvisForAspect(Aspect aspect) {
         if (job.aspects() == null) return 0;
-        int baseCost = job.aspects().getAmount(aspect) * CVIS_MULTIPLIER;
+        // A parallel batch pays the vis of every craft in it.
+        int baseCost = job.aspects().getAmount(aspect) * CVIS_MULTIPLIER * job.count();
         float discount = visDiscount.getOrDefault(aspect, BASE_VIS_DISCOUNT);
         return Math.max(0, Math.round(baseCost * discount));
     }
@@ -427,7 +531,7 @@ public class TileArcaneAssembler extends ThETileBase
         return pearls;
     }
 
-    private int ticksPerCraft() {
+    protected int ticksPerCraft() {
         return Math.max(4, BASE_TICKS_PER_CRAFT - (4 * speedUpgrades));
     }
 
@@ -452,7 +556,7 @@ public class TileArcaneAssembler extends ThETileBase
             ItemStack armor = internalInventory.getItem(ARMOR_SLOT_START + i);
             if (!armor.isEmpty() && armor.getItem() instanceof IWarpingGear gear) {
                 try {
-                    warpPowerMultiplier += gear.getWarp(armor, null) * WARP_POWER_PERCENT;
+                    warpPowerMultiplier += gear.getWarp(armor, null) * thaumicenergistics.config.ThEConfig.assemblerWarpPowerFraction();
                 } catch (Exception ignored) {}
             }
         }
@@ -460,26 +564,36 @@ public class TileArcaneAssembler extends ThETileBase
 
     @Override
     public List<IPatternDetails> getAvailablePatterns() {
-        ItemStack kCore = internalInventory.getItem(KCORE_SLOT);
-        if (kCore.isEmpty() || !kCore.is(ModItems.KNOWLEDGE_CORE.get())) {
-            return List.of();
-        }
-
-        HandlerKnowledgeCore handler = new HandlerKnowledgeCore(kCore);
-        if (!handler.hasCore()) {
-            return List.of();
-        }
-
         List<IPatternDetails> result = new ArrayList<>();
-        List<ArcaneCraftingPattern> patterns = handler.getPatterns();
-        for (ArcaneCraftingPattern acp : patterns) {
-            if (acp == null || !acp.isPatternValid()) continue;
-            ArcaneAssemblerPattern ap = buildArcanePattern(acp);
-            if (ap != null) {
-                result.add(ap);
+        // The same recipe on two cores is offered once.
+        var seen = new java.util.HashSet<AEItemKey>();
+        for (ItemStack kCore : knowledgeCores()) {
+            if (kCore.isEmpty() || !kCore.is(ModItems.KNOWLEDGE_CORE.get())) continue;
+            HandlerKnowledgeCore handler = new HandlerKnowledgeCore(kCore);
+            if (!handler.hasCore()) continue;
+            for (ArcaneCraftingPattern acp : handler.getPatterns()) {
+                if (acp == null || !acp.isPatternValid()) continue;
+                ArcaneAssemblerPattern ap = buildArcanePattern(acp);
+                if (ap != null && (ap.getDefinition() == null || seen.add(ap.getDefinition()))) {
+                    result.add(ap);
+                }
             }
         }
         return result;
+    }
+
+    /** The knowledge cores whose recipes this machine offers. */
+    protected List<ItemStack> knowledgeCores() {
+        return List.of(internalInventory.getItem(KCORE_SLOT));
+    }
+
+    /** Called when the cores change: re-advertise the recipes. */
+    protected void onKnowledgeCoresChanged() {
+        legacyCraftBlocked = false;
+        stalePatterns = true;
+        if (level != null && !level.isClientSide() && mainNode.getGrid() != null) {
+            ICraftingProvider.requestUpdate(mainNode);
+        }
     }
 
     @Override
@@ -556,17 +670,28 @@ public class TileArcaneAssembler extends ThETileBase
     }
 
     private boolean beginCrafting(ArcaneAssemblerPattern arcanePattern, KeyCounter[] inputHolder) {
+        return beginCrafting(arcanePattern, inputHolder, 1, inputHolder);
+    }
+
+    /** {@code perCraft} holds one craft's inputs; {@code owned} is what to empty once the order is taken. */
+    private boolean beginCrafting(ArcaneAssemblerPattern arcanePattern, KeyCounter[] perCraft, int crafts,
+            KeyCounter[] owned) {
+        KeyCounter[] inputHolder = perCraft;
         AspectList aspects = arcanePattern.getAspects();
         ItemStack result = arcanePattern.getResultStack();
         if (isCrafting || !mainNode.isActive()) return false;
         if (aspects == null || aspects.isEmpty() || result.isEmpty()) return false;
+        // No vis source and not enough stored vis: refuse, so the crafting CPU uses another provider or reports
+        // the problem instead of waiting forever (TEU-01, decision 6). With a source, accept and show the deficit.
+        if (!isVisSourceAvailable() && !storedVisCovers(aspects, crafts)) return false;
         var actualGrid = arcanePattern.materializeInputs(inputHolder, level);
         if (actualGrid == null) return false;
 
         this.isCrafting = true;
         this.craftTickCounter = 0;
-        job.start(aspects, result, actualGrid);
-        for (var holder : inputHolder) holder.reset();
+        mainNode.ifPresent((grid, node) -> grid.getTickManager().alertDevice(node));
+        job.start(aspects, result, actualGrid, crafts);
+        for (var holder : owned) holder.reset();
         this.internalInventory.setItem(TARGET_SLOT, result.copy());
         setChanged();
         markForUpdate();
@@ -581,10 +706,10 @@ public class TileArcaneAssembler extends ThETileBase
 
     @Override
     public PatternContainerGroup getCraftingMachineInfo() {
-        ItemStack icon = new ItemStack(ModItems.ARCANE_ASSEMBLER_ITEM.get());
+        var block = getBlockState().getBlock();
         return new PatternContainerGroup(
-                AEItemKey.of(icon),
-                Component.translatable("block.thaumicenergistics.arcane_assembler"),
+                AEItemKey.of(block.asItem()),
+                block.getName(),
                 List.of()
         );
     }
@@ -630,10 +755,7 @@ public class TileArcaneAssembler extends ThETileBase
     /** The configured source must resolve to an active, loaded relay route. */
     public boolean isVisSourceAvailable() {
         var grid = mainNode.getGrid();
-        if (!isNodeActive() || grid == null || visSourceFreq == 0) return false;
-        var p2p = P2PService.get(grid);
-        return p2p != null && p2p.getInput(visSourceFreq) instanceof VisInterfacePart source
-                && source.hasAvailableRelay();
+        return isNodeActive() && thaumicenergistics.common.parts.ArcaneVisReplenish.hasAvailableSource(grid, visSourceFreq);
     }
     /** ME 节点是否有能量（Jade 网络状态细分用）。 */
     public boolean isNodePowered() { return mainNode != null && mainNode.isPowered(); }
@@ -648,7 +770,12 @@ public class TileArcaneAssembler extends ThETileBase
                                      ItemStack heldItem) {
         Short freq = heldItem.get(AEComponents.EXPORTED_P2P_FREQUENCY);
         if (freq != null) {
-            // 卡上带 P2P 频率（从 vis_interface shift+右键复制来的）→ 设为 vis 源
+            // 卡上带 P2P 频率（从 vis_interface shift+右键复制来的）→ 设为 vis 源；只接受魔力接口的频率
+            var problem = thaumicenergistics.common.parts.ArcaneVisReplenish.checkFrequency(mainNode.getGrid(), freq);
+            if (problem != null) {
+                player.displayClientMessage(problem, true);
+                return;
+            }
             this.visSourceFreq = freq;
             this.setChanged();
             memoryCard.notifyUser(player, MemoryCardMessages.SETTINGS_LOADED);
@@ -797,7 +924,9 @@ public class TileArcaneAssembler extends ThETileBase
             for (Aspect primal : PRIMALS) {
                 String key = primal.getTag();
                 if (visTag.contains(key)) {
-                    storedVis.add(primal, visTag.getInt(key));
+                    // Up to 16x the normal cache: an order may have raised the limit before the save.
+                    int amount = (int) Math.max(0, Math.min(maxStoredCvis() * 16L, visTag.getInt(key)));
+                    if (amount > 0) storedVis.add(primal, amount);
                 }
             }
         }
@@ -826,9 +955,10 @@ public class TileArcaneAssembler extends ThETileBase
     /** 老存档只保存目标槽：仅在知识核心能唯一确定配方时恢复，避免猜错配方。 */
     private void restoreLegacyCraft() {
         var target = internalInventory.getItem(TARGET_SLOT);
-        var core = internalInventory.getItem(KCORE_SLOT);
-        if (!target.isEmpty() && core.is(ModItems.KNOWLEDGE_CORE.get())) {
-            var matches = new HandlerKnowledgeCore(core).getPatterns().stream()
+        if (!target.isEmpty()) {
+            var matches = knowledgeCores().stream()
+                    .filter(core -> core.is(ModItems.KNOWLEDGE_CORE.get()))
+                    .flatMap(core -> new HandlerKnowledgeCore(core).getPatterns().stream())
                     .filter(pattern -> pattern != null && pattern.isPatternValid()
                             && ItemStack.matches(pattern.getResult(), target)).toList();
             if (matches.size() == 1) {

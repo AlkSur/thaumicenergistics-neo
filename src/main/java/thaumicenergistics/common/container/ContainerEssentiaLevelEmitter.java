@@ -93,6 +93,9 @@ public class ContainerEssentiaLevelEmitter extends UpgradeableMenu<EssentiaLevel
 
     public Aspect getTrackedAspect() {
         if (trackedAspectId.isEmpty()) return null;
-        return Aspect.getAspect(trackedAspectId);
+        // The synced value is a full id ("thaumcraft:aqua"); Aspect.getAspect wants the bare tag (TEM-07).
+        var id = net.minecraft.resources.ResourceLocation.tryParse(trackedAspectId);
+        return id != null ? thaumicenergistics.common.integration.tc.AspectIds.findAspectById(id)
+                : Aspect.getAspect(trackedAspectId);
     }
 }

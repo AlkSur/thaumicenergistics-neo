@@ -29,10 +29,10 @@ import thaumicenergistics.init.ModItems;
 final class WirelessChargingChecks {
     private static final net.neoforged.neoforge.registries.DeferredRegister.Items ITEMS =
             net.neoforged.neoforge.registries.DeferredRegister.createItems("thaumicenergistics_tests");
-    private static final net.neoforged.neoforge.registries.DeferredItem<TestTerminal> TERMINAL =
+    static final net.neoforged.neoforge.registries.DeferredItem<TestTerminal> TERMINAL =
             ITEMS.registerItem("charging_fixture", TestTerminal::new);
-    private static IGridNode chargingNode;
-    private static boolean connected;
+    static IGridNode chargingNode;
+    static boolean connected;
 
     static void register(net.neoforged.bus.api.IEventBus bus) { ITEMS.register(bus); }
 
@@ -66,7 +66,7 @@ final class WirelessChargingChecks {
         player.discard();
     }
 
-    private static class TestTerminal extends WirelessArcaneCraftingTerminalItem {
+    static class TestTerminal extends WirelessArcaneCraftingTerminalItem {
         TestTerminal(Item.Properties properties) { super(() -> 10000, properties); }
 
         @Override

@@ -1,0 +1,14 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "ESSENTIAPROVIDER",
+  "order": 299,
+  "aspects": {
+    "ordo": 5,
+    "perditio": 5
+  },
+  "ingredients": [
+    "ae2:certus_quartz_wrench",
+    "thaumcraft:balanced_shard"
+  ],
+  "result": "thaumicenergistics:wireless_connector"
+}

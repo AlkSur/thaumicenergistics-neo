@@ -95,9 +95,7 @@ public final class EssentiaInterfaceState implements IEssentiaInterfaceLogic {
         if (!this.thE$essentiaBuffer.isEmpty() && !this.thE$essentiaBuffer.aspectId().equals(key.getId())) {
             return 0;
         }
-        int want = Math.min(amount, thE$transportLimit());
-        long room = networkStorage.get().insert(key, want, Actionable.SIMULATE, actionSource.get());
-        return (int) Math.min(room, want);
+        return thE$bufferRoom(key, amount);
     }
 
     @Override
@@ -116,18 +114,31 @@ public final class EssentiaInterfaceState implements IEssentiaInterfaceLogic {
                 return 0;
             }
         }
-        int want = Math.min(amount, thE$transportLimit());
-        long room = networkStorage.get().insert(key, want, Actionable.SIMULATE, actionSource.get());
-        if (room <= 0) {
+        int accepted = thE$bufferRoom(key, amount);
+        if (accepted <= 0) {
             return 0;
         }
-        int accepted = (int) Math.min(room, want);
         long existing = this.thE$essentiaBuffer.isEmpty() ? 0 : this.thE$essentiaBuffer.amount();
         this.thE$essentiaBuffer = new AspectStack(key.getId(), existing + accepted);
         thE$saveHost();
         // 尽力立即注入（残留留缓冲，交 tick 循环下轮冲）
         thE$flushEssentiaBuffer();
         return accepted;
+    }
+
+    /**
+     * How much may enter the buffer now. The buffer never grows past one transport batch, and the
+     * network must have room for what is already buffered plus the new amount; otherwise an unpowered
+     * network (SIMULATE ignores power) turns the buffer into an unbounded hidden store (TEC-10).
+     */
+    private int thE$bufferRoom(AEssentiaKey key, int amount) {
+        long existing = this.thE$essentiaBuffer.isEmpty() ? 0 : this.thE$essentiaBuffer.amount();
+        long want = Math.min(amount, (long) thE$transportLimit() - existing);
+        if (want <= 0) {
+            return 0;
+        }
+        long room = networkStorage.get().insert(key, existing + want, Actionable.SIMULATE, actionSource.get());
+        return (int) Math.max(0, Math.min(want, room - existing));
     }
 
     @Override

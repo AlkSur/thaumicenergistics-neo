@@ -1,0 +1,46 @@
+{
+  "item": "thaumicenergistics:infusion_monitor",
+  "flags": [
+    "round"
+  ],
+  "col": -7,
+  "row": -2,
+  "complexity": 1,
+  "key": "INFUSIONMONITOR",
+  "order": 222,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.INFUSIONMONITOR.stage.1"
+    },
+    {
+      "type": "INFUSION"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.INFUSIONMONITOR.stage.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.INFUSIONMONITOR.stage.1",
+    "tc.research_text.INFUSIONMONITOR.stage.2"
+  ],
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "amount": 4
+    },
+    {
+      "aspect": "auram",
+      "amount": 4
+    },
+    {
+      "aspect": "sensus",
+      "amount": 6
+    }
+  ],
+  "parents": [
+    "INFUSIONPROVIDER"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "neoforge:conditions": [{"type": "neoforge:item_exists", "item": "thaumicenergistics:eco_essentia_cell_housing"}],
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {"item": "thaumicenergistics:eco_essentia_cell_housing"},
+    {"item": "neoecoae:eco_cell_component_256m"}
+  ],
+  "result": {"id": "thaumicenergistics:eco_essentia_storage_cell_256m", "count": 1}
+}

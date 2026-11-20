@@ -75,7 +75,7 @@ public final class EssentiaContainerItemStrategy
             return extracted;
         }
         var aspect = TCReflection.findAspectById(key.getId());
-        if (aspect == null || amount <= 0) return 0;
+        if (aspect == null || amount <= 0 || !ThEEssentiaContainers.labelAllows(context.stack(), aspect)) return 0;
         var contents = EssentiaItemContainers.contents(context.stack());
         int extracted = (int) Math.min(amount, contents.getAmount(aspect));
         if (extracted <= 0) return 0;
@@ -90,7 +90,7 @@ public final class EssentiaContainerItemStrategy
     public long insert(Context context, AEssentiaKey key, long amount, Actionable mode) {
         if (!ThEEssentiaContainers.isEssentiaContainer(context.stack())) return 0;
         var aspect = TCReflection.findAspectById(key.getId());
-        if (aspect == null || amount <= 0) return 0;
+        if (aspect == null || amount <= 0 || !ThEEssentiaContainers.labelAllows(context.stack(), aspect)) return 0;
         var contents = EssentiaItemContainers.contents(context.stack());
         for (var existing : contents.getAspects()) {
             if (existing != aspect) return 0;

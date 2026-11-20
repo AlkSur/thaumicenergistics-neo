@@ -2,10 +2,12 @@
 
 - 上游 / Upstream: https://github.com/AlkSur/thaumicenergistics-neo
 - Branch: main
-- Commit: `94b1a43d0cf80e4044a3f9048e2abea184da02ef`
-- Tree: `7ceeccc07341a097e63e2d2710ca05c156c2cbe9`
+- Commit: `8767972d9496761d91f252b66c36c5f6d93a1344`（2026-11-20 同步；首次导入为 `94b1a43`）
+- Tree: `32814d066c9c07f2d121db843fe14ee05815b2c3`
 - 上游声明版本 / Declared source version: `2.6.10-alpha`
-- 同步日期 / Imported: 2026-11-09
+- 同步日期 / Imported: 2026-11-09；Synced: 2026-11-20
+
+2026-11-20：上游 main 的 `6e4ac77`/`8767972` 是从本仓库同步回去的 TEA-01..09 修复，内容与本目录完全相同，合并只接入了上游历史，没有改动文件。
 
 上游全部受 Git 管理的源码、资源、wrapper、构建脚本与许可证原样保留。本目录额外加入本交接文档和 `SCEX-SOURCE.json`，没有修改业务代码。
 

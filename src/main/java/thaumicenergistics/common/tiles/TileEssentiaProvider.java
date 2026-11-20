@@ -42,9 +42,7 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     }
 
     /** 最多连接的接收器数量。 */
-    public static final int MAX_LINKED_RECEIVERS = 8;
     /** 最大连接距离（格）。 */
-    public static final int MAX_LINK_DISTANCE = 32;
 
     private List<BlockPos> linkedReceivers = new ArrayList<>();
 
@@ -57,14 +55,17 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     }
 
     /** 注册一个接收器连接（校验数量与距离，失败返回原因文案；成功返回 null）。 */
-    public String addLinkedReceiver(BlockPos receiverPos) {
+    @org.jetbrains.annotations.Nullable
+    public net.minecraft.network.chat.Component addLinkedReceiver(BlockPos receiverPos) {
         if (linkedReceivers.contains(receiverPos)) return null; // 已连接
-        if (linkedReceivers.size() >= MAX_LINKED_RECEIVERS) {
-            return "§c该源质供应器已连接满 " + MAX_LINKED_RECEIVERS + " 个接收器";
+        if (linkedReceivers.size() >= thaumicenergistics.config.ThEConfig.providerMaxReceivers()) {
+            return net.minecraft.network.chat.Component.translatable("thaumicenergistics.link.full", thaumicenergistics.config.ThEConfig.providerMaxReceivers())
+                    .withStyle(net.minecraft.ChatFormatting.RED);
         }
         double dist = Math.sqrt(worldPosition.distSqr(receiverPos));
-        if (dist > MAX_LINK_DISTANCE) {
-            return "§c距离过远（" + (int) Math.ceil(dist) + " 格 > " + MAX_LINK_DISTANCE + " 格上限）";
+        if (dist > thaumicenergistics.config.ThEConfig.providerMaxDistance()) {
+            return net.minecraft.network.chat.Component.translatable("thaumicenergistics.link.too_far",
+                    (int) Math.ceil(dist), thaumicenergistics.config.ThEConfig.providerMaxDistance()).withStyle(net.minecraft.ChatFormatting.RED);
         }
         linkedReceivers.add(receiverPos);
         setChanged();
@@ -83,6 +84,8 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     public void validateLinkedReceivers() {
         if (level == null || linkedReceivers.isEmpty()) return;
         linkedReceivers.removeIf(pos -> {
+            // An unloaded receiver is not gone, and looking it up would load its chunk (TET-09).
+            if (!level.isLoaded(pos)) return false;
             boolean gone = !(level.getBlockEntity(pos) instanceof TileEssentiaProviderConnection);
             if (gone) setChanged();
             return gone;
@@ -104,7 +107,7 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     private List<IAspectStack> getCachedEssentiaList() {
         if (essentiaListCacheTimer <= 0) {
             essentiaListCacheTimer = ESSENTIA_LIST_CACHE_TICKS;
-            cachedEssentiaList = essentiaGrid != null ? essentiaGrid.getEssentiaList() : List.of();
+            cachedEssentiaList = getEssentiaMonitor() ? essentiaGrid.getEssentiaList() : List.of();
         }
         return cachedEssentiaList;
     }
@@ -187,7 +190,7 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
             return wanted;
         }
         // 邻居无特定需求时，返回网络中第一种有存量的源质（列表短时缓存，避免 TC 管道每 tick suction 全量遍历）
-        if (essentiaGrid != null) {
+        if (getEssentiaMonitor()) {
             for (var stack : getCachedEssentiaList()) {
                 if (stack.amount() > 0) {
                     return Aspect.getAspect(stack.aspectId().getPath());
@@ -229,7 +232,7 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
 
     /** 网络中第一种有存量的源质（供接收器无特定需求时兜底）。 */
     public Aspect thE_firstAvailable() {
-        if (essentiaGrid != null) {
+        if (getEssentiaMonitor()) {
             for (var stack : getCachedEssentiaList()) {
                 if (stack.amount() > 0) {
                     return Aspect.getAspect(stack.aspectId().getPath());
@@ -245,6 +248,8 @@ public class TileEssentiaProvider extends TileProviderBase implements IEssentiaT
     }
 
     private Aspect getNeighborWantedAspect(Direction side) {
+        // TC asks getEssentiaType(null) for directionless sources (TubeNetwork, tubes, golems).
+        if (side == null || level == null) return null;
         BlockPos neighborPos = worldPosition.relative(side);
         BlockEntity neighbor = level.getBlockEntity(neighborPos);
         if (neighbor instanceof IEssentiaTransport transport) {

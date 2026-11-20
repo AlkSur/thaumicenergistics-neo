@@ -1,0 +1,19 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "VISINTERFACE",
+  "order": 296,
+  "aspects": {
+    "aer": 2,
+    "terra": 2,
+    "ignis": 2,
+    "aqua": 2,
+    "ordo": 2,
+    "perditio": 2
+  },
+  "ingredients": [
+    "thaumcraft:balanced_shard",
+    "ae2:me_p2p_tunnel",
+    "thaumicenergistics:mystic_processor"
+  ],
+  "result": "thaumicenergistics:vis_interface"
+}

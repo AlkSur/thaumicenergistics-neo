@@ -1,0 +1,22 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "KNOWLEDGEINSCRIBER",
+  "order": 287,
+  "aspects": {
+    "aqua": 3,
+    "ordo": 3,
+    "terra": 1
+  },
+  "pattern": [
+    "ABA",
+    "BCB",
+    "ADA"
+  ],
+  "key": {
+    "A": "ae2:quartz_glass",
+    "B": "minecraft:lapis_lazuli",
+    "C": "thaumcraft:zombie_brain",
+    "D": "thaumicenergistics:mystic_processor"
+  },
+  "result": "thaumicenergistics:knowledge_core"
+}

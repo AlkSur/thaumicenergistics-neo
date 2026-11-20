@@ -1,0 +1,15 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "MYSTICCRYSTALCIRCUIT",
+  "order": 270,
+  "aspects": {
+    "perditio": 5
+  },
+  "ingredients": [
+    "thaumicenergistics:mystic_crystal"
+  ],
+  "result": {
+    "id": "thaumicenergistics:mystic_crystal_dust",
+    "count": 2
+  }
+}

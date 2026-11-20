@@ -64,7 +64,7 @@ public class EssentiaContainerStorage implements MEStorage {
         if (transport != null && side != null
                 && (!transport.isConnectable(side) || !transport.canInputFrom(side))) return 0;
         if (be instanceof IAspectContainer container
-                && !container.doesContainerAccept(aspect)) return 0;
+                && (!TCReflection.isEssentiaStore(be) || !container.doesContainerAccept(aspect))) return 0;
 
         // TC 内部 AspectContainer（要素罐子 / 奥术蒸馏器 等）：单方面储罐，容量可精确读取，
         // 因此 SIMULATE 能如实回答"还能装多少"。输入总线的预检依赖这一点：
@@ -96,10 +96,13 @@ public class EssentiaContainerStorage implements MEStorage {
             return accepted;
         }
 
-        // 其他容器没有"模拟插入"API：SIMULATE 乐观返回，实际插入按容器返回值结算
-        // （输入总线侧有缓冲兜底，模拟与实插不一致时源质也不会丢）
+        // Other targets: SIMULATE must never promise more than MODULATE delivers. AE2 callers such as
+        // emptying a held jar in a terminal extract first and insert after, and silently drop any
+        // shortfall (TEC-03). Use TC's own insertion preflight; without one, promise nothing.
         if (mode == Actionable.SIMULATE) {
-            return amount;
+            if (transport == null || side == null) return 0;
+            int request = (int) Math.min(amount, Integer.MAX_VALUE);
+            return Math.max(0, Math.min(request, transport.simulateAddEssentia(aspect, request, side)));
         }
         return EssentiaEndpoints.insert(
                 be, key.getId(), (int) Math.min(amount, Integer.MAX_VALUE), side);

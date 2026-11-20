@@ -8,5 +8,8 @@
     "MixinPatternProviderTarget"
   ],
   "client": [],
-  "server": []
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

@@ -1,0 +1,24 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "INFUSIONPROVIDER",
+  "order": 303,
+  "instability": 3,
+  "aspects": {
+    "machina": 64,
+    "praecantatio": 32,
+    "ordo": 32,
+    "permutatio": 16
+  },
+  "central": "ae2:interface",
+  "components": [
+    "thaumcraft:essentia_mirror",
+    "thaumcraft:essentia_mirror",
+    "thaumcraft:air_shard",
+    "thaumcraft:air_shard",
+    "thaumicenergistics:coalescence_core",
+    "thaumicenergistics:coalescence_core",
+    "thaumicenergistics:mystic_processor",
+    "thaumcraft:salis_mundus"
+  ],
+  "result": "thaumicenergistics:infusion_provider"
+}

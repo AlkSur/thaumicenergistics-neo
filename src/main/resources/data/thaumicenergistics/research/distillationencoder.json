@@ -1,0 +1,41 @@
+{
+  "item": "thaumicenergistics:distillation_encoder",
+  "flags": [
+    "round"
+  ],
+  "col": -4,
+  "row": -4,
+  "complexity": 3,
+  "key": "DISTILLATIONENCODER",
+  "order": 228,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.DISTILLATIONENCODER.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.DISTILLATIONENCODER.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "machina",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    },
+    {
+      "aspect": "perditio",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "ESSENTIAACCESSCARD"
+  ]
+}

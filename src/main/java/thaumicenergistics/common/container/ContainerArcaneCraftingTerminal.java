@@ -77,13 +77,31 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         if (!arcaneResult.isEmpty()) {
             AspectList aspects = ThaumcraftCraftingManager.findMatchingArcaneRecipeAspects(craftContainer, player);
             if (aspects != null && hasEnoughVis(aspects)) {
-                resultSlot.setRequiredAspects(aspects);
                 resultSlot.setDisplayedCraftingOutput(arcaneResult);
             }
         }
     }
 
     private final ISegmentedInventory craftingInventoryHost;
+
+    /** The wand currently in the shared wand slot (read live; another viewer may have swapped it). */
+    public ItemStack liveWand() {
+        return craftingInventoryHost.getSubInventory(ArcaneCraftingTerminalPart.INV_WAND).getStackInSlot(0);
+    }
+
+    /**
+     * Persist a wand whose vis was changed in place. Paying vis edits the stack's components, which
+     * the slot inventory never sees, so wireless hosts must write the wand back to the terminal item
+     * and the wired part must be marked dirty.
+     */
+    public void persistWand() {
+        if (craftingInventoryHost instanceof IArcaneTerminalInventoryHost host) {
+            host.saveWandInv();
+        } else if (craftingInventoryHost instanceof ArcaneCraftingTerminalPart part) {
+            part.onWandChanged();
+        }
+    }
+
     private final CraftingMatrixSlot[] craftingSlots = new CraftingMatrixSlot[9];
     private final ArcaneCraftingResultSlot resultSlot;
 
@@ -119,7 +137,8 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
             @Override
             public boolean mayPlace(ItemStack stack) {
                 //只允许 TCFunctionalItems.WandCastingItem 类型的物品放入
-                return stack.getItem() instanceof TCFunctionalItems.WandCastingItem;
+                // TC's workbench rule: wands only, no staffs (TEA2-05).
+                return thaumcraft.common.blockentities.ArcaneWorkbenchBlockEntity.isValidWand(stack);
             }
 
             @Override
@@ -309,8 +328,6 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         }
         if (player.level().isClientSide()) return;
         hasValidRecipe = match.arcane();
-        resultSlot.setRequiredAspects(match.cost());
-        resultSlot.setWandStack(match.arcane() ? wand : ItemStack.EMPTY);
         requiredAspectsData = match.arcane()
                 ? ArcaneTerminalRecipeState.displayedCosts(wand, match.cost(), player) : "";
     }
@@ -328,6 +345,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         Set<Integer> craftableSlots = new HashSet<>();
 
         var reservedGridAmounts = new Object2IntOpenHashMap<Object>();
+        var repoByItem = indexClientRepoByItem();
         var playerItems = getPlayerInventory().items;
         var reservedPlayerItems = new int[playerItems.size()];
 
@@ -346,7 +364,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
             }
 
             if (!found) {
-                if (hasIngredient(ingredient, reservedGridAmounts)) {
+                if (hasIngredient(ingredient, reservedGridAmounts, repoByItem)) {
                     reservedGridAmounts.merge(ingredient, 1, Integer::sum);
                     found = true;
                 }
@@ -354,7 +372,7 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
 
             if (!found) {
                 for (var stack : ingredient.getItems()) {
-                    if (isCraftable(stack)) {
+                    if (isCraftable(stack, repoByItem)) {
                         craftableSlots.add(entry.getKey());
                         found = true;
                         break;
@@ -463,10 +481,25 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
     }
 
     /**
-     * 检查 ME 网络中是否有指定材料的库存（含已预留量）。
-     * 直接遍历 clientRepo 条目匹配 ingredient，确保不受 linkStatus 时序或 getByIngredient 实现细节影响。
+     * The client repo grouped by item, built once per preview. JEI previews every recipe slot; walking
+     * the whole repo and copying every entry to an ItemStack per slot stalled large networks (TEI-06).
      */
-    public boolean hasIngredient(Ingredient ingredient, Object2IntOpenHashMap<Object> reservedAmounts) {
+    private Map<net.minecraft.world.item.Item, List<appeng.menu.me.common.GridInventoryEntry>> indexClientRepoByItem() {
+        var index = new HashMap<net.minecraft.world.item.Item, List<appeng.menu.me.common.GridInventoryEntry>>();
+        var clientRepo = getClientRepo();
+        if (clientRepo != null) {
+            for (var entry : clientRepo.getAllEntries()) {
+                if (entry.getWhat() instanceof AEItemKey itemKey) {
+                    index.computeIfAbsent(itemKey.getItem(), k -> new java.util.ArrayList<>()).add(entry);
+                }
+            }
+        }
+        return index;
+    }
+
+    /** 检查合成格或 ME 网络中是否有指定材料（含已预留量）；网络部分只看该材料各变体对应的条目。 */
+    private boolean hasIngredient(Ingredient ingredient, Object2IntOpenHashMap<Object> reservedAmounts,
+            Map<net.minecraft.world.item.Item, List<appeng.menu.me.common.GridInventoryEntry>> repoByItem) {
         for (var slot : getSlots(SlotSemantics.CRAFTING_GRID)) {
             var stackInSlot = slot.getItem();
             if (!stackInSlot.isEmpty() && ingredient.test(stackInSlot)) {
@@ -477,13 +510,12 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
                 }
             }
         }
-        // 直接遍历 clientRepo 检查 ME 网络仓库
-        var clientRepo = getClientRepo();
-        if (clientRepo != null) {
-            for (var entry : clientRepo.getAllEntries()) {
-                if (!(entry.getWhat() instanceof AEItemKey itemKey)) continue;
+        var seen = new HashSet<net.minecraft.world.item.Item>();
+        for (var variant : ingredient.getItems()) {
+            if (!seen.add(variant.getItem())) continue;
+            for (var entry : repoByItem.getOrDefault(variant.getItem(), List.of())) {
                 if (entry.getStoredAmount() <= 0) continue;
-                if (!ingredient.test(itemKey.toStack())) continue;
+                if (!(entry.getWhat() instanceof AEItemKey itemKey) || !ingredient.test(itemKey.toStack())) continue;
                 var reservedAmount = reservedAmounts.getOrDefault(entry, 0);
                 if (entry.getStoredAmount() - reservedAmount >= 1) {
                     reservedAmounts.merge(entry, 1, Integer::sum);
@@ -494,17 +526,12 @@ public class ContainerArcaneCraftingTerminal extends MEStorageMenu implements IC
         return false;
     }
 
-    /**
-     * 检查物品是否可在 ME 网络中自动合成。
-     * 移植自 CraftingTermMenu.isCraftable。
-     */
-    private boolean isCraftable(ItemStack itemStack) {
-        var clientRepo = getClientRepo();
-        if (clientRepo != null) {
-            for (var stack : clientRepo.getAllEntries()) {
-                if (AEItemKey.matches(stack.getWhat(), itemStack) && stack.isCraftable()) {
-                    return true;
-                }
+    /** 检查物品是否可在 ME 网络中自动合成（移植自 CraftingTermMenu.isCraftable）。 */
+    private static boolean isCraftable(ItemStack itemStack,
+            Map<net.minecraft.world.item.Item, List<appeng.menu.me.common.GridInventoryEntry>> repoByItem) {
+        for (var entry : repoByItem.getOrDefault(itemStack.getItem(), List.of())) {
+            if (entry.isCraftable() && AEItemKey.matches(entry.getWhat(), itemStack)) {
+                return true;
             }
         }
         return false;

@@ -1,0 +1,47 @@
+{
+  "item": "thaumicenergistics:arcane_crafting_terminal",
+  "flags": [
+    "round"
+  ],
+  "col": 4,
+  "row": -4,
+  "complexity": 2,
+  "key": "ARCANECRAFTINGTERMINAL",
+  "order": 219,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ARCANECRAFTINGTERMINAL.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ARCANECRAFTINGTERMINAL.stage.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.ARCANECRAFTINGTERMINAL.stage.1",
+    "tc.research_text.ARCANECRAFTINGTERMINAL.stage.2"
+  ],
+  "aspects": [
+    {
+      "aspect": "fabrico",
+      "amount": 10
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 10
+    },
+    {
+      "aspect": "machina",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "BASEENERGISTICS",
+    "MYSTICPROCESSOR"
+  ]
+}

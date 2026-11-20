@@ -102,6 +102,7 @@ public final class ThEEssentiaPushTarget implements PatternProviderTarget {
                     && transport.canInputFrom(this.accessSide);
         }
         return this.container instanceof IAspectContainer aspectContainer
+                && TCReflection.isEssentiaStore(this.container)
                 && aspectContainer.doesContainerAccept(aspect);
     }
 }

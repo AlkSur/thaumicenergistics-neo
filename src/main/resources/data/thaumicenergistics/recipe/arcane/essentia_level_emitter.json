@@ -1,0 +1,14 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "ESSENTIAACCESSCARD",
+  "order": 294,
+  "aspects": {
+    "ignis": 4
+  },
+  "ingredients": [
+    "thaumicenergistics:mystic_processor",
+    "minecraft:redstone_torch",
+    "thaumcraft:salis_mundus"
+  ],
+  "result": "thaumicenergistics:essentia_level_emitter"
+}

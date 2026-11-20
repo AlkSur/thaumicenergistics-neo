@@ -1,0 +1,41 @@
+{
+  "item": "thaumicenergistics:essentia_vibration_chamber",
+  "flags": [
+    "round"
+  ],
+  "col": 1,
+  "row": -4,
+  "complexity": 3,
+  "key": "ESSENTIAVIBRATIONCHAMBER",
+  "order": 227,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ESSENTIAVIBRATIONCHAMBER.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.ESSENTIAVIBRATIONCHAMBER.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "potentia",
+      "amount": 8
+    },
+    {
+      "aspect": "machina",
+      "amount": 5
+    },
+    {
+      "aspect": "ignis",
+      "amount": 3
+    }
+  ],
+  "parents": [
+    "DIGISENTIA"
+  ]
+}

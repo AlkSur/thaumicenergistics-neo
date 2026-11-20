@@ -1,0 +1,56 @@
+{
+  "item": "thaumicenergistics:essentia_cell_1k",
+  "flags": [
+    "round"
+  ],
+  "row": 2,
+  "complexity": 2,
+  "key": "ESSENTIASTORAGE",
+  "order": 218,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ESSENTIASTORAGE.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "array": true,
+      "candidate_count": 5,
+      "type": "ARCANE"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "array": true,
+      "candidate_count": 9,
+      "type": "ARCANE"
+    },
+    {
+      "type": "NORMAL",
+      "recipe": "thaumicenergistics:essentia_cell_workbench_shapeless"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.ESSENTIASTORAGE.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 1
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 1
+    }
+  ],
+  "parents": [
+    "BASEENERGISTICS",
+    "PSEUDO_DISTILESSENTIA",
+    "PSEUDO_WARDEDARCANA",
+    "MYSTICPROCESSOR"
+  ]
+}

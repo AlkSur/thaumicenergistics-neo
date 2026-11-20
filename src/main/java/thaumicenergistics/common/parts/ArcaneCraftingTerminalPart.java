@@ -89,7 +89,14 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart implements 
         if (heldItem.getItem() instanceof IMemoryCard memoryCard) {
             Short freq = heldItem.get(AEComponents.EXPORTED_P2P_FREQUENCY);
             if (freq != null) {
+                var node = getMainNode().getNode();
+                var problem = ArcaneVisReplenish.checkFrequency(node != null ? node.getGrid() : null, freq);
+                if (problem != null) {
+                    player.displayClientMessage(problem, true);
+                    return true;
+                }
                 this.visSourceFreq = freq;
+                wakeCharging();
                 getHost().markForSave();
                 memoryCard.notifyUser(player, MemoryCardMessages.SETTINGS_LOADED);
                 return true;
@@ -108,17 +115,54 @@ public class ArcaneCraftingTerminalPart extends AbstractTerminalPart implements 
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(VIS_REPLENISH_INTERVAL, VIS_REPLENISH_INTERVAL, false);
+        // Charges every tick while vis flows; drifts to every 20 ticks while no source has vis.
+        return new TickingRequest(VIS_REPLENISH_INTERVAL, 20, false);
     }
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        // 充能体抽至 ArcaneVisReplenish 单套实现（无线终端菜单打开期间共用，D1），行为零变化
-        if (ArcaneVisReplenish.replenish(node.getGrid(), visSourceFreq, wandInv.getStackInSlot(0))) {
+        // Charge every tick while there is something to charge; sleep otherwise and wake on the
+        // changes that can create work (wand slot, vis spent by crafting, memory card) (TEA2-10).
+        var wand = wandInv.getStackInSlot(0);
+        if (ArcaneVisReplenish.isFull(wand)) {
+            return TickRateModulation.SLEEP;
+        }
+        // Bound by memory card: that interface. Unbound: any vis interface on the network (TEU-04).
+        boolean charged = visSourceFreq != 0
+                ? ArcaneVisReplenish.replenish(node.getGrid(), visSourceFreq, wand)
+                : ArcaneVisReplenish.replenishAuto(node.getGrid(), wand);
+        if (charged) {
             // 法杖 vis 存储在 ItemStack NBT，手动标记保存
             getHost().markForSave();
+            return TickRateModulation.URGENT;
         }
-        return TickRateModulation.SAME;
+        return TickRateModulation.IDLE;
+    }
+
+    public static final int VIS_SOURCE_NONE = 0, VIS_SOURCE_UNAVAILABLE = 1, VIS_SOURCE_OK = 2;
+
+    /** No frequency, a frequency whose vis interface has no vis behind it, or a working source (TEU-05). */
+    public int visSourceState() {
+        var node = getMainNode().getNode();
+        var grid = node != null ? node.getGrid() : null;
+        if (ArcaneVisReplenish.hasAvailableSource(grid, visSourceFreq)) return VIS_SOURCE_OK;
+        return visSourceFreq == 0 ? VIS_SOURCE_NONE : VIS_SOURCE_UNAVAILABLE;
+    }
+
+    /** The wand changed in place (vis paid by crafting): persist it and resume charging. */
+    public void onWandChanged() {
+        if (getHost() != null) getHost().markForSave();
+        wakeCharging();
+    }
+
+    private void wakeCharging() {
+        getMainNode().ifPresent((grid, node) -> grid.getTickManager().wakeDevice(node));
+    }
+
+    @Override
+    public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+        super.onChangeInventory(inv, slot);
+        if (inv == wandInv) wakeCharging();
     }
 
     @Override

@@ -1,0 +1,22 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "DISTILLATIONENCODER",
+  "order": 291,
+  "aspects": {
+    "ordo": 5,
+    "perditio": 5,
+    "ignis": 3
+  },
+  "pattern": [
+    "ABA",
+    " C ",
+    "ADA"
+  ],
+  "key": {
+    "A": "minecraft:iron_ingot",
+    "B": "#thaumicenergistics:monitors",
+    "C": "thaumcraft:thaumometer",
+    "D": "thaumicenergistics:mystic_processor"
+  },
+  "result": "thaumicenergistics:distillation_encoder"
+}

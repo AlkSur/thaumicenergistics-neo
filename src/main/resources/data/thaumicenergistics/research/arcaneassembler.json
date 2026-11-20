@@ -1,0 +1,51 @@
+{
+  "item": "thaumicenergistics:arcane_assembler",
+  "flags": [
+    "round"
+  ],
+  "col": 8,
+  "row": -4,
+  "complexity": 3,
+  "key": "ARCANEASSEMBLER",
+  "order": 216,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ARCANEASSEMBLER.stage.1"
+    },
+    {
+      "type": "INFUSION"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ARCANEASSEMBLER.stage.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.ARCANEASSEMBLER.stage.1",
+    "tc.research_text.ARCANEASSEMBLER.stage.2"
+  ],
+  "aspects": [
+    {
+      "aspect": "fabrico",
+      "amount": 10
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 10
+    },
+    {
+      "aspect": "machina",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "VISINTERFACE",
+    "PSEUDO_SCEPTRE"
+  ]
+}

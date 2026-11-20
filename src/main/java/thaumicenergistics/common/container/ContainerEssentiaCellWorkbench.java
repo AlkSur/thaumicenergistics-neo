@@ -48,7 +48,7 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
     /** 兜底用空库存（workbench 为 null 时）。 */
     private final IItemHandler fallbackCell = new ItemStackHandler(1) {
         @Override public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.getItem() instanceof ItemEssentiaCell;
+            return ItemEssentiaCell.isPartitionable(stack);
         }
         @Override public int getSlotLimit(int slot) { return 1; }
     };
@@ -164,7 +164,7 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
     }
 
     public boolean hasCell() {
-        return slots.get(SLOT_CELL).getItem().getItem() instanceof ItemEssentiaCell;
+        return ItemEssentiaCell.isPartitionable(slots.get(SLOT_CELL).getItem());
     }
 
     public List<ResourceLocation> getPartitionAspects() {
@@ -234,7 +234,7 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
             if (!moveItemStackTo(stack, PLAYER_INV_START, HOTBAR_END, true)) return ItemStack.EMPTY;
         } else if (idx < HOTBAR_END) {
             // 玩家背包 → cell 槽（仅当 cell 槽空且物品是源质元件）
-            if (stack.getItem() instanceof ItemEssentiaCell && workbench.getCell().isEmpty()) {
+            if (ItemEssentiaCell.isPartitionable(stack) && workbench.getCell().isEmpty()) {
                 if (!moveItemStackTo(stack, SLOT_CELL, SLOT_CELL + 1, false)) return ItemStack.EMPTY;
             } else if (isCellUpgrade(stack)) {
                 // Supported cards -> the current cell's persistent upgrade inventory.
@@ -262,6 +262,10 @@ public class ContainerEssentiaCellWorkbench extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return workbench == null || workbench.hasLevel() && player.level().getBlockEntity(workbench.getBlockPos()) == workbench;
+        if (workbench == null) return true;
+        var pos = workbench.getBlockPos();
+        // Same rule as the other machine menus: the block must still be there and within 8 blocks (TEC-09).
+        return workbench.hasLevel() && player.level().getBlockEntity(pos) == workbench
+                && player.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) <= 64.0;
     }
 }

@@ -16,16 +16,33 @@ public final class ArcaneCraftJob {
     private ItemStack result = ItemStack.EMPTY;
     private ItemStack[] inputs = emptyGrid();
     private boolean produced;
+    /** Crafts in this order: 1, or N when a Neo ECOAE crafting CPU pushed a parallel batch. */
+    private int count = 1;
     private final List<ItemStack> outputs = new ArrayList<>();
 
     public AspectList aspects() { return aspects; }
     public ItemStack result() { return result; }
     public ItemStack[] inputs() { return inputs; }
     public boolean produced() { return produced; }
+    public int count() { return count; }
+
+    /** What breaking the machine must give back before the order is produced: the inputs of every craft. */
+    public List<ItemStack> refund() {
+        var refund = new ArrayList<ItemStack>();
+        for (var input : inputs) {
+            if (!input.isEmpty()) addSplit(refund, input, (long) input.getCount() * count);
+        }
+        return refund;
+    }
     public List<ItemStack> outputs() { return outputs; }
 
     public void start(AspectList cost, ItemStack output, ItemStack[] actualInputs) {
+        start(cost, output, actualInputs, 1);
+    }
+
+    public void start(AspectList cost, ItemStack output, ItemStack[] actualInputs, int crafts) {
         clear();
+        count = Math.max(1, crafts);
         aspects = cost.copy();
         result = output.copy();
         for (int i = 0; i < inputs.length && i < actualInputs.length; i++) {
@@ -35,8 +52,8 @@ public final class ArcaneCraftJob {
 
     public void produce(List<ItemStack> retainedInputs) {
         if (produced) throw new IllegalStateException("Arcane order was already produced");
-        outputs.add(result.copy());
-        for (var retained : retainedInputs) outputs.add(retained.copy());
+        addSplit(outputs, result, (long) result.getCount() * count);
+        for (var retained : retainedInputs) addSplit(outputs, retained, (long) retained.getCount() * count);
         produced = true;
     }
 
@@ -47,6 +64,7 @@ public final class ArcaneCraftJob {
         result = ItemStack.EMPTY;
         inputs = emptyGrid();
         produced = false;
+        count = 1;
         outputs.clear();
     }
 
@@ -57,6 +75,7 @@ public final class ArcaneCraftJob {
         var grid = tag.getCompound("PreviewGrid");
         for (int i = 0; i < inputs.length; i++) inputs[i] = ItemStack.parseOptional(registries, grid.getCompound("g" + i));
         produced = tag.getBoolean("ResultProduced");
+        count = tag.contains("CraftCount") ? Math.max(1, tag.getInt("CraftCount")) : 1;
         for (var output : tag.getList("PendingCraftOutputs", Tag.TAG_COMPOUND)) {
             var stack = ItemStack.parseOptional(registries, (CompoundTag) output);
             if (!stack.isEmpty()) outputs.add(stack);
@@ -65,6 +84,7 @@ public final class ArcaneCraftJob {
 
     public void save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putBoolean("ResultProduced", produced);
+        tag.putInt("CraftCount", count);
         tag.remove("CurrentCraftResult");
         if (!result.isEmpty()) tag.put("CurrentCraftResult", result.save(registries));
         var cost = new CompoundTag();
@@ -76,6 +96,16 @@ public final class ArcaneCraftJob {
         var pending = new ListTag();
         for (var output : outputs) if (!output.isEmpty()) pending.add(output.save(registries));
         tag.put("PendingCraftOutputs", pending);
+    }
+
+    /** Adds {@code total} of {@code stack} as stacks no larger than its max size (saved stacks must stay valid). */
+    private static void addSplit(List<ItemStack> into, ItemStack stack, long total) {
+        int max = Math.max(1, stack.getMaxStackSize());
+        while (total > 0) {
+            int part = (int) Math.min(max, total);
+            into.add(stack.copyWithCount(part));
+            total -= part;
+        }
     }
 
     private static ItemStack[] emptyGrid() {

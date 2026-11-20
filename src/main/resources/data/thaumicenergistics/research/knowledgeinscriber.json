@@ -1,0 +1,44 @@
+{
+  "item": "thaumicenergistics:knowledge_inscriber",
+  "flags": [
+    "round"
+  ],
+  "col": 8,
+  "row": -3,
+  "complexity": 3,
+  "key": "KNOWLEDGEINSCRIBER",
+  "order": 217,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.KNOWLEDGEINSCRIBER.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.KNOWLEDGEINSCRIBER.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "amount": 10
+    },
+    {
+      "aspect": "machina",
+      "amount": 5
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "ARCANEASSEMBLER"
+  ]
+}

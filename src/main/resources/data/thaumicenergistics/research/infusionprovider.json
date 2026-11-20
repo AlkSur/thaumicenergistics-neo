@@ -1,0 +1,52 @@
+{
+  "item": "thaumicenergistics:infusion_provider",
+  "flags": [
+    "round"
+  ],
+  "col": -5,
+  "row": -2,
+  "complexity": 3,
+  "key": "INFUSIONPROVIDER",
+  "order": 221,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.INFUSIONPROVIDER.stage.1"
+    },
+    {
+      "type": "INFUSION"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.INFUSIONPROVIDER.stage.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.INFUSIONPROVIDER.stage.1",
+    "tc.research_text.INFUSIONPROVIDER.stage.2"
+  ],
+  "aspects": [
+    {
+      "aspect": "machina",
+      "amount": 10
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 10
+    },
+    {
+      "aspect": "ordo",
+      "amount": 8
+    },
+    {
+      "aspect": "permutatio",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "ESSENTIAACCESSCARD",
+    "PSEUDO_INFUSION",
+    "PSEUDO_MIRROR"
+  ]
+}

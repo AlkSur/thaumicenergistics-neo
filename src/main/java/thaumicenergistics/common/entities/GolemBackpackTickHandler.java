@@ -289,20 +289,41 @@ public final class GolemBackpackTickHandler {
     /**
      * ESSENTIA 核心 (ID=6): 傀儡与 AE 源质网络交互（对应 1.7.10 AIGolemWifiEssentia）。
      */
+    private static final String NBT_FROM_NETWORK_ASPECT = "ThEEssentiaFromNetwork";
+    private static final String NBT_FROM_NETWORK_TIME = "ThEEssentiaFromNetworkTime";
+    /** How long essentia taken from the network may be carried before it goes back (30 s). */
+    private static final long NETWORK_HOLD_TICKS = 600;
+
+    private static void clearNetworkMark(net.minecraft.nbt.CompoundTag data) {
+        data.remove(NBT_FROM_NETWORK_ASPECT);
+        data.remove(NBT_FROM_NETWORK_TIME);
+    }
+
     private static void doEssentia(ThaumcraftGolemEntity golem, WirelessAELinkGolem link) {
         Aspect aspect = golem.essentiaCarried();
         int amount = golem.essentiaAmount();
+        var data = golem.getPersistentData();
+        long now = golem.level().getGameTime();
 
         if (aspect != null && amount > 0) {
+            // Essentia this core just took from the network is on its way to a jar: do not put it straight
+            // back (a slow walk used to undo every delivery). Only after NETWORK_HOLD_TICKS, e.g. when every
+            // jar is full, does it return to the network (TEG-02).
+            if (aspect.getTag().equals(data.getString(NBT_FROM_NETWORK_ASPECT))
+                    && now - data.getLong(NBT_FROM_NETWORK_TIME) < NETWORK_HOLD_TICKS) {
+                return;
+            }
             ResourceLocation aspectId = TCReflection.getAspectId(aspect);
             int deposited = link.depositEssentia(aspectId, amount);
             if (deposited > 0) {
                 int remaining = amount - deposited;
                 golem.setEssentiaCarried(remaining > 0 ? aspect : null, remaining);
                 golem.startActionTimer();
+                if (remaining <= 0) clearNetworkMark(data);
             }
             return;
         }
+        clearNetworkMark(data);
 
         for (int slot = 0; slot < 9; slot++) {
             ItemStack filter = golem.getFilter(slot);
@@ -319,6 +340,8 @@ public final class GolemBackpackTickHandler {
                     if (extracted > 0) {
                         golem.setEssentiaCarried(filterAspect, extracted);
                         golem.startActionTimer();
+                        data.putString(NBT_FROM_NETWORK_ASPECT, filterAspect.getTag());
+                        data.putLong(NBT_FROM_NETWORK_TIME, now);
                         return;
                     }
                 }

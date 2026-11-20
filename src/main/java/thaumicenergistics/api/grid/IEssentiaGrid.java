@@ -40,7 +40,7 @@ public interface IEssentiaGrid extends IGridService {
      * @param aspectId 源质 ID
      * @param amount 要注入的量
      * @param simulate true 为模拟，false 为实际执行
-     * @return 无法注入的量（0 表示全部成功）
+     * @return 无法注入的量（0 表示全部成功）。注意与 {@link #extractEssentia} 相反：后者返回实际取出的量。
      */
     long injectEssentia(ResourceLocation aspectId, long amount, boolean simulate);
 

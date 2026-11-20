@@ -1,0 +1,6 @@
+{
+  "parent": "thaumicenergistics:block/arcane_crafting_chamber_l4",
+  "textures": {
+    "led": "thaumicenergistics:block/arcane_chamber/led_on"
+  }
+}

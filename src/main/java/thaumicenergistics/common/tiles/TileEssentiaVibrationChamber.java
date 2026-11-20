@@ -35,13 +35,9 @@ import thaumicenergistics.init.ModItems;
 public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorldGridNodeHost, IGridTickable, IEssentiaTransport, EssentiaTransport {
 
     private static final int MAX_ESSENTIA = 64;
-    private static final int BASE_BURN_TICKS = 800;
-    private static final double BASE_AE_PER_TICK = 200.0;
     private static final int IDLE_POWER = 1;
 
     // 能量槽配置：16KFE = 16000 AE，对外最大输出 1000 AE/t
-    public static final double MAX_ENERGY_STORAGE = 16000.0;
-    public static final double MAX_OUTPUT_PER_TICK = 2000.0;
 
     // 懒 tick 周期：燃烧中 10 tick、空闲 40 tick（能量生产无需实时响应，低频即可）
     private static final int TICK_RATE_BURNING = 10;
@@ -60,8 +56,15 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
     private int burnTicksRemaining;
     private int totalBurnTicks;
     private double aePerTick;
-    private int storedEssentia;
+    /**
+     * Fuel per aspect, at most {@link #MAX_ESSENTIA} in total. One shared counter let the last aspect in
+     * decide the tier for the whole store: 63 cheap essentia plus one potentia burned as 64 potentia (TET-07).
+     */
+    private final java.util.LinkedHashMap<Aspect, Integer> fuel = new java.util.LinkedHashMap<>();
+    /** Aspect of the essentia now burning (display). */
     private Aspect currentAspect;
+    /** Only these aspects are pulled from the ME network; pipes may still feed any aspect (TET-08). */
+    private static final java.util.List<Aspect> NETWORK_FUEL = java.util.List.of(Aspect.FIRE, Aspect.ENERGY);
 
     private double storedEnergy;
 
@@ -116,9 +119,9 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
 
         IEnergyService energy = grid.getService(IEnergyService.class);
 
-        // 1) 能量槽对外输出：最多 MAX_OUTPUT_PER_TICK AE/t
+        // 1) 能量槽对外输出：最多 thaumicenergistics.config.ThEConfig.chamberMaxOutput() AE/t
         if (storedEnergy > 0 && energy != null) {
-            double toOutput = Math.min(storedEnergy, MAX_OUTPUT_PER_TICK * ticksSinceLast);
+            double toOutput = Math.min(storedEnergy, thaumicenergistics.config.ThEConfig.chamberMaxOutput() * ticksSinceLast);
             if (toOutput > 0) {
                 double rejected = energy.injectPower(toOutput, Actionable.MODULATE);
                 storedEnergy -= (toOutput - rejected);
@@ -128,15 +131,15 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         }
 
         // 2) 能量槽已满时停止发电（但仍抽取源质以备槽空后立即使用）
-        if (storedEssentia < MAX_ESSENTIA) {
+        if (storedEssentia() < MAX_ESSENTIA) {
             takeEssentiaFromNeighbors();
-            if (storedEssentia < MAX_ESSENTIA) {
+            if (storedEssentia() < MAX_ESSENTIA) {
                 pullEssentiaFromNetwork();
             }
         }
 
         // 若能量槽已满（或等于），不消耗源质发电
-        if (storedEnergy >= MAX_ENERGY_STORAGE - 0.01) {
+        if (storedEnergy >= thaumicenergistics.config.ThEConfig.chamberBuffer() - 0.01) {
             // 保持燃烧状态标记，以便 Jade/UI 显示"蓄能中"
             if (isActive) return TickRateModulation.SAME;
             return TickRateModulation.IDLE;
@@ -144,12 +147,13 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
 
         // 3) 消耗源质燃烧 -> 能量先进槽
         if (burnTicksRemaining > 0) {
-            double toGenerate = aePerTick * ticksSinceLast;
-            double space = MAX_ENERGY_STORAGE - storedEnergy;
+            // The last interval may be shorter than ticksSinceLast: do not pay for ticks past the burn.
+            double toGenerate = aePerTick * Math.min(ticksSinceLast, burnTicksRemaining);
+            double space = thaumicenergistics.config.ThEConfig.chamberBuffer() - storedEnergy;
             double accepted = Math.min(toGenerate, space);
             if (accepted > 0) {
                 storedEnergy += accepted;
-                if (storedEnergy > MAX_ENERGY_STORAGE) storedEnergy = MAX_ENERGY_STORAGE;
+                if (storedEnergy > thaumicenergistics.config.ThEConfig.chamberBuffer()) storedEnergy = thaumicenergistics.config.ThEConfig.chamberBuffer();
                 setChanged();
             }
             burnTicksRemaining -= ticksSinceLast;
@@ -161,9 +165,8 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
             }
         }
 
-        if (burnTicksRemaining <= 0 && storedEssentia > 0) {
+        if (burnTicksRemaining <= 0 && storedEssentia() > 0) {
             if (startBurning()) {
-                storedEssentia--;
                 isActive = true;
                 setChanged();
                 return TickRateModulation.URGENT;
@@ -173,7 +176,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
     }
 
     private void takeEssentiaFromNeighbors() {
-        int space = MAX_ESSENTIA - storedEssentia;
+        int space = MAX_ESSENTIA - storedEssentia();
         if (space <= 0) return;
         for (Direction side : Direction.values()) {
             BlockPos sourcePos = worldPosition.relative(side);
@@ -192,8 +195,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
             int want = Math.min(1, space);
             int taken = source.takeEssentia(srcType, want, sourceSide);
             if (taken > 0) {
-                storedEssentia += taken;
-                currentAspect = srcType;
+                addFuel(srcType, taken);
                 // suctionAspect 固定为 null（通配吸力），不锁定单一类型
                 setChanged();
                 return;
@@ -214,38 +216,52 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
 
     private void pullEssentiaFromNetwork() {
         if (!getEssentiaMonitor()) return;
-        int space = MAX_ESSENTIA - storedEssentia;
-        if (space <= 0) return;
-
-        if (currentAspect != null && isFuelAspect(currentAspect)) {
-            ResourceLocation id = TCReflection.getAspectId(currentAspect);
-            if (id != null && essentiaGrid.getEssentiaAmount(id) > 0) {
-                long extracted = essentiaGrid.extractEssentia(id, 1, false);
-                if (extracted > 0) {
-                    storedEssentia += (int) extracted;
-                    setChanged();
-                    return;
-                }
-            }
-        }
-
-        var list = essentiaGrid.getEssentiaList();
-        for (var stack : list) {
-            if (stack.amount() <= 0) continue;
-            Aspect aspect = Aspect.getAspect(stack.aspectId().getPath());
-            if (!isFuelAspect(aspect)) continue;
-            long extracted = essentiaGrid.extractEssentia(stack.aspectId(), 1, false);
+        if (MAX_ESSENTIA - storedEssentia() <= 0) return;
+        for (Aspect aspect : NETWORK_FUEL) {
+            ResourceLocation id = TCReflection.getAspectId(aspect);
+            if (id == null || essentiaGrid.getEssentiaAmount(id) <= 0) continue;
+            long extracted = essentiaGrid.extractEssentia(id, 1, false);
             if (extracted > 0) {
-                storedEssentia += (int) extracted;
-                currentAspect = aspect;
-                setChanged();
+                addFuel(aspect, (int) extracted);
                 return;
             }
         }
     }
 
+    private int storedEssentia() {
+        int total = 0;
+        for (int amount : fuel.values()) total += amount;
+        return total;
+    }
+
+    private void addFuel(Aspect aspect, int amount) {
+        if (aspect == null || amount <= 0) return;
+        fuel.merge(aspect, amount, Integer::sum);
+        setChanged();
+    }
+
+    /** Take one unit of fuel, cheapest aspect last; null when empty. */
+    @Nullable
+    private Aspect takeFuel() {
+        Aspect best = null;
+        for (var entry : fuel.entrySet()) {
+            if (entry.getValue() <= 0) continue;
+            if (best == null || tierRank(entry.getKey()) > tierRank(best)) best = entry.getKey();
+        }
+        if (best == null) return null;
+        int left = fuel.get(best) - 1;
+        if (left <= 0) fuel.remove(best); else fuel.put(best, left);
+        return best;
+    }
+
+    private static int tierRank(Aspect aspect) {
+        return aspect == Aspect.ENERGY ? 2 : aspect == Aspect.FIRE ? 1 : 0;
+    }
+
     private boolean startBurning() {
-        if (currentAspect == null) currentAspect = Aspect.FIRE;
+        Aspect burning = takeFuel();
+        if (burning == null) return false;
+        currentAspect = burning;
 
         String tag = currentAspect.getTag();
         boolean isPotentia = currentAspect == Aspect.ENERGY || tag.equals("potentia") || tag.equals("energy");
@@ -255,16 +271,16 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         double power;
         if (isPotentia) {
             // 能量：1.6 倍功率，燃烧更久
-            burnTime = (int)(BASE_BURN_TICKS / 1.6f);
-            power = BASE_AE_PER_TICK * 1.6;
+            burnTime = (int) (thaumicenergistics.config.ThEConfig.chamberBurnTicks() / thaumicenergistics.config.ThEConfig.chamberPotentiaMultiplier());
+            power = thaumicenergistics.config.ThEConfig.chamberIgnisAePerTick() * thaumicenergistics.config.ThEConfig.chamberPotentiaMultiplier();
         } else if (isOther) {
             // 其他所有要素：基础效率的 1/2
-            burnTime = BASE_BURN_TICKS / 2;
-            power = BASE_AE_PER_TICK / 2.0;
+            burnTime = thaumicenergistics.config.ThEConfig.chamberBurnTicks() / 2;
+            power = thaumicenergistics.config.ThEConfig.chamberIgnisAePerTick() * thaumicenergistics.config.ThEConfig.chamberOtherMultiplier();
         } else {
             // 火：基础效率
-            burnTime = BASE_BURN_TICKS / 2;
-            power = BASE_AE_PER_TICK;
+            burnTime = thaumicenergistics.config.ThEConfig.chamberBurnTicks() / 2;
+            power = thaumicenergistics.config.ThEConfig.chamberIgnisAePerTick();
         }
 
         burnTicksRemaining = burnTime;
@@ -294,26 +310,25 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
 
     @Override
     public int addEssentia(Aspect aspect, int amount, Direction side) {
-        if (storedEssentia >= MAX_ESSENTIA) return 0;
-        if (!isFuelAspect(aspect)) return 0;
-
-        int space = MAX_ESSENTIA - storedEssentia;
-        int toAdd = Math.min(amount, space);
-        storedEssentia += toAdd;
-        currentAspect = aspect;
-        if (toAdd > 0) setChanged();
+        if (!isFuelAspect(aspect) || amount <= 0) return 0;
+        int toAdd = Math.min(amount, MAX_ESSENTIA - storedEssentia());
+        if (toAdd <= 0) return 0;
+        addFuel(aspect, toAdd);
         return toAdd;
     }
 
     @Override
     public Aspect getEssentiaType(Direction side) {
-        if (storedEssentia <= 0) return null;
-        return currentAspect;
+        for (var entry : fuel.entrySet()) {
+            if (entry.getValue() > 0) return entry.getKey();
+        }
+        return null;
     }
 
     @Override
     public int getEssentiaAmount(Direction side) {
-        return storedEssentia;
+        Aspect aspect = getEssentiaType(side);
+        return aspect == null ? 0 : fuel.getOrDefault(aspect, 0);
     }
 
     @Override public int getMinimumSuction() { return 1; }
@@ -323,7 +338,8 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         // 通配吸力模式下无需设置类型；保留方法避免编译错误
     }
 
-    public int getStoredEssentia() { return storedEssentia; }
+    public int getStoredEssentia() { return storedEssentia(); }
+    @Nullable public Aspect getCurrentAspect() { return currentAspect; }
     public int getMaxEssentia() { return MAX_ESSENTIA; }
     public double getAePerTick() { return aePerTick; }
     public int getBurnTicksRemaining() { return burnTicksRemaining; }
@@ -332,9 +348,9 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
 
     // 能量槽访问器
     public double getStoredEnergy() { return storedEnergy; }
-    public double getMaxEnergyStorage() { return MAX_ENERGY_STORAGE; }
-    public double getMaxOutputPerTick() { return MAX_OUTPUT_PER_TICK; }
-    public float getEnergyFillProgress() { return (float)(storedEnergy / MAX_ENERGY_STORAGE); }
+    public double getMaxEnergyStorage() { return thaumicenergistics.config.ThEConfig.chamberBuffer(); }
+    public double getMaxOutputPerTick() { return thaumicenergistics.config.ThEConfig.chamberMaxOutput(); }
+    public float getEnergyFillProgress() { return (float)(storedEnergy / thaumicenergistics.config.ThEConfig.chamberBuffer()); }
 
     public void markForUpdate() {
         if (level != null) {
@@ -348,7 +364,7 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         if (level == null || level.isClientSide() || isRemoved() || !level.hasChunkAt(worldPosition)) return;
         var state = getBlockState();
         boolean working = mainNode.getGrid() != null && burnTicksRemaining > 0
-                && storedEnergy < MAX_ENERGY_STORAGE - 0.01;
+                && storedEnergy < thaumicenergistics.config.ThEConfig.chamberBuffer() - 0.01;
         if (state.hasProperty(EssentiaVibrationChamberBlock.WORKING)
                 && state.getValue(EssentiaVibrationChamberBlock.WORKING) != working) {
             level.setBlock(worldPosition, state.setValue(EssentiaVibrationChamberBlock.WORKING, working),
@@ -362,13 +378,29 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         if (tag.contains("AttachSide")) attachmentSide = Direction.from3DDataValue(tag.getInt("AttachSide"));
         mainNode.loadFromNBT(tag);
         mainNode.setIdlePowerUsage(IDLE_POWER);
-        burnTicksRemaining = tag.getInt("BurnTicks");
-        totalBurnTicks = tag.getInt("TotalBurnTicks");
-        aePerTick = tag.getDouble("AEPerTick");
-        storedEssentia = tag.getInt("StoredEssentia");
-        storedEnergy = tag.getDouble("StoredEnergy");
-        if (storedEnergy > MAX_ENERGY_STORAGE) storedEnergy = MAX_ENERGY_STORAGE;
-        if (tag.contains("AspectTag")) currentAspect = Aspect.getAspect(tag.getString("AspectTag"));
+        burnTicksRemaining = Math.max(0, Math.min(thaumicenergistics.config.ThEConfig.chamberBurnTicks(), tag.getInt("BurnTicks")));
+        totalBurnTicks = Math.max(0, Math.min(thaumicenergistics.config.ThEConfig.chamberBurnTicks(), tag.getInt("TotalBurnTicks")));
+        aePerTick = Math.max(0, Math.min(thaumicenergistics.config.ThEConfig.chamberIgnisAePerTick() * Math.max(1.0, Math.max(thaumicenergistics.config.ThEConfig.chamberPotentiaMultiplier(), thaumicenergistics.config.ThEConfig.chamberOtherMultiplier())), tag.getDouble("AEPerTick")));
+        storedEnergy = Math.max(0, Math.min(thaumicenergistics.config.ThEConfig.chamberBuffer(), tag.getDouble("StoredEnergy")));
+        currentAspect = tag.contains("AspectTag") ? Aspect.getAspect(tag.getString("AspectTag")) : null;
+        fuel.clear();
+        if (tag.contains("Fuel")) {
+            CompoundTag stored = tag.getCompound("Fuel");
+            for (String key : stored.getAllKeys()) {
+                addFuel(Aspect.getAspect(key), Math.max(0, stored.getInt(key)));
+            }
+        } else if (currentAspect != null) {
+            // Saves before per-aspect fuel kept one counter tagged with the last aspect.
+            addFuel(currentAspect, Math.max(0, tag.getInt("StoredEssentia")));
+        }
+        // Clamp to capacity, dropping the cheapest fuel first.
+        int excess = storedEssentia() - MAX_ESSENTIA;
+        for (var it = fuel.entrySet().iterator(); excess > 0 && it.hasNext(); ) {
+            var entry = it.next();
+            int cut = Math.min(excess, entry.getValue());
+            excess -= cut;
+            if (entry.getValue() - cut <= 0) it.remove(); else entry.setValue(entry.getValue() - cut);
+        }
         // suctionAspect 固定为 null（通配吸力），不读取 SuctionTag
     }
 
@@ -380,7 +412,9 @@ public class TileEssentiaVibrationChamber extends ThETileBase implements IInWorl
         tag.putInt("BurnTicks", burnTicksRemaining);
         tag.putInt("TotalBurnTicks", totalBurnTicks);
         tag.putDouble("AEPerTick", aePerTick);
-        tag.putInt("StoredEssentia", storedEssentia);
+        CompoundTag stored = new CompoundTag();
+        fuel.forEach((aspect, amount) -> stored.putInt(aspect.getTag(), amount));
+        tag.put("Fuel", stored);
         tag.putDouble("StoredEnergy", storedEnergy);
         if (currentAspect != null) tag.putString("AspectTag", currentAspect.getTag());
         // suctionAspect 固定为 null（通配吸力），不写入 SuctionTag

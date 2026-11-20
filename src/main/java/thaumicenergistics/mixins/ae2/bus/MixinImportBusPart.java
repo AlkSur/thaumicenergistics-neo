@@ -207,7 +207,7 @@ public abstract class MixinImportBusPart {
         if (!thE$warnedMissingCapability) {
             thE$warnedMissingCapability = true;
             ThaumicEnergistics.LOG.warn(
-                    "ThaumicEnergistics: 原版总线 {} 未暴露 {} 能力（MixinIOBusPart 可能未应用），源质搬运本轮跳过。",
+                    "ThaumicEnergistics: bus {} does not expose {} (MixinIOBusPart not applied?); skipping essentia transfer this round.",
                     ((Object) this).getClass().getName(), capability);
         }
     }

@@ -48,9 +48,15 @@ public class GuiEssentiaCellWorkbench extends AbstractContainerScreen<ContainerE
         super.init();
         // 分区为当前（P）与清除分区（C）按钮，位置对应 1.7.10（GUI 左外侧）
         addRenderableWidget(Button.builder(Component.literal("P"), b -> CellWorkbenchC2SPacket.sendPartitionToContents())
-                .bounds(leftPos - 18, topPos + 8, 18, 18).build());
+                .bounds(leftPos - 18, topPos + 8, 18, 18)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                        Component.translatable("thaumicenergistics.gui.cell_workbench.partition_to_contents")))
+                .build());
         addRenderableWidget(Button.builder(Component.literal("C"), b -> CellWorkbenchC2SPacket.sendClear())
-                .bounds(leftPos - 18, topPos + 28, 18, 18).build());
+                .bounds(leftPos - 18, topPos + 28, 18, 18)
+                .tooltip(net.minecraft.client.gui.components.Tooltip.create(
+                        Component.translatable("thaumicenergistics.gui.cell_workbench.clear_partition")))
+                .build());
         // 打开时请求服务端分区列表
         CellWorkbenchC2SPacket.sendRequestPartitions();
     }

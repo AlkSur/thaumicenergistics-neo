@@ -16,5 +16,9 @@ public final class Ae2JeiCompat {
     /** 注册源质转换器到 AE2-JEI-Integration（支持从 JEI 拖拽源质到 AE2 筛选槽）。 */
     public static void register() {
         IngredientConverters.register(new EssentiaIngredientConverter());
+        var shared = JeiAspects.sharedType();
+        if (shared != null) {
+            IngredientConverters.register(new SharedAspectIngredientConverter(shared));
+        }
     }
 }

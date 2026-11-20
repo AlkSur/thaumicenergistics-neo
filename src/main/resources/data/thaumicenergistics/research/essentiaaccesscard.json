@@ -1,0 +1,45 @@
+{
+  "item": "thaumicenergistics:essentia_upgrade_card",
+  "flags": [
+    "round"
+  ],
+  "col": -2,
+  "row": -2,
+  "complexity": 2,
+  "key": "ESSENTIAACCESSCARD",
+  "order": 231,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.ESSENTIAACCESSCARD.stage.1"
+    },
+    {
+      "type": "INFUSION"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.ESSENTIAACCESSCARD.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "amount": 5
+    },
+    {
+      "aspect": "permutatio",
+      "amount": 5
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 3
+    }
+  ],
+  "parents": [
+    "DIGISENTIA",
+    "PSEUDO_TUBEFILTER"
+  ]
+}

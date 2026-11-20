@@ -1,5 +1,6 @@
 package thaumicenergistics.mixins.ae2.bus;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
@@ -98,17 +99,32 @@ public abstract class MixinExportBusPart {
             return;
         }
 
+        List<AEssentiaKey> candidates = thE$configuredEssentia();
+
         if ((Object) this instanceof EssentiaTransferBuffer buffer
                 && !buffer.thE$getTransferBuffer().isEmpty()) {
             var pending = buffer.thE$getTransferBuffer();
+            var pendingKey = AEssentiaKey.of(pending.aspectId());
             long delivered = EssentiaEnergy.transfer(
                     grid, pending.amount(), allowed -> EssentiaTransfer.insertOwned(
-                            AEssentiaKey.of(pending.aspectId()), allowed, adjacentBE, side.getOpposite()));
-            buffer.thE$setTransferBuffer(delivered == pending.amount()
+                            pendingKey, allowed, adjacentBE, side.getOpposite()));
+            long remaining = pending.amount() - delivered;
+            // Stock nobody wants any more (the machine switched aspect, or the filter changed) goes back
+            // to the network; otherwise it would block every later export for good (TEM-01).
+            if (remaining > 0 && !thE$consumerWants(adjacentBE, side.getOpposite(), pendingKey, candidates)) {
+                remaining -= grid.getStorageService().getInventory()
+                        .insert(pendingKey, remaining, Actionable.MODULATE, thE$source());
+            }
+            buffer.thE$setTransferBuffer(remaining <= 0
                     ? AspectStack.EMPTY
-                    : new AspectStack(pending.aspectId(), pending.amount() - delivered));
-            if (delivered > 0) cir.setReturnValue(true);
-            return;
+                    : new AspectStack(pending.aspectId(), remaining));
+            if (delivered > 0) {
+                cir.setReturnValue(true);
+                return;
+            }
+            if (remaining > 0) {
+                return;
+            }
         }
 
         int rate = 8 * Math.max(1, thE$operationsPerTick());
@@ -116,7 +132,6 @@ public abstract class MixinExportBusPart {
             return;
         }
 
-        List<AEssentiaKey> candidates = thE$configuredEssentia();
         if (candidates.isEmpty()) {
             return;
         }
@@ -130,7 +145,11 @@ public abstract class MixinExportBusPart {
                     grid, thE$source(), key, rate, adjacentBE, side.getOpposite());
             if (!transfer.leftover().isEmpty()
                     && (Object) this instanceof EssentiaTransferBuffer buffer) {
+                // The buffer holds one stack: stop here so a later key cannot overwrite it (TEM-02).
                 buffer.thE$setTransferBuffer(transfer.leftover());
+                this.thE$roundRobinIndex = (index + 1) % count;
+                if (transfer.moved() > 0) cir.setReturnValue(true);
+                return;
             }
             long injected = transfer.moved();
             if (injected > 0) {
@@ -148,6 +167,20 @@ public abstract class MixinExportBusPart {
                 return;
             }
         }
+    }
+
+    /** Whether the adjacent machine still asks for this aspect through this face. */
+    @Unique
+    private static boolean thE$consumerWants(BlockEntity consumer, Direction face, AEssentiaKey key,
+            List<AEssentiaKey> configured) {
+        if (!configured.contains(key)) return false;
+        var aspect = thaumicenergistics.common.integration.tc.AspectIds.findAspectById(key.getId());
+        var transport = thaumicenergistics.common.integration.tc.EssentiaEndpoints.transport(consumer, face);
+        if (aspect == null || transport == null || !transport.isConnectable(face) || !transport.canInputFrom(face)) {
+            return false;
+        }
+        var wanted = transport.getSuctionType(face);
+        return transport.getSuctionAmount(face) > 0 && (wanted == null || wanted == aspect);
     }
 
     /**

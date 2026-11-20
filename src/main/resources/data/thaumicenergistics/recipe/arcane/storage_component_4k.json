@@ -1,0 +1,21 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "ESSENTIASTORAGE",
+  "order": 278,
+  "aspects": {
+    "ignis": 3,
+    "ordo": 2
+  },
+  "pattern": [
+    "ABA",
+    "CDC",
+    "ACA"
+  ],
+  "key": {
+    "A": "#thaumicenergistics:wisp_essences",
+    "B": "thaumicenergistics:mystic_processor",
+    "C": "thaumicenergistics:storage_component_1k",
+    "D": "ae2:quartz_glass"
+  },
+  "result": "thaumicenergistics:storage_component_4k"
+}

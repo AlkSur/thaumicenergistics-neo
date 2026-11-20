@@ -23,9 +23,11 @@
   "client": [
     "ae2.screen.MixinCraftConfirmScreen",
     "eap.MixinEAPInputEvents",
-    "tc.ResearchPageIndexMixin",
     "tc.MixinThaumonomiconScreen",
     "tc.AccessorLegacyGolemModel"
   ],
-  "server": []
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }
