@@ -28,6 +28,9 @@ public enum AssemblerProvider implements IBlockComponentProvider, IServerDataPro
     private static final String TAG_POWERED = "NodePowered";
     private static final String TAG_VIS = "VisConnected";
     private static final String TAG_FREQUENCY = "VisFrequency";
+    private static final String TAG_WAIT_ASPECT = "VisWaitAspect";
+    private static final String TAG_WAIT_HAVE = "VisWaitHave";
+    private static final String TAG_WAIT_NEED = "VisWaitNeed";
 
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
@@ -36,6 +39,12 @@ public enum AssemblerProvider implements IBlockComponentProvider, IServerDataPro
             data.putBoolean(TAG_POWERED, assembler.isNodePowered());
             data.putBoolean(TAG_VIS, assembler.isVisSourceAvailable());
             data.putShort(TAG_FREQUENCY, assembler.getVisSourceFreq());
+            var wait = assembler.visWait();
+            if (wait != null) {
+                data.putString(TAG_WAIT_ASPECT, wait.aspect().getTag());
+                data.putInt(TAG_WAIT_HAVE, wait.haveCvis());
+                data.putInt(TAG_WAIT_NEED, wait.needCvis());
+            }
         }
     }
 
@@ -75,6 +84,15 @@ public enum AssemblerProvider implements IBlockComponentProvider, IServerDataPro
                         : frequency == 0 ? "thaumicenergistics.jade.assembler.vis_disconnected"
                         : "thaumicenergistics.jade.assembler.vis_unavailable")
                         .withStyle(style -> style.withColor(visConnected ? 0xFF55FF55 : 0xFFAAAAAA))));
+        var serverData = accessor.getServerData();
+        if (serverData.contains(TAG_WAIT_ASPECT)) {
+            var aspect = thaumcraft.api.aspects.Aspect.getAspect(serverData.getString(TAG_WAIT_ASPECT));
+            tooltip.add(Component.translatable("thaumicenergistics.jade.assembler.waiting_vis",
+                    aspect != null ? aspect.displayName() : Component.literal(serverData.getString(TAG_WAIT_ASPECT)),
+                    String.format(java.util.Locale.ROOT, "%.1f", serverData.getInt(TAG_WAIT_HAVE) / 10.0),
+                    String.format(java.util.Locale.ROOT, "%.1f", serverData.getInt(TAG_WAIT_NEED) / 10.0))
+                    .withStyle(style -> style.withColor(0xFFFFAA55)));
+        }
     }
 
     @Override

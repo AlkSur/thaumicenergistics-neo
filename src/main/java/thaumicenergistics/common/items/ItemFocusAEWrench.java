@@ -140,13 +140,11 @@ public class ItemFocusAEWrench extends TCFunctionalItems.FocusItem {
                     Component.translatable("message.thaumcraft.wand.not_enough_vis"), true);
             return false;
         }
-        if (!wand.consumeVisCost(wandStack, player, cost, true)) {
-            return false;
-        }
-
         boolean handled = handleWrenchAction(level, player, hit, wandStack);
 
         if (handled) {
+            // Pay only for an action that happened: a refused dismantle used to cost vis anyway (TEG-16).
+            wand.consumeVisCost(wandStack, player, cost, true);
             spawnBeamParticles(level, player, pos);
             return true;
         }

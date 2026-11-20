@@ -1,0 +1,20 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "ESSENTIASTORAGE",
+  "order": 277,
+  "aspects": {
+    "ignis": 3,
+    "ordo": 1
+  },
+  "pattern": [
+    "AB ",
+    "BCB",
+    " BA"
+  ],
+  "key": {
+    "A": "#thaumicenergistics:wisp_essences",
+    "B": "thaumicenergistics:mystic_crystal",
+    "C": "thaumicenergistics:mystic_processor"
+  },
+  "result": "thaumicenergistics:storage_component_1k"
+}

@@ -21,6 +21,48 @@ public final class ArcaneVisReplenish {
 
     private ArcaneVisReplenish() {}
 
+    /**
+     * The vis interfaces a device draws from (TEU-04): the one bound by memory card when {@code freq} is set,
+     * otherwise every interface on the grid that faces a relay. Only the relay-facing end of each tunnel is
+     * listed, so a P2P pair is no longer counted twice (TEA2-12).
+     */
+    public static java.util.List<VisInterfacePart> sources(@org.jetbrains.annotations.Nullable IGrid grid, short freq) {
+        if (grid == null) return java.util.List.of();
+        if (freq != 0) {
+            P2PService p2p = P2PService.get(grid);
+            return p2p != null && p2p.getInput(freq) instanceof VisInterfacePart bound
+                    ? java.util.List.of(bound) : java.util.List.of();
+        }
+        var result = new java.util.ArrayList<VisInterfacePart>();
+        for (VisInterfacePart part : grid.getMachines(VisInterfacePart.class)) {
+            // A part with no host cannot be judged by its facing; keep it (consumeVis still finds the relay end).
+            if (part.getBlockEntity() == null || part.facesRelay()) result.add(part);
+        }
+        return result;
+    }
+
+    /** Whether any of {@link #sources} has vis behind it right now (no extraction, no chunk loading). */
+    public static boolean hasAvailableSource(@org.jetbrains.annotations.Nullable IGrid grid, short freq) {
+        for (VisInterfacePart source : sources(grid, freq)) {
+            if (source.hasAvailableRelay()) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks a frequency from a memory card: it must name a vis interface. Null when it does (or when there is
+     * no grid to check against), otherwise the message to show (TEU-04: any P2P frequency used to be taken).
+     */
+    @org.jetbrains.annotations.Nullable
+    public static net.minecraft.network.chat.Component checkFrequency(@org.jetbrains.annotations.Nullable IGrid grid,
+            short freq) {
+        if (grid == null || freq == 0) return null;
+        P2PService p2p = P2PService.get(grid);
+        if (p2p == null || p2p.getInput(freq) instanceof VisInterfacePart) return null;
+        return net.minecraft.network.chat.Component.translatable("thaumicenergistics.vis_source.not_vis_interface")
+                .withStyle(net.minecraft.ChatFormatting.RED);
+    }
+
     /** Avoid ticking a passive connection when the wand is absent, unsupported, or already full. */
     public static boolean needsCharge(ItemStack stack) {
         if (stack.isEmpty() || !(stack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) return false;
@@ -63,12 +105,24 @@ public final class ArcaneVisReplenish {
             return false;
         }
         boolean changed = false;
-        for (VisInterfacePart visSource : grid.getMachines(VisInterfacePart.class)) {
+        for (VisInterfacePart visSource : sources(grid, (short) 0)) {
             if (chargeFrom(visSource, wandStack)) {
                 changed = true;
             }
         }
         return changed;
+    }
+
+    /** No wand, not a wand, or every primal already at capacity: nothing to charge. */
+    public static boolean isFull(ItemStack wandStack) {
+        if (wandStack.isEmpty() || !(wandStack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) {
+            return true;
+        }
+        int maxVis = wand.getMaxVis(wandStack);
+        for (Aspect primal : Aspect.getPrimalAspects()) {
+            if (wand.getVis(wandStack, primal) < maxVis) return false;
+        }
+        return true;
     }
 
     /** 共享核心充能循环：从单个要素中继接口为法杖补 vis；每 tick 申请真实量（与池子每 tick 重置对齐），vis 守恒。 */

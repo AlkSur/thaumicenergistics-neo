@@ -1,0 +1,20 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "ESSENTIASTORAGE",
+  "order": 271,
+  "aspects": {
+    "ignis": 6,
+    "ordo": 10
+  },
+  "pattern": [
+    "ABA",
+    "B B",
+    "CCC"
+  ],
+  "key": {
+    "A": "#thaumicenergistics:essentia_cell_glass",
+    "B": "minecraft:redstone",
+    "C": "thaumcraft:void_metal_ingot"
+  },
+  "result": "thaumicenergistics:advanced_storage_casing"
+}

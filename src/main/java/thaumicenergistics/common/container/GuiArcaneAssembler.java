@@ -86,7 +86,7 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
         }
 
         ContainerData data = this.menu.visData;
-        final int maxCvis = 187 * 10;
+        final int maxCvis = thaumicenergistics.config.ThEConfig.assemblerVisCache() * 10;
         for (int i = 0; i < BARS.length; i++) {
             int srcX = BARS[i][0];
             int bx = left + BARS[i][1];
@@ -124,5 +124,31 @@ public class GuiArcaneAssembler extends AbstractContainerScreen<ContainerArcaneA
         this.renderBackground(g, mx, my, pt);
         super.render(g, mx, my, pt);
         this.renderTooltip(g, mx, my);
+        renderVisBarTooltip(g, mx, my);
+    }
+
+    /** Hovering a vis bar shows stored / cache vis and what the running order needs (TEU-01). */
+    private void renderVisBarTooltip(GuiGraphics g, int mx, int my) {
+        int left = this.leftPos, top = this.topPos;
+        for (int i = 0; i < 6; i++) {
+            int bx = left + BARS[i][1], by = top + BARS[i][2];
+            if (mx < bx || mx >= bx + BAR_W || my < by || my >= by + BAR_H) continue;
+            var data = this.menu.visData;
+            var aspect = ContainerArcaneAssembler.BAR_ASPECTS[i];
+            var lines = new java.util.ArrayList<net.minecraft.network.chat.Component>();
+            lines.add(aspect.displayName());
+            lines.add(net.minecraft.network.chat.Component.translatable("thaumicenergistics.gui.assembler.vis_stored",
+                    data.get(ContainerArcaneAssembler.DATA_AIR + i) / 10, thaumicenergistics.config.ThEConfig.assemblerVisCache())
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
+            int need = data.get(ContainerArcaneAssembler.DATA_NEED_AIR + i);
+            if (need > 0) {
+                boolean enough = data.get(ContainerArcaneAssembler.DATA_AIR + i) >= need;
+                lines.add(net.minecraft.network.chat.Component.translatable("thaumicenergistics.gui.assembler.vis_needed",
+                        String.format(java.util.Locale.ROOT, "%.1f", need / 10.0))
+                        .withStyle(enough ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.RED));
+            }
+            g.renderComponentTooltip(this.font, lines, mx, my);
+            return;
+        }
     }
 }

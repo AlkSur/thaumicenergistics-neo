@@ -62,7 +62,7 @@ public class ThEGhostIngredientHandler implements IGhostIngredientHandler<Screen
     }
 
     private <I> boolean canHandleIngredient(ITypedIngredient<I> ingredient) {
-        if (ingredient.getIngredient() instanceof AspectIngredient) {
+        if (JeiAspects.aspectOf(ingredient.getIngredient()) != null) {
             return true;
         }
         if (ingredient.getIngredient() instanceof ItemStack stack) {
@@ -74,9 +74,10 @@ public class ThEGhostIngredientHandler implements IGhostIngredientHandler<Screen
     private <I> void handleIngredientDrop(I ingredient, FakeSlot fakeSlot) {
         ItemStack targetStack = ItemStack.EMPTY;
 
-        if (ingredient instanceof AspectIngredient ai && ai.aspect() != null) {
-            // AspectIngredient → WrappedGenericStack ItemStack
-            var aspectId = TCReflection.getAspectId(ai.aspect());
+        var dropped = JeiAspects.aspectOf(ingredient);
+        if (dropped != null) {
+            // Aspect ingredient (TE's or the shared one) → WrappedGenericStack ItemStack
+            var aspectId = TCReflection.getAspectId(dropped);
             if (aspectId != null) {
                 var key = AEssentiaKey.of(aspectId);
                 targetStack = GenericStack.wrapInItemStack(key, 0);

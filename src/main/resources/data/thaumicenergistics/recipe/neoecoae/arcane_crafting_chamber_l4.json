@@ -1,0 +1,14 @@
+{
+  "neoforge:conditions": [{"type": "neoforge:item_exists", "item": "thaumicenergistics:arcane_crafting_chamber_l4"}],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["CMC", "WAW", "CPC"],
+  "key": {
+    "C": {"item": "neoecoae:crafting_casing"},
+    "M": {"item": "thaumicenergistics:mystic_processor"},
+    "W": {"item": "neoecoae:crafting_worker"},
+    "A": {"item": "thaumicenergistics:arcane_assembler"},
+    "P": {"item": "neoecoae:crafting_parallel_core_l4"}
+  },
+  "result": {"id": "thaumicenergistics:arcane_crafting_chamber_l4", "count": 1}
+}

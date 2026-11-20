@@ -36,10 +36,11 @@ public enum VibrationChamberProvider implements IBlockComponentProvider, IServer
 
         // 当前仓内源质类型（通配吸力模式下显示仓内实际燃料）
         if (data.contains(TAG_ASPECT)) {
-            String aspect = data.getString(TAG_ASPECT);
-            String aspectKey = "thaumicenergistics.aspect." + aspect;
+            String tag = data.getString(TAG_ASPECT);
+            // The aspect's own display name: only three aspects had TE lang keys, others showed a raw key (TEU-11).
+            var aspect = thaumcraft.api.aspects.Aspect.getAspect(tag);
             tooltip.add(Component.translatable("thaumicenergistics.jade.current_aspect",
-                    Component.translatable(aspectKey)));
+                    aspect != null ? aspect.displayName() : Component.literal(tag)));
         }
 
         // 源质存储量

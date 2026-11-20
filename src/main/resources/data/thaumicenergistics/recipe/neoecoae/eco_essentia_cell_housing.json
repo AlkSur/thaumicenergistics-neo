@@ -1,0 +1,13 @@
+{
+  "neoforge:conditions": [{"type": "neoforge:item_exists", "item": "thaumicenergistics:eco_essentia_cell_housing"}],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["ABA", "C C", "DDD"],
+  "key": {
+    "A": {"item": "neoecoae:crystal_matrix"},
+    "B": {"item": "thaumicenergistics:coalescence_core"},
+    "C": {"item": "thaumicenergistics:diffusion_core"},
+    "D": {"tag": "c:ingots/aluminum_alloy"}
+  },
+  "result": {"id": "thaumicenergistics:eco_essentia_cell_housing", "count": 1}
+}

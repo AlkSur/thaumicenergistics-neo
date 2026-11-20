@@ -43,6 +43,28 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
     /** 模拟管道的最大扫描距离（格）：接收器可隔空拉取该距离内的源质源。 */
     private static final int PIPE_SCAN_RANGE = 16;
 
+    /**
+     * Breaking the receiver drops the essentia still waiting for network room (as AE2's wrapped essentia,
+     * which a jar or terminal can take back) instead of deleting it (TET-21).
+     */
+    public void onBreakBlock() {
+        if (level == null || level.isClientSide() || buffer.isEmpty()) return;
+        var drops = new java.util.ArrayList<net.minecraft.world.item.ItemStack>();
+        for (Aspect aspect : buffer.getAspects()) {
+            var id = thaumicenergistics.common.integration.tc.AspectIds.getAspectId(aspect);
+            int amount = buffer.getAmount(aspect);
+            if (id != null && amount > 0) {
+                thaumicenergistics.common.integration.appeng.AEssentiaKey.of(id)
+                        .addDrops(amount, drops, level, worldPosition);
+            }
+        }
+        buffer.aspects.clear();
+        for (var drop : drops) {
+            net.minecraft.world.Containers.dropItemStack(level,
+                    worldPosition.getX(), worldPosition.getY(), worldPosition.getZ(), drop);
+        }
+    }
+
     /** 服务端 tick：周期校验连接 + 主动沿模拟管道拉取源质（蒸馏器/罐/管道不主动推，需接收器拉）。 */
     public static void serverTick(Level level, BlockPos pos, BlockState state, TileEssentiaProviderConnection be) {
         if (level.isClientSide()) return;
@@ -142,16 +164,18 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
     }
 
     /** 设置连接（无线连接器右键供应器时调用）。返回 null = 成功；否则返回失败原因文案。 */
-    public String setLinkedProvider(BlockPos providerPos) {
+    @org.jetbrains.annotations.Nullable
+    public net.minecraft.network.chat.Component setLinkedProvider(BlockPos providerPos) {
         // 在供应器侧注册（校验数量/距离）
         if (level != null && !level.isClientSide()) {
             if (level.getBlockEntity(providerPos) instanceof TileEssentiaProvider provider) {
-                String error = provider.addLinkedReceiver(worldPosition);
+                var error = provider.addLinkedReceiver(worldPosition);
                 if (error != null) {
                     return error; // 超限/超距，不建立连接
                 }
             } else {
-                return "§c目标不是有效的源质供应器";
+                return net.minecraft.network.chat.Component.translatable("thaumicenergistics.link.not_provider")
+                        .withStyle(net.minecraft.ChatFormatting.RED);
             }
         }
         this.linkedProviderPos = providerPos;
@@ -187,6 +211,8 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
     /** 查找连接的供应器 tile。 */
     public TileEssentiaProvider getLinkedProvider() {
         if (level == null || level.isClientSide() || linkedProviderPos == null) return null;
+        // An unloaded provider is unavailable, not removed: keep the link and do not load its chunk (TET-09).
+        if (!level.isLoaded(linkedProviderPos)) return null;
         if (level.getBlockEntity(linkedProviderPos) instanceof TileEssentiaProvider provider) {
             // 自愈：供应器列表缺本接收器时补注册（修复旧存档/列表丢失导致的状态不一致）
             if (!provider.getLinkedReceivers().contains(worldPosition)) {
@@ -287,6 +313,8 @@ public class TileEssentiaProviderConnection extends BlockEntity implements IEsse
     }
 
     private Aspect getNeighborWantedAspect(Direction side) {
+        // TC asks getEssentiaType(null) for directionless sources (TubeNetwork, tubes, golems).
+        if (side == null || level == null) return null;
         BlockPos neighborPos = worldPosition.relative(side);
         if (level.getBlockEntity(neighborPos) instanceof IEssentiaTransport transport) {
             return transport.getSuctionType(side.getOpposite());

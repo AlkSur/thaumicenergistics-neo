@@ -108,17 +108,24 @@ public final class GolemBackpackHandler {
 
     private static void handleEquipBackpack(ThaumcraftGolemEntity golem, Player player, ItemStack held,
                                             PlayerInteractEvent.EntityInteract event) {
+        // Every refusal says why on the action bar; it used to do nothing at all (TEU-20/TEG-10).
         if (!golem.isOwnedBy(player)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "thaumicenergistics.golem_backpack.not_owner"), true);
             return;
         }
 
         if (hasBackpack(golem)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "thaumicenergistics.golem_backpack.already_equipped"), true);
             return;
         }
 
         ItemGolemWirelessBackpack backpackItem = (ItemGolemWirelessBackpack) held.getItem();
         GlobalPos linkedPos = backpackItem.getLinkedPosition(held);
         if (linkedPos == null) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "thaumicenergistics.golem_backpack.unlinked"), true);
             return;
         }
 
@@ -184,6 +191,37 @@ public final class GolemBackpackHandler {
         GolemBackpackSyncPacket packet = new GolemBackpackSyncPacket(
                 golem.getId(), GolemBackpackSyncPacket.STATUS_NO_BACKPACK, 0);
         PacketDistributor.sendToPlayersTrackingEntity(golem, packet);
+    }
+
+    /**
+     * A golem that dies (combat, lava, /kill) drops its backpack and facade instead of taking them with
+     * it: they only live in the entity's persistent data (TEG-01).
+     */
+    @SubscribeEvent
+    public static void onGolemDrops(net.neoforged.neoforge.event.entity.living.LivingDropsEvent event) {
+        if (!(event.getEntity() instanceof ThaumcraftGolemEntity golem) || golem.level().isClientSide()) {
+            return;
+        }
+        GlobalPos linkedPos = getBackpackLink(golem);
+        if (linkedPos != null) {
+            ItemStack backpackStack = new ItemStack(ModItems.GOLEM_WIFI_BACKPACK.get());
+            backpackStack.set(AEComponents.WIRELESS_LINK_TARGET, linkedPos);
+            event.getDrops().add(dropAt(golem, backpackStack));
+        }
+        ItemStack facade = getFacadeItem(golem);
+        if (!facade.isEmpty()) {
+            event.getDrops().add(dropAt(golem, facade));
+        }
+        clearBackpackLink(golem);
+        clearBackpackSkin(golem);
+        clearFacadeItem(golem);
+    }
+
+    private static net.minecraft.world.entity.item.ItemEntity dropAt(ThaumcraftGolemEntity golem, ItemStack stack) {
+        var item = new net.minecraft.world.entity.item.ItemEntity(
+                golem.level(), golem.getX(), golem.getY() + 0.5, golem.getZ(), stack);
+        item.setDefaultPickUpDelay();
+        return item;
     }
 
     /**

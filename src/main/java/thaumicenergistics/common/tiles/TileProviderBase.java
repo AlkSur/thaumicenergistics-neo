@@ -97,7 +97,9 @@ public abstract class TileProviderBase extends ThETileBase implements IInWorldGr
             attachmentSide = Direction.from3DDataValue(tag.getInt(NBT_ATTACH_SIDE));
         }
         if (tag.contains(NBT_COLOR)) {
-            providerColor = AEColor.values()[tag.getInt(NBT_COLOR)];
+            int color = tag.getInt(NBT_COLOR);
+            // A corrupt index used to throw and drop the whole block entity on load (TET-17).
+            providerColor = color >= 0 && color < AEColor.values().length ? AEColor.values()[color] : AEColor.TRANSPARENT;
             mainNode.setGridColor(providerColor);
         }
         isColorForced = tag.getBoolean(NBT_COLOR_FORCED);
@@ -173,10 +175,12 @@ public abstract class TileProviderBase extends ThETileBase implements IInWorldGr
         return essentiaGrid.extractEssentia(id, amount, simulate);
     }
 
+    /** @return the amount NOT accepted, like {@link IEssentiaGrid#injectEssentia}: all of it when there is no network. */
     protected long injectEssentiaToNetwork(Aspect aspect, long amount, boolean simulate) {
-        if (!getEssentiaMonitor()) return 0;
+        // Returning 0 here meant "everything accepted" and voided essentia when the grid was missing (TEC-12).
+        if (!getEssentiaMonitor()) return amount;
         ResourceLocation id = TCReflection.getAspectId(aspect);
-        if (id == null) return 0;
+        if (id == null) return amount;
         return essentiaGrid.injectEssentia(id, amount, simulate);
     }
 }

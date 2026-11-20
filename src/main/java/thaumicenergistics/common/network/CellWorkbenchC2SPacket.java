@@ -1,5 +1,7 @@
 package thaumicenergistics.common.network;
 
+import thaumicenergistics.common.integration.tc.AspectIds;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -91,9 +93,12 @@ public record CellWorkbenchC2SPacket(
                         }
                         return;
                     }
-                    case ACTION_ADD -> changed = menu.addAspectToPartition(this.aspectA);
+                    // Only registered aspects under their own id may enter a partition (TEC-08).
+                    case ACTION_ADD -> changed = AspectIds.canonicalId(this.aspectA) != null
+                            && menu.addAspectToPartition(this.aspectA);
                     case ACTION_REMOVE -> changed = menu.removeAspectFromPartition(this.aspectA);
-                    case ACTION_REPLACE -> changed = menu.replaceAspectInPartition(this.aspectA, this.aspectB);
+                    case ACTION_REPLACE -> changed = AspectIds.canonicalId(this.aspectB) != null
+                            && menu.replaceAspectInPartition(this.aspectA, this.aspectB);
                     case ACTION_CLEAR -> {
                         menu.clearPartitioning();
                         changed = true;

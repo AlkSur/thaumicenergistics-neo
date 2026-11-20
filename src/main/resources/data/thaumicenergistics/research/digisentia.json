@@ -1,0 +1,50 @@
+{
+  "item": "thaumicenergistics:diffusion_core",
+  "flags": [
+    "round"
+  ],
+  "row": -2,
+  "complexity": 1,
+  "key": "DIGISENTIA",
+  "order": 224,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.DIGISENTIA.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.DIGISENTIA.stage.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.DIGISENTIA.stage.1",
+    "tc.research_text.DIGISENTIA.stage.2"
+  ],
+  "aspects": [
+    {
+      "aspect": "ordo",
+      "amount": 5
+    },
+    {
+      "aspect": "perditio",
+      "amount": 5
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 3
+    }
+  ],
+  "parents": [
+    "BASEENERGISTICS",
+    "PSEUDO_DISTILESSENTIA",
+    "MYSTICPROCESSOR"
+  ]
+}

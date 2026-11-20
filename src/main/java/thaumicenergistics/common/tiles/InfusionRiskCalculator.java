@@ -1,9 +1,7 @@
 package thaumicenergistics.common.tiles;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -11,7 +9,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import thaumcraft.api.ThaumcraftApi;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
-import thaumcraft.api.aspects.IAspectContainer;
+import thaumcraft.api.aspects.IAspectSource;
 import thaumcraft.api.crafting.InfusionRecipe;
 import thaumcraft.common.blockentities.InfusionMatrixBlockEntity;
 import thaumcraft.common.blockentities.PedestalBlockEntity;
@@ -41,24 +39,42 @@ public final class InfusionRiskCalculator {
 
     /** 扫描指定位置附近的注魔矩阵（取最近的）。 */
     public static InfusionMatrixInfo scanNearbyMatrix(Level level, BlockPos center) {
-        InfusionMatrixBlockEntity nearest = null;
-        int bestDist = Integer.MAX_VALUE;
-        for (int dx = -MATRIX_SEARCH_RADIUS; dx <= MATRIX_SEARCH_RADIUS; dx++) {
-            for (int dz = -MATRIX_SEARCH_RADIUS; dz <= MATRIX_SEARCH_RADIUS; dz++) {
-                // 注魔矩阵在 y 方向位置固定（中央柱在下方 2 格），扫描 3 层高度
-                for (int dy = -4; dy <= 4; dy++) {
-                    BlockPos pos = center.offset(dx, dy, dz);
-                    if (level.getBlockEntity(pos) instanceof InfusionMatrixBlockEntity matrix) {
-                        int dist = dx * dx + dz * dz + dy * dy;
-                        if (dist < bestDist) {
-                            bestDist = dist;
-                            nearest = matrix;
+        InfusionMatrixBlockEntity[] nearest = {null};
+        int[] bestDist = {Integer.MAX_VALUE};
+        forEachLoadedBlockEntity(level,
+                center.offset(-MATRIX_SEARCH_RADIUS, -4, -MATRIX_SEARCH_RADIUS),
+                center.offset(MATRIX_SEARCH_RADIUS, 4, MATRIX_SEARCH_RADIUS), be -> {
+                    if (be instanceof InfusionMatrixBlockEntity matrix) {
+                        int dist = (int) be.getBlockPos().distSqr(center);
+                        if (dist < bestDist[0]) {
+                            bestDist[0] = dist;
+                            nearest[0] = matrix;
                         }
+                    }
+                });
+        return nearest[0] != null ? new InfusionMatrixInfo(nearest[0].getBlockPos(), nearest[0]) : null;
+    }
+
+    /**
+     * Visit the block entities inside a box, chunk by chunk, skipping unloaded chunks. Probing every
+     * position cost thousands of lookups per scan and could load chunks at the edge (TET-11).
+     */
+    static void forEachLoadedBlockEntity(Level level, BlockPos min, BlockPos max,
+            java.util.function.Consumer<BlockEntity> action) {
+        for (int cx = min.getX() >> 4; cx <= max.getX() >> 4; cx++) {
+            for (int cz = min.getZ() >> 4; cz <= max.getZ() >> 4; cz++) {
+                var chunk = level.getChunkSource().getChunkNow(cx, cz);
+                if (chunk == null) continue;
+                for (BlockEntity be : List.copyOf(chunk.getBlockEntities().values())) {
+                    BlockPos pos = be.getBlockPos();
+                    if (pos.getX() >= min.getX() && pos.getX() <= max.getX()
+                            && pos.getY() >= min.getY() && pos.getY() <= max.getY()
+                            && pos.getZ() >= min.getZ() && pos.getZ() <= max.getZ()) {
+                        action.accept(be);
                     }
                 }
             }
         }
-        return nearest != null ? new InfusionMatrixInfo(nearest.getBlockPos(), nearest) : null;
     }
 
     /**
@@ -85,9 +101,10 @@ public final class InfusionRiskCalculator {
         // 源质缺口：剩余所需 vs 周围可抽
         String shortages = "";
         int totalNeeded = 0;
+        long missing = 0;
         AspectList remaining = matrix.remainingEssentia();
         if (remaining != null && remaining.size() > 0) {
-            Map<Aspect, Long> available = scanAvailableEssentia(level, info.matrixPos());
+            Map<Aspect, Long> available = scanAvailableEssentia(level, info.matrixPos(), remaining);
             StringBuilder sb = new StringBuilder();
             for (Aspect aspect : remaining.aspects()) {
                 int need = remaining.amount(aspect);
@@ -95,49 +112,40 @@ public final class InfusionRiskCalculator {
                 totalNeeded += need;
                 long have = available.getOrDefault(aspect, 0L);
                 if (have < need) {
-                    if (!sb.isEmpty()) sb.append("，");
-                    sb.append(aspect.getTag()).append(" 缺 ").append(need - have);
+                    if (!sb.isEmpty()) sb.append(';');
+                    sb.append(aspect.getTag()).append('=').append(need - have);
+                    missing += need - have;
                 }
             }
             shortages = sb.toString();
         }
 
-        int tier = tierFor(instability, shortages, totalNeeded);
+        int tier = tierFor(instability, missing, totalNeeded);
         return new RiskData(true, crafting, tier, instability, symmetry, recipeInstability,
                 tierText(tier), shortages, totalNeeded);
     }
 
     /** 5 档判定：不稳定度 + 源质缺口强制升级。 */
-    private static int tierFor(int instability, String shortages, int totalNeeded) {
+    private static int tierFor(int instability, long missing, int totalNeeded) {
         int tier;
         if (instability <= 1) tier = 1;
         else if (instability <= 3) tier = 2;
         else if (instability <= 6) tier = 3;
         else if (instability <= 12) tier = 4;
         else tier = 5;
-        // 源质缺口强制升级
-        if (!shortages.isEmpty()) {
-            // 缺口过半（总需 > 0 且缺口文字非空）→ 至少 4 档；严重 → 5 档
-            if (totalNeeded > 0 && shortages.length() > 20) {
-                tier = Math.max(tier, 5);
-            } else {
-                tier = Math.max(tier, 4);
-            }
+        // A shortage raises the tier: to 5 when half or more of what is still needed is missing, else to 4.
+        // (It used to count the characters of the Chinese shortage text.)
+        if (missing > 0) {
+            tier = Math.max(tier, totalNeeded > 0 && missing * 2 >= totalNeeded ? 5 : 4);
         }
         return tier;
     }
 
-    /** 档位对应文字（玩家视角后果）。 */
+    /** Language key of the tier's consequences, stored in RiskData.tierText and rendered by the reader. */
     public static String tierText(int tier) {
-        return switch (tier) {
-            case 1 -> "基本安静，偶发弹飞 1 个物品";
-            case 2 -> "弹飞常见；闪电/咒波几乎不出现";
-            case 3 -> "弹飞+可能电击；咒波罕见";
-            case 4 -> "电击/爆炸/咒波都可能；可能销毁物品";
-            case 5 -> "频繁销毁/爆炸/咒波/精神污染——不要开始";
-            default -> "";
-        };
+        return tier >= 1 && tier <= 5 ? "thaumicenergistics.monitor.tier_effect." + tier : "";
     }
+
 
     /** 未注魔时估算匹配配方的配方基础不稳定（复制 matches 但忽略研究门禁）。 */
     private static int estimateRecipeInstability(Level level, InfusionMatrixInfo info) {
@@ -150,51 +158,62 @@ public final class InfusionRiskCalculator {
                 return 0;
             }
             ItemStack central = center.heldStack();
-            // 收集周围柱物品（与 scanSurroundings 一致的 ±8 范围简化版）
-            List<ItemStack> components = new ArrayList<>();
-            for (int dx = -8; dx <= 8; dx++) {
-                for (int dz = -8; dz <= 8; dz++) {
-                    if (dx == 0 && dz == 0) continue;
-                    for (int dy = 1; dy <= 10; dy++) {
-                        BlockEntity be = level.getBlockEntity(info.matrixPos().offset(dx, -dy, dz));
-                        if (be instanceof PedestalBlockEntity ped && !ped.heldStack().isEmpty()) {
-                            components.add(ped.heldStack());
-                            break;
-                        }
-                    }
-                }
-            }
-            // 找匹配配方（忽略研究：直接比对中央 + 组件，不调 matches 以免研究门禁）
+            // Pedestal items around the matrix: per column, the highest pedestal below it (TC's layout).
+            java.util.Map<Long, PedestalBlockEntity> columns = new java.util.HashMap<>();
+            BlockPos m = info.matrixPos();
+            forEachLoadedBlockEntity(level, m.offset(-8, -10, -8), m.offset(8, -1, 8), be -> {
+                if (!(be instanceof PedestalBlockEntity ped) || ped.heldStack().isEmpty()) return;
+                BlockPos p = be.getBlockPos();
+                if (p.getX() == m.getX() && p.getZ() == m.getZ()) return;
+                long column = ((long) p.getX() << 32) ^ (p.getZ() & 0xffffffffL);
+                columns.merge(column, ped, (a1, b1) -> a1.getBlockPos().getY() >= b1.getBlockPos().getY() ? a1 : b1);
+            });
+            List<ItemStack> components = new java.util.ArrayList<>();
+            for (var ped : columns.values()) components.add(ped.heldStack());
+            // The recipe whose central item and components both match, ignoring research. If none or several
+            // match, take the highest instability among recipes for this central item: a warning that errs high
+            // beats showing another recipe's number (TET-10).
+            int matched = -1;
+            int matches = 0;
+            int highest = 0;
             for (Object o : ThaumcraftApi.getCraftingRecipes()) {
                 if (!(o instanceof InfusionRecipe recipe)) continue;
-                if (!recipe.getRecipeInput().is(central.getItem())) continue;
-                // 简化：中央物品匹配即采用其基础不稳定（组件精确匹配留给 craftingStart 处理）
-                return recipe.instability(central);
+                if (recipe.getRecipeInput() == null || !recipe.getRecipeInput().is(central.getItem())) continue;
+                int value = recipe.instability(central);
+                highest = Math.max(highest, value);
+                if (InfusionRecipe.matchesComponents(components, recipe.components(central))) {
+                    matched = value;
+                    matches++;
+                }
             }
+            return matches == 1 ? matched : highest;
         } catch (Exception ignored) {
         }
         return 0;
     }
 
-    /** 扫描周围 12 格内源质容器，汇总每种源质可抽量。 */
-    private static Map<Aspect, Long> scanAvailableEssentia(Level level, BlockPos matrixPos) {
-        Map<Aspect, Long> totals = new ConcurrentHashMap<>();
-        for (int dx = -ESSENTIA_SCAN_RADIUS; dx <= ESSENTIA_SCAN_RADIUS; dx++) {
-            for (int dy = -6; dy <= 6; dy++) {
-                for (int dz = -ESSENTIA_SCAN_RADIUS; dz <= ESSENTIA_SCAN_RADIUS; dz++) {
-                    BlockEntity be = level.getBlockEntity(matrixPos.offset(dx, dy, dz));
-                    if (be == null || be == level.getBlockEntity(matrixPos)) continue;
-                    if (be instanceof IAspectContainer container) {
-                        AspectList aspects = container.getAspects();
-                        if (aspects == null) continue;
-                        for (Aspect aspect : aspects.aspects()) {
-                            int amt = aspects.getAmount(aspect);
-                            if (amt > 0) totals.merge(aspect, (long) amt, Long::sum);
-                        }
+    /**
+     * What the matrix could drain: the same sources and box as TC's EssentiaHandler (IAspectSource only,
+     * ±12 across, -12..+11 vertically). Asking each source by aspect counts ME-backed infusion providers,
+     * whose getAspects() is empty, and one network behind several providers is counted once (TET-03).
+     */
+    private static Map<Aspect, Long> scanAvailableEssentia(Level level, BlockPos matrixPos, AspectList needed) {
+        Map<Aspect, Long> totals = new java.util.HashMap<>();
+        java.util.Set<Object> grids = new java.util.HashSet<>();
+        forEachLoadedBlockEntity(level,
+                matrixPos.offset(-ESSENTIA_SCAN_RADIUS, -ESSENTIA_SCAN_RADIUS, -ESSENTIA_SCAN_RADIUS),
+                matrixPos.offset(ESSENTIA_SCAN_RADIUS, ESSENTIA_SCAN_RADIUS - 1, ESSENTIA_SCAN_RADIUS), be -> {
+                    if (be.getBlockPos().equals(matrixPos) || be.isRemoved()
+                            || !(be instanceof IAspectSource source)) return;
+                    if (be instanceof TileProviderBase provider) {
+                        var grid = provider.getMainNode().getGrid();
+                        if (grid != null && !grids.add(grid)) return;
                     }
-                }
-            }
-        }
+                    for (Aspect aspect : needed.aspects()) {
+                        int amount = source.containerContains(aspect);
+                        if (amount > 0) totals.merge(aspect, (long) amount, Long::sum);
+                    }
+                });
         return totals;
     }
 }

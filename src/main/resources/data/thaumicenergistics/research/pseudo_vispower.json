@@ -1,0 +1,42 @@
+{
+  "item": "thaumcraft:node_transducer",
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "col": 6,
+  "row": -3,
+  "complexity": 1,
+  "key": "PSEUDO_VISPOWER",
+  "order": 208,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.VISPOWER.1"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.VISPOWER.2"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.VISPOWER.3"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.VISPOWER.4"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.VISPOWER.5"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.VISPOWER.1",
+    "tc.research_page.VISPOWER.2",
+    "tc.research_page.VISPOWER.3",
+    "tc.research_page.VISPOWER.4",
+    "tc.research_page.VISPOWER.5"
+  ]
+}

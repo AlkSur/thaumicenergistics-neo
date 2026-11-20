@@ -1,0 +1,31 @@
+{
+  "item": "thaumcraft:magic_mirror",
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "col": -4,
+  "complexity": 1,
+  "key": "PSEUDO_MIRROR",
+  "order": 204,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.MIRROR.1"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.MIRROR.2"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.MIRROR.3"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.MIRROR.1",
+    "tc.research_page.MIRROR.2",
+    "tc.research_page.MIRROR.3"
+  ]
+}

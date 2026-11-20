@@ -59,7 +59,8 @@ public final class ModItems {
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_16M = REGISTRY.registerItem("essentia_cell_16m", ItemEssentiaCell::create16m);
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_64M = REGISTRY.registerItem("essentia_cell_64m", ItemEssentiaCell::create64m);
     public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_256M = REGISTRY.registerItem("essentia_cell_256m", ItemEssentiaCell::create256m);
-    public static final DeferredItem<ItemEssentiaCell> ESSENTIA_CELL_CREATIVE = REGISTRY.registerItem("essentia_cell_creative", ItemEssentiaCell::createCreative);
+    public static final DeferredItem<thaumicenergistics.common.items.ItemCreativeEssentiaCell> ESSENTIA_CELL_CREATIVE =
+            REGISTRY.registerItem("essentia_cell_creative", thaumicenergistics.common.items.ItemCreativeEssentiaCell::new);
     public static final DeferredItem<Item> ADVANCED_STORAGE_CASING = REGISTRY.registerSimpleItem("advanced_storage_casing");
     public static final DeferredItem<Item> STORAGE_COMPONENT_1K = REGISTRY.registerSimpleItem("storage_component_1k");
     public static final DeferredItem<Item> STORAGE_COMPONENT_4K = REGISTRY.registerSimpleItem("storage_component_4k");

@@ -155,6 +155,11 @@ public class VisInterfacePart extends P2PTunnelPart<VisInterfacePart> implements
         }
     }
 
+    /** Whether this end faces a loaded vis relay (status display). */
+    public boolean facesRelay() {
+        return getRelay() != null;
+    }
+
     /** Inspect the loaded route without extracting vis, spending power, or loading chunks. */
     public boolean hasAvailableRelay() {
         if (!isActive()) return false;

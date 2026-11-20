@@ -1,0 +1,39 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "ARCANEASSEMBLER",
+  "order": 304,
+  "instability": 5,
+  "aspects": {
+    "fabrico": 64,
+    "permutatio": 32,
+    "auram": 16,
+    "praecantatio": 16,
+    "metallum": 8,
+    "vitreus": 8
+  },
+  "central": "ae2:molecular_assembler",
+  "components": [
+    "thaumcraft:fire_shard",
+    "thaumcraft:entropy_shard",
+    "thaumcraft:order_shard",
+    "thaumicenergistics:mystic_processor",
+    "thaumcraft:water_shard",
+    "thaumcraft:earth_shard",
+    "thaumcraft:air_shard",
+    {
+      "id": "thaumcraft:silverwood_thaumium_scepter",
+      "count": 1,
+      "components": {
+        "thaumcraft:stored_vis": {
+          "aer": 15000,
+          "aqua": 15000,
+          "ignis": 15000,
+          "ordo": 15000,
+          "perditio": 15000,
+          "terra": 15000
+        }
+      }
+    }
+  ],
+  "result": "thaumicenergistics:arcane_assembler"
+}

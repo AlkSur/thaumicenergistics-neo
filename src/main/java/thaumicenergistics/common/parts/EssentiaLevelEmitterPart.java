@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import thaumcraft.api.aspects.Aspect;
 import thaumicenergistics.ThaumicEnergistics;
 import thaumicenergistics.common.integration.appeng.AEssentiaKey;
+import thaumicenergistics.common.integration.appeng.EssentiaKeys;
 import thaumicenergistics.common.integration.appeng.AEssentiaKeyType;
 import thaumicenergistics.common.integration.tc.TCReflection;
 import thaumicenergistics.init.ModMenuTypes;
@@ -183,7 +184,10 @@ public class EssentiaLevelEmitterPart extends AbstractLevelEmitterPart
 
         if (this.storageWatcher != null) {
             if (myStack == null) {
-                this.storageWatcher.setWatchAll(true);
+                // Watch essentia only: watching all keys woke the emitter on every item change (TEM-04).
+                for (var key : EssentiaKeys.registered()) {
+                    this.storageWatcher.add(key);
+                }
             } else {
                 this.storageWatcher.add(myStack);
             }
@@ -196,28 +200,19 @@ public class EssentiaLevelEmitterPart extends AbstractLevelEmitterPart
     private void updateReportingValue(IGrid grid) {
         if (grid == null) return;
         var myStack = getConfiguredKey();
-        var allStacks = grid.getStorageService().getInventory().getAvailableStacks();
-
+        // AE2's cached inventory, looked up by key: no walk over every storage and item type.
+        var cached = grid.getStorageService().getCachedInventory();
         if (myStack == null) {
-            this.lastReportedValue = 0;
-            // 遍历所有存储中的源质（直接查询可用堆叠，非缓存）
-            for (var st : allStacks) {
-                if (st.getKey() instanceof AEssentiaKey) {
-                    this.lastReportedValue += st.getLongValue();
-                    if (this.lastReportedValue > this.getReportingValue()) {
-                        break;
-                    }
-                }
-            }
-        } else {
-            // KeyCounter.get 用 Reference2LongMap（引用比较），自定义 AEKey 需要 equals 遍历
-            this.lastReportedValue = 0;
-            for (var st : allStacks) {
-                if (st.getKey() instanceof AEssentiaKey ek && ek.equals(myStack)) {
-                    this.lastReportedValue = st.getLongValue();
+            long total = 0;
+            for (var key : EssentiaKeys.registered()) {
+                total += cached.get(key);
+                if (total > this.getReportingValue()) {
                     break;
                 }
             }
+            this.lastReportedValue = total;
+        } else {
+            this.lastReportedValue = cached.get(myStack);
         }
 
         this.updateState();

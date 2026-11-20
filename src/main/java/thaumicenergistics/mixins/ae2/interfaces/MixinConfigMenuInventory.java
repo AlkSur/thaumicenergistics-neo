@@ -65,6 +65,13 @@ public abstract class MixinConfigMenuInventory {
             return;
         }
 
+        // In a slot that also takes items (IO buses, interfaces) only jars and phials become essentia filters;
+        // wisp essence and aspect crystals stay item filters, as the player meant (TEL-08/TEM-13).
+        if (this.inv.isSupportedType(appeng.api.stacks.AEKeyType.items())
+                && !thaumicenergistics.common.integration.tc.ThEEssentiaContainers.isEssentiaContainer(stack)) {
+            return;
+        }
+
         // 检测是否为 Thaumcraft 源质容器物品
         if (stack.getItem() instanceof IEssentiaContainerItem containerItem) {
             AspectList aspects = containerItem.getAspects(stack);

@@ -1,0 +1,22 @@
+{
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "icon": "thaumcraft:textures/misc/r_alchmult.png",
+  "col": -5,
+  "row": -6,
+  "complexity": 1,
+  "key": "PSEUDO_ALCHEMICALDUPLICATION",
+  "order": 203,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.ALCHEMICALDUPLICATION.1"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.ALCHEMICALDUPLICATION.1"
+  ]
+}

@@ -167,7 +167,16 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         // 无祭坛缓存时全量扫描退避到 SCAN_MISS_INTERVAL（否则每 10 tick 扫 9800 次 getBlockEntity，
         // 附近没建祭坛时也持续 ~70us/t）
         int interval = be.matrixPos == null ? SCAN_MISS_INTERVAL : SCAN_INTERVAL;
-        if (++be.scanCounter >= interval) {
+        if (!be.mainNode.isActive()) {
+            // Every reading (Jade, bubble, pulse) needs the network: an unconnected monitor scans nothing (TET-11).
+            be.scanCounter = interval;
+            if (be.matrixPos != null || be.cachedRisk.found()) {
+                be.matrixPos = null;
+                be.cachedRisk = RiskData.NONE;
+                be.cachedCrafting = false;
+                be.markForUpdate();
+            }
+        } else if (++be.scanCounter >= interval) {
             be.scanCounter = 0;
             be.scanMatrix();
         }
@@ -321,29 +330,32 @@ public class TileInfusionMonitor extends ThETileBase implements IInWorldGridNode
         boolean hasBook = getBlockState().getValue(ModBlocks.BOOK);
         boolean hasNetwork = getBlockState().getValue(ModBlocks.NETWORK);
         if (!hasBook && !hasNetwork) {
-            player.sendSystemMessage(Component.literal("§7韵魔观测器: 缺少引导的书籍与网络能量（魔导手册与 AE 网络）"));
+            player.sendSystemMessage(Component.translatable("thaumicenergistics.monitor.chat.no_book_no_network")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
             return;
         }
         if (!hasBook) {
-            player.sendSystemMessage(Component.literal("§7韵魔观测器: 需要放置魔导手册作为引导"));
+            player.sendSystemMessage(Component.translatable("thaumicenergistics.monitor.chat.no_book")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
             return;
         }
         if (!hasNetwork) {
-            player.sendSystemMessage(Component.literal("§7韵魔观测器: 需要接入 AE 网络供能"));
+            player.sendSystemMessage(Component.translatable("thaumicenergistics.monitor.chat.no_network")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
             return;
         }
         if (!cachedRisk.found()) {
-            player.sendSystemMessage(Component.literal("§7韵魔观测器: 未检测到注魔祭坛"));
+            player.sendSystemMessage(Component.translatable("thaumicenergistics.monitor.chat.no_altar")
+                    .withStyle(net.minecraft.ChatFormatting.GRAY));
             return;
         }
-        String tierWord = tierWord(cachedRisk.tier());
-        String desc = tierDesc(cachedRisk.tier());
-        Component msg = Component.literal("注魔风险: ")
+        Component msg = Component.translatable("thaumicenergistics.monitor.bubble.risk", tierWord(cachedRisk.tier()))
                 .withStyle(style -> style.withColor(tierColor(cachedRisk.tier())))
-                .append(Component.literal(tierWord + "§7"))
-                .append(Component.literal("\n不稳定度: " + cachedRisk.instability()
-                        + " (基础 " + cachedRisk.recipeInstability() + " + 祭坛 " + cachedRisk.symmetry() + ")§f\n"))
-                .append(Component.literal(desc));
+                .append(Component.literal("\n"))
+                .append(Component.translatable("thaumicenergistics.monitor.chat.instability", cachedRisk.instability(),
+                        cachedRisk.recipeInstability(), cachedRisk.symmetry()).withStyle(net.minecraft.ChatFormatting.GRAY))
+                .append(Component.literal("\n"))
+                .append(tierDesc(cachedRisk.tier()).copy().withStyle(net.minecraft.ChatFormatting.WHITE));
         player.sendSystemMessage(msg);
     }
 

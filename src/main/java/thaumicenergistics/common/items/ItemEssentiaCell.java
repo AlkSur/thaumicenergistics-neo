@@ -60,7 +60,7 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
     @Override
     public int getBytes(ItemStack cellItem) {
-        return this.totalBytes;
+        return (int) Math.min(Integer.MAX_VALUE, Math.round(this.totalBytes * ThEConfig.cellCapacityMultiplier()));
     }
 
     @Override
@@ -124,7 +124,8 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
         return this.getCellTooltipImage(stack);
     }
 
-    public String getTier() { return tier; }
+    /** Size name such as "1k" or "256m". */
+    public String getSizeName() { return tier; }
 
     @Nullable
     private static ItemEssentiaCell getCellItem(ItemStack stack) {
@@ -134,8 +135,14 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
     /** 获取 cell 的分区库存（63 槽 ConfigInventory），非 cell 返回 null。 */
     @Nullable
     public static ConfigInventory getPartitionInventory(ItemStack stack) {
+        if (stack.getItem() instanceof ItemCreativeEssentiaCell creative) return creative.getConfigInventory(stack);
         ItemEssentiaCell cell = getCellItem(stack);
         return cell == null ? null : cell.getConfigInventory(stack);
+    }
+
+    /** Any cell the essentia cell workbench can partition, creative included. */
+    public static boolean isPartitionable(ItemStack stack) {
+        return stack.getItem() instanceof ItemEssentiaCell || stack.getItem() instanceof ItemCreativeEssentiaCell;
     }
 
     /** 获取分区列表（aspect 的 ResourceLocation）。 */
@@ -201,6 +208,8 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
 
     /** 将 cell 当前存储的源质设为分区（对应 1.7.10 的 partitionToCellContents）。 */
     public static void partitionToContents(ItemStack stack) {
+        // A creative cell's contents are its partition: nothing to copy.
+        if (stack.getItem() instanceof ItemCreativeEssentiaCell) return;
         ConfigInventory inv = getPartitionInventory(stack);
         if (inv == null) return;
         inv.clear();
@@ -222,6 +231,27 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
         ItemStack held = player.getItemInHand(hand);
 
         if (!player.isShiftKeyDown()) return InteractionResultHolder.pass(held);
+        List<ItemStack> parts = disassemblyParts();
+        if (parts.isEmpty()) return InteractionResultHolder.pass(held);
+        if (!level.isClientSide) {
+            BasicCellInventory inventory = BasicCellInventory.createInventory(held, null);
+            // Fail closed if the storage handler could not read the cell.
+            if (inventory == null || inventory.getStoredItemCount() != 0) {
+                player.displayClientMessage(PlayerMessages.OnlyEmptyCellsCanBeDisassembled.text(), true);
+                return InteractionResultHolder.fail(held);
+            }
+            List<ItemStack> returned = new ArrayList<>(parts);
+            getUpgrades(held).forEach(upgrade -> {
+                if (!upgrade.isEmpty()) returned.add(upgrade.copy());
+            });
+            player.setItemInHand(hand, ItemStack.EMPTY);
+            returned.forEach(player.getInventory()::placeItemBackInInventory);
+        }
+        return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
+    }
+
+    /** What an empty cell splits into when sneak-used; empty means it cannot be taken apart. */
+    protected List<ItemStack> disassemblyParts() {
         Item componentItem = switch (tier) {
             case "1k" -> ModItems.STORAGE_COMPONENT_1K.get();
             case "4k" -> ModItems.STORAGE_COMPONENT_4K.get();
@@ -235,28 +265,12 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
             case "256m" -> ModItems.STORAGE_COMPONENT_256M.get();
             default -> null;
         };
-        if (componentItem == null) return InteractionResultHolder.pass(held);
-        if (!level.isClientSide) {
-            BasicCellInventory inventory = BasicCellInventory.createInventory(held, null);
-            // Fail closed if the storage handler could not read the cell.
-            if (inventory == null || inventory.getStoredItemCount() != 0) {
-                player.displayClientMessage(PlayerMessages.OnlyEmptyCellsCanBeDisassembled.text(), true);
-                return InteractionResultHolder.fail(held);
-            }
-            List<ItemStack> returned = new ArrayList<>();
-            returned.add(new ItemStack(componentItem));
-            Item casing = switch (tier) {
-                case "1m", "4m", "16m", "64m", "256m" -> ModItems.ADVANCED_STORAGE_CASING.get();
-                default -> ModItems.STORAGE_CASING.get();
-            };
-            returned.add(new ItemStack(casing));
-            getUpgrades(held).forEach(upgrade -> {
-                if (!upgrade.isEmpty()) returned.add(upgrade.copy());
-            });
-            player.setItemInHand(hand, ItemStack.EMPTY);
-            returned.forEach(player.getInventory()::placeItemBackInInventory);
-        }
-        return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
+        if (componentItem == null) return List.of();
+        Item casing = switch (tier) {
+            case "1m", "4m", "16m", "64m", "256m" -> ModItems.ADVANCED_STORAGE_CASING.get();
+            default -> ModItems.STORAGE_CASING.get();
+        };
+        return List.of(new ItemStack(componentItem), new ItemStack(casing));
     }
 
     public static ItemEssentiaCell create1k(Item.Properties props) {
@@ -289,7 +303,5 @@ public class ItemEssentiaCell extends Item implements IBasicCellItem {
     public static ItemEssentiaCell create256m(Item.Properties props) {
         return new ItemEssentiaCell(props, "256m", 262144, 8, ThEConfig.CELL_MEGABYTE_MAX_TYPES, 5.0);
     }
-    public static ItemEssentiaCell createCreative(Item.Properties props) {
-        return new ItemEssentiaCell(props, "creative", Integer.MAX_VALUE / 1024, 8, 63, 0.0);
-    }
+
 }

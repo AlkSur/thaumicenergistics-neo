@@ -1,0 +1,25 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "KNOWLEDGEINSCRIBER",
+  "order": 290,
+  "aspects": {
+    "aqua": 5,
+    "terra": 5,
+    "ignis": 5,
+    "aer": 5,
+    "ordo": 5,
+    "perditio": 5
+  },
+  "pattern": [
+    "ABA",
+    " C ",
+    "ADA"
+  ],
+  "key": {
+    "A": "minecraft:iron_ingot",
+    "B": "#thaumicenergistics:monitors",
+    "C": "thaumcraft:thaumonomicon",
+    "D": "thaumicenergistics:mystic_processor"
+  },
+  "result": "thaumicenergistics:knowledge_inscriber"
+}

@@ -1,0 +1,43 @@
+{
+  "item": "thaumicenergistics:mystic_circuit_board",
+  "flags": [
+    "round"
+  ],
+  "col": 4,
+  "complexity": 2,
+  "key": "MYSTICCRYSTALCIRCUIT",
+  "order": 213,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.MYSTICCRYSTALCIRCUIT.stage.1"
+    },
+    {
+      "type": "CRUCIBLE"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.MYSTICCRYSTALCIRCUIT.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "amount": 5
+    },
+    {
+      "aspect": "ordo",
+      "amount": 5
+    },
+    {
+      "aspect": "machina",
+      "amount": 3
+    }
+  ],
+  "parents": [
+    "MYSTICCRYSTALGROWTH"
+  ]
+}

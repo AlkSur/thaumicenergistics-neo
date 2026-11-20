@@ -1,0 +1,26 @@
+{
+  "item": "thaumcraft:alchemical_furnace",
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "col": -2,
+  "complexity": 1,
+  "key": "PSEUDO_DISTILESSENTIA",
+  "order": 201,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.DISTILESSENTIA.1"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.DISTILESSENTIA.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.DISTILESSENTIA.1",
+    "tc.research_page.DISTILESSENTIA.2"
+  ]
+}

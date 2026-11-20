@@ -1,0 +1,44 @@
+{
+  "item": "ae2:certus_quartz_crystal",
+  "flags": [
+    "round"
+  ],
+  "col": -5,
+  "row": -5,
+  "complexity": 2,
+  "key": "CERTUS_DUPE",
+  "order": 226,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.CERTUS_DUPE.stage.1"
+    },
+    {
+      "type": "CRUCIBLE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.CERTUS_DUPE.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "vitreus",
+      "amount": 5
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 5
+    },
+    {
+      "aspect": "permutatio",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "PSEUDO_ALCHEMICALDUPLICATION"
+  ],
+  "parents_hidden": [
+    "BASEENERGISTICS"
+  ]
+}

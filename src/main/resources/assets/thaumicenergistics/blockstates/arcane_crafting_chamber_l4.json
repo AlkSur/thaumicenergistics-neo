@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "online=false": {
+      "model": "thaumicenergistics:block/arcane_crafting_chamber_l4"
+    },
+    "online=true": {
+      "model": "thaumicenergistics:block/arcane_crafting_chamber_l4_online"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "GACHABOX",
+  "order": 307,
+  "instability": 8,
+  "aspects": {
+    "cognitio": 32,
+    "permutatio": 16,
+    "praecantatio": 16,
+    "motus": 8,
+    "machina": 8,
+    "vitium": 8
+  },
+  "central": "thaumicenergistics:knowledge_core",
+  "components": [
+    "thaumcraft:wisp_essence_cognitio",
+    "thaumicenergistics:diffusion_core",
+    "thaumcraft:wisp_essence_vitium",
+    "ae2:formation_core",
+    "thaumicenergistics:mystic_processor",
+    "thaumcraft:thaumium_ingot",
+    "thaumcraft:thaumium_ingot",
+    "thaumcraft:salis_mundus"
+  ],
+  "result": "thaumicenergistics:brain_of_probability"
+}

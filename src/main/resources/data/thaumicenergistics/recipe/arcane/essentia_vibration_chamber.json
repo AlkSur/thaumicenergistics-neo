@@ -1,0 +1,18 @@
+{
+  "type": "thaumcraft:arcane_shapeless",
+  "research": "ESSENTIAVIBRATIONCHAMBER",
+  "order": 297,
+  "aspects": {
+    "ignis": 10,
+    "aqua": 6,
+    "ordo": 4,
+    "perditio": 4
+  },
+  "ingredients": [
+    "ae2:vibration_chamber",
+    "thaumcraft:jar_of_essentia",
+    "thaumicenergistics:coalescence_core",
+    "thaumicenergistics:mystic_processor"
+  ],
+  "result": "thaumicenergistics:essentia_vibration_chamber"
+}

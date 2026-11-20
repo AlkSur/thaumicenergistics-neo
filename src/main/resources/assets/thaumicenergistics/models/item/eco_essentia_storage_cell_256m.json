@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "thaumicenergistics:item/eco_essentia_storage_cell_256m"
+  }
+}

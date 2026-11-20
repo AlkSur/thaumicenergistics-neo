@@ -66,6 +66,9 @@ public abstract class ThEBaseEntityBlock extends Block implements EntityBlock {
         if (!state.is(newState.getBlock())) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof ThETileBase tb) tb.onBreakBlock();
+            else if (be instanceof thaumicenergistics.common.tiles.TileEssentiaProviderConnection receiver) {
+                receiver.onBreakBlock();
+            }
         }
         super.onRemove(state, level, pos, newState, moved);
     }

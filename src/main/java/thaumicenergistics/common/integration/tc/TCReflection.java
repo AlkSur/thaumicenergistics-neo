@@ -23,6 +23,27 @@ public final class TCReflection {
     private TCReflection() {}
 
     @Nullable
+    /**
+     * Whether an {@link IAspectContainer} really stores essentia. TC's wand recharge pedestal implements
+     * the interface to show the wand's vis: it "accepts" everything, keeps nothing and cannot be drained,
+     * so treating it as storage voids essentia and shows phantom stock (TEC-04).
+     */
+    public static boolean isEssentiaStore(@Nullable BlockEntity be) {
+        return be instanceof IAspectContainer
+                && !(be instanceof thaumcraft.common.blockentities.WandRechargePedestalBlockEntity)
+                && !net.minecraft.core.registries.BuiltInRegistries.BLOCK_ENTITY_TYPE
+                        .wrapAsHolder(be.getType()).is(ESSENTIA_STORE_BLACKLIST);
+    }
+
+    /**
+     * Block entities that implement IAspectContainer but cannot be drained like storage: addon vats, crucibles
+     * and funnels showed phantom essentia that crafting then waited on forever (TEL-02). Packs may add to it.
+     */
+    public static final net.minecraft.tags.TagKey<net.minecraft.world.level.block.entity.BlockEntityType<?>>
+            ESSENTIA_STORE_BLACKLIST = net.minecraft.tags.TagKey.create(
+                    net.minecraft.core.registries.Registries.BLOCK_ENTITY_TYPE,
+                    ResourceLocation.fromNamespaceAndPath("thaumicenergistics", "essentia_store_blacklist"));
+
     public static AspectStack extractEssentia(@Nullable BlockEntity be, int maxAmount) {
         return extractEssentia(be, null, maxAmount);
     }
@@ -59,7 +80,7 @@ public final class TCReflection {
                 }
             }
         }
-        if (!(be instanceof IAspectContainer container)) {
+        if (!(be instanceof IAspectContainer container) || !isEssentiaStore(be)) {
             return null;
         }
 
@@ -117,7 +138,7 @@ public final class TCReflection {
             LegacyFurnaceEssentia.addToFurnace(be, aspect, (int) stack.amount());
             return;
         }
-        if (!(be instanceof IAspectContainer container)) return;
+        if (!(be instanceof IAspectContainer container) || !isEssentiaStore(be)) return;
         container.addToContainer(aspect, (int) stack.amount());
         be.setChanged();
     }
@@ -130,13 +151,20 @@ public final class TCReflection {
         if (FURNACE_CLASS_NAME.equals(be.getClass().getName())) {
             return LegacyFurnaceEssentia.addToFurnace(be, aspect, toInsert);
         }
-        if (!(be instanceof IAspectContainer container)) return 0;
+        if (!(be instanceof IAspectContainer container) || !isEssentiaStore(be)) return 0;
+        int before = storedAmount(container, aspect);
         int leftover = container.addToContainer(aspect, toInsert);
-        int added = toInsert - leftover;
+        // Trust only what the container actually holds afterwards: a "0 leftover" is not proof.
+        int added = Math.max(0, Math.min(toInsert - leftover, storedAmount(container, aspect) - before));
         if (added > 0) {
             be.setChanged();
         }
         return added;
+    }
+
+    private static int storedAmount(IAspectContainer container, Aspect aspect) {
+        AspectList list = container.getAspects();
+        return list == null ? 0 : list.getAmount(aspect);
     }
 
     /** 非破坏性列出容器内全部源质（存储总线挂载为网络存储、导入总线预检用）。 */
@@ -169,7 +197,7 @@ public final class TCReflection {
             return result;
         }
         // IAspectContainer（罐子/奥术蒸馏器等）
-        if (be instanceof IAspectContainer container) {
+        if (be instanceof IAspectContainer container && isEssentiaStore(be)) {
             AspectList list = container.getAspects();
             if (list != null) {
                 for (Aspect aspect : list.getAspects()) {

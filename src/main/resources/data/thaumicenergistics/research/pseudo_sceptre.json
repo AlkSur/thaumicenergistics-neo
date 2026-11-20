@@ -1,0 +1,22 @@
+{
+  "item": "thaumcraft:silverwood_thaumium_scepter",
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "col": 7,
+  "row": -3,
+  "complexity": 1,
+  "key": "PSEUDO_SCEPTRE",
+  "order": 209,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.SCEPTRE.1"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.SCEPTRE.1"
+  ]
+}

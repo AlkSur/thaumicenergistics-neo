@@ -1,0 +1,43 @@
+{
+  "item": "thaumicenergistics:golem_wifi_backpack",
+  "flags": [
+    "round"
+  ],
+  "row": -6,
+  "complexity": 3,
+  "key": "GOLEMWIFIBACKPACK",
+  "order": 229,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.GOLEMWIFI.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.GOLEMWIFI.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "praecantatio",
+      "amount": 5
+    },
+    {
+      "aspect": "machina",
+      "amount": 5
+    },
+    {
+      "aspect": "cognitio",
+      "amount": 3
+    }
+  ],
+  "parents": [
+    "PSEUDO_COREGATHER"
+  ],
+  "parents_hidden": [
+    "DIGISENTIA"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:item_exists",
+      "item": "thaumicenergistics:arcane_crafting_chamber_l4"
+    }
+  ],
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CPC",
+    "PXP",
+    "CPC"
+  ],
+  "key": {
+    "C": {
+      "item": "neoecoae:crafting_casing"
+    },
+    "P": {
+      "item": "neoecoae:crafting_parallel_core_l6"
+    },
+    "X": {
+      "item": "thaumicenergistics:arcane_crafting_chamber_l4"
+    }
+  },
+  "result": {
+    "id": "thaumicenergistics:arcane_crafting_chamber_l6",
+    "count": 1
+  }
+}

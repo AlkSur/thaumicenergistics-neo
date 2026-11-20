@@ -42,6 +42,15 @@ public final class ThEExtendedAE {
         registerHost(card, "ex_pattern_provider_part", "block.extendedae.ex_pattern_provider");
         registerHost(card, "oversize_interface", "block.extendedae.oversize_interface");
         registerHost(card, "oversize_interface_part", "block.extendedae.oversize_interface");
+        // Verified against ExtendedAE 1.21-2.2.35: these extend AE2's ExportBusPart / ImportBusPart, the extended
+        // interface block extends InterfaceBlockEntity and the extended interface part runs AE2's InterfaceLogic,
+        // so TE's bus and interface essentia logic applies to them as is (TEL-05).
+        registerHost(card, "ex_export_bus_part", null);
+        registerHost(card, "ex_import_bus_part", null);
+        registerHost(card, "precise_export_bus", null);
+        registerHost(card, "threshold_export_bus", null);
+        registerHost(card, "ex_interface", "block.extendedae.ex_interface");
+        registerHost(card, "ex_interface_part", "block.extendedae.ex_interface");
     }
 
     private static void registerHost(Item card, String path, String tooltipGroup) {
@@ -56,6 +65,10 @@ public final class ThEExtendedAE {
             return;
         }
 
-        Upgrades.add(card, host, 1, tooltipGroup);
+        if (tooltipGroup == null) {
+            Upgrades.add(card, host, 1);
+        } else {
+            Upgrades.add(card, host, 1, tooltipGroup);
+        }
     }
 }

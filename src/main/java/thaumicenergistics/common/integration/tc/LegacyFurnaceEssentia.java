@@ -8,6 +8,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
+import thaumcraft.common.blockentities.AlchemicalFurnaceBlockEntity;
 import thaumicenergistics.api.storage.AspectStack;
 
 /** port.261 炼金炉的私有方面缓存兼容，公开 capability 无法覆盖时才调用。 */
@@ -33,6 +34,17 @@ final class LegacyFurnaceEssentia {
         }
     }
 
+    /**
+     * The furnace keeps a separate vis counter for its 50-point limit and only recounts it when it smelts
+     * or loads. Changing the aspect list alone left the counter stale: a drained furnace refused to smelt
+     * until reloaded, and a filled one ignored its limit (TEC-01). Slot 3 of its data access is that counter.
+     */
+    private static void syncVisCounter(BlockEntity be, AspectList aspects) {
+        if (be instanceof AlchemicalFurnaceBlockEntity furnace) {
+            furnace.dataAccess().set(3, aspects.totalAmount());
+        }
+    }
+
     /** 荒古炼金炉写回（aspects 为 private 字段，无公开写入 API）。返回实际写入量。 */
     static int addToFurnace(BlockEntity be, Aspect aspect, int amount) {
         if (amount <= 0) return 0;
@@ -43,9 +55,15 @@ final class LegacyFurnaceEssentia {
                 list = new AspectList();
                 furnaceAspectsField.set(be, list);
             }
-            list.add(aspect, amount);
+            int room = amount;
+            if (be instanceof AlchemicalFurnaceBlockEntity furnace) {
+                room = Math.min(amount, AlchemicalFurnaceBlockEntity.MAX_VIS - furnace.pendingVis());
+            }
+            if (room <= 0) return 0;
+            list.add(aspect, room);
+            syncVisCounter(be, list);
             be.setChanged();
-            return amount;
+            return room;
         } catch (Exception e) {
             return 0;
         }
@@ -65,6 +83,7 @@ final class LegacyFurnaceEssentia {
             if (only != null && !only.equals(id)) continue;
             int toExtract = Math.min(amt, maxAmount);
             furnaceAspects.remove(aspect, toExtract);
+            syncVisCounter(be, furnaceAspects);
             be.setChanged();
             return new AspectStack(id, toExtract);
         }

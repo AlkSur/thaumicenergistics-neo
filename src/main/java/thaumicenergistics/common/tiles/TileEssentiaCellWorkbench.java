@@ -23,7 +23,7 @@ public class TileEssentiaCellWorkbench extends ThETileBase {
     private final ItemStackHandler cellInventory = new ItemStackHandler(1) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.isEmpty() || stack.getItem() instanceof ItemEssentiaCell;
+            return stack.isEmpty() || ItemEssentiaCell.isPartitionable(stack);
         }
 
         @Override public int getSlotLimit(int slot) { return 1; }

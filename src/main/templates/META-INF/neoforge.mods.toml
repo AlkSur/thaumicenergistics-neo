@@ -29,14 +29,14 @@ side="BOTH"
 [[dependencies.thaumicenergistics]]
 modId="ae2"
 type="required"
-versionRange="[19,)"
+versionRange="[19.2.17,19.3)"
 ordering="AFTER"
 side="BOTH"
 
 [[dependencies.thaumicenergistics]]
 modId="thaumcraft"
 type="required"
-versionRange="[0.2.2.95,)"
+versionRange="[0.3.0-port.280,)"
 ordering="AFTER"
 side="BOTH"
 
@@ -75,7 +75,7 @@ side="BOTH"
 [[dependencies.thaumicenergistics]]
 modId="advanced_ae"
 type="optional"
-versionRange="*"
+versionRange="[1.6.12,1.7)"
 ordering="AFTER"
 side="BOTH"
 
@@ -97,3 +97,23 @@ config="thaumicenergistics.provider.essentia.mixins.json"
 
 [[mixins]]
 config="thaumicenergistics.compat.mixins.json"
+
+# Neo ECO AE Extension: parallel arcane assembly (21.2.10+) and the research gate for its big orders.
+# No version range: Neo ECOAE warns that a range on an optional dependency makes the game exit on a mismatch;
+# TE checks for the API it needs at runtime instead.
+[[dependencies.thaumicenergistics]]
+modId="neoecoae"
+type="optional"
+versionRange="*"
+ordering="NONE"
+side="BOTH"
+
+# The SCEX refill-cadence patch slowed arcane-terminal charging to one fifth; the terminal now sleeps
+# when idle on its own. Refuse to load beside it.
+[[dependencies.thaumicenergistics]]
+modId="scex_thaumic_lifecycle_fix"
+type="incompatible"
+reason="Retired: Thaumic Energistics 2.6.10-scex.1 charges the arcane terminal every tick and sleeps when idle. Remove scex-thaumic-lifecycle-fix."
+versionRange="*"
+ordering="NONE"
+side="BOTH"

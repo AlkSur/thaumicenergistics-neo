@@ -1,0 +1,18 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "MYSTICCRYSTALGROWTH",
+  "order": 267,
+  "instability": 1,
+  "aspects": {
+    "vitreus": 8,
+    "praecantatio": 8
+  },
+  "central": "thaumicenergistics:damaged_budding_thaumic_crystal",
+  "components": [
+    "thaumcraft:thaumium_ingot",
+    "thaumicenergistics:mystic_crystal",
+    "thaumicenergistics:mystic_crystal",
+    "thaumcraft:salis_mundus"
+  ],
+  "result": "thaumicenergistics:chipped_budding_thaumic_crystal"
+}

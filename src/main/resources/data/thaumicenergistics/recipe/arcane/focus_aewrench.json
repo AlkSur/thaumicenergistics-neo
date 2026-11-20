@@ -1,0 +1,21 @@
+{
+  "type": "thaumcraft:arcane_shaped",
+  "research": "FOCUS_AEWRENCH",
+  "order": 288,
+  "aspects": {
+    "aer": 10,
+    "ignis": 10
+  },
+  "pattern": [
+    "ABC",
+    "BDB",
+    "CBA"
+  ],
+  "key": {
+    "A": "thaumcraft:air_shard",
+    "B": "minecraft:quartz",
+    "C": "thaumcraft:fire_shard",
+    "D": "ae2:certus_quartz_wrench"
+  },
+  "result": "thaumicenergistics:focus_aewrench"
+}

@@ -1,0 +1,49 @@
+{
+  "item": "thaumicenergistics:wireless_arcane_crafting_terminal",
+  "flags": [
+    "round"
+  ],
+  "col": 5,
+  "row": -5,
+  "complexity": 2,
+  "key": "WIRELESSARCANECRAFTINGTERMINAL",
+  "order": 230,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.WIRELESSARCANECRAFTINGTERMINAL.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.WIRELESSARCANECRAFTINGTERMINAL.stage.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.WIRELESSARCANECRAFTINGTERMINAL.stage.1",
+    "tc.research_text.WIRELESSARCANECRAFTINGTERMINAL.stage.2"
+  ],
+  "aspects": [
+    {
+      "aspect": "fabrico",
+      "amount": 8
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 8
+    },
+    {
+      "aspect": "machina",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "ARCANECRAFTINGTERMINAL"
+  ]
+}

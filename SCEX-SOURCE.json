@@ -1,12 +1,15 @@
 {
   "upstream": "https://github.com/AlkSur/thaumicenergistics-neo",
   "branch": "main",
-  "commit": "94b1a43d0cf80e4044a3f9048e2abea184da02ef",
-  "tree": "7ceeccc07341a097e63e2d2710ca05c156c2cbe9",
+  "commit": "8767972d9496761d91f252b66c36c5f6d93a1344",
+  "tree": "32814d066c9c07f2d121db843fe14ee05815b2c3",
   "declaredVersion": "2.6.10-alpha",
   "importedAt": "2026-11-09T14:17:49.134589+00:00",
   "upstreamFilesUnmodified": true,
   "productionVersion": "2.6.16-alpha",
   "binaryEquivalenceVerified": false,
-  "buildTested": false
+  "buildTested": false,
+  "previousCommit": "94b1a43d0cf80e4044a3f9048e2abea184da02ef",
+  "syncedAt": "2026-11-20",
+  "note": "Upstream 8767972 = 94b1a43 + its sync of the SCEX TEA-01..09 fixes (6e4ac77). Tree identical to this directory at merge time."
 }

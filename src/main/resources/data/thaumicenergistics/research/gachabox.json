@@ -1,0 +1,49 @@
+{
+  "item": "thaumicenergistics:brain_of_probability",
+  "flags": [
+    "round"
+  ],
+  "col": -1,
+  "row": -4,
+  "complexity": 3,
+  "key": "GACHABOX",
+  "order": 232,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.GACHABOX.stage.1"
+    },
+    {
+      "type": "INFUSION"
+    },
+    {
+      "type": "ARCANE"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.GACHABOX.stage.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.GACHABOX.stage.1",
+    "tc.research_text.GACHABOX.stage.2"
+  ],
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "amount": 8
+    },
+    {
+      "aspect": "perditio",
+      "amount": 5
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "DIGISENTIA"
+  ]
+}

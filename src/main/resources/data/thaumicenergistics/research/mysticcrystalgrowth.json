@@ -1,0 +1,54 @@
+{
+  "item": "thaumicenergistics:mystic_crystal",
+  "flags": [
+    "round"
+  ],
+  "col": 2,
+  "complexity": 2,
+  "key": "MYSTICCRYSTALGROWTH",
+  "order": 212,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.MYSTICCRYSTALGROWTH.stage.1"
+    },
+    {
+      "type": "INFUSION"
+    },
+    {
+      "array": true,
+      "candidate_count": 2,
+      "type": "INFUSION"
+    },
+    {
+      "type": "INFUSION"
+    },
+    {
+      "array": true,
+      "candidate_count": 2,
+      "type": "INFUSION"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.MYSTICCRYSTALGROWTH.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "vitreus",
+      "amount": 5
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 5
+    },
+    {
+      "aspect": "terra",
+      "amount": 3
+    }
+  ],
+  "parents": [
+    "BASEENERGISTICS",
+    "PSEUDO_INFUSION"
+  ]
+}

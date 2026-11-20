@@ -17,45 +17,14 @@ import thaumicenergistics.init.ModBlocks;
 import thaumicenergistics.init.ModItems;
 
 /** CE material progression, registered through neo's TC4 API rather than Thaumaturge JSON. */
+/**
+ * Aspects of TE's crystal items. The crystal recipes themselves are datapack files under
+ * data/thaumicenergistics/recipe (TEL-03), so packs can change or remove them.
+ */
 public final class CrystalRecipeRegistration {
     private CrystalRecipeRegistration() {}
-    public static InfusionRecipe CHIPPED, DAMAGED, FLAWED, FLAWLESS, RESTORE_THAUMIUM, RESTORE_VOID;
-    public static CrucibleRecipe PRESS;
-    public static ShapelessArcaneRecipe DUST;
 
     public static void registerAll() {
-        CHIPPED = ThaumcraftApi.addInfusionCraftingRecipe("MYSTICCRYSTALGROWTH",
-                new ItemStack(ModBlocks.CHIPPED_BUDDING_THAUMIC_CRYSTAL.get()), 1,
-                growth(16).add(Aspect.ORDER, 8), item("ae2", "chipped_budding_quartz"),
-                tc("thaumium_ingot"), tc("thaumium_ingot"), tc("salis_mundus"));
-        DAMAGED = ThaumcraftApi.addInfusionCraftingRecipe("MYSTICCRYSTALGROWTH",
-                new ItemStack(ModBlocks.DAMAGED_BUDDING_THAUMIC_CRYSTAL.get()), 1,
-                growth(16).add(Aspect.EARTH, 8), item("ae2", "damaged_budding_quartz"),
-                tc("thaumium_ingot"), tc("salis_mundus"));
-        FLAWED = ThaumcraftApi.addInfusionCraftingRecipe("MYSTICCRYSTALGROWTH",
-                new ItemStack(ModBlocks.FLAWED_BUDDING_THAUMIC_CRYSTAL.get()), 2,
-                growth(24).add(Aspect.VOID, 8), item("ae2", "flawed_budding_quartz"),
-                tc("void_metal_ingot"), new ItemStack(ModItems.MYSTIC_PROCESSOR.get()), tc("salis_mundus"));
-        FLAWLESS = ThaumcraftApi.addInfusionCraftingRecipe("MYSTICCRYSTALGROWTH",
-                new ItemStack(ModBlocks.FLAWLESS_BUDDING_THAUMIC_CRYSTAL.get()), 3,
-                growth(32).add(Aspect.VOID, 16).add(Aspect.ORDER, 16), item("ae2", "flawless_budding_quartz"),
-                tc("void_metal_ingot"), tc("void_metal_ingot"), new ItemStack(ModItems.MYSTIC_PROCESSOR.get()), tc("salis_mundus"));
-        RESTORE_THAUMIUM = ThaumcraftApi.addInfusionCraftingRecipe("MYSTICCRYSTALGROWTH",
-                new ItemStack(ModBlocks.CHIPPED_BUDDING_THAUMIC_CRYSTAL.get()), 1,
-                growth(8), new ItemStack(ModBlocks.DAMAGED_BUDDING_THAUMIC_CRYSTAL.get()),
-                tc("thaumium_ingot"), new ItemStack(ModItems.MYSTIC_CRYSTAL.get()),
-                new ItemStack(ModItems.MYSTIC_CRYSTAL.get()), tc("salis_mundus"));
-        RESTORE_VOID = ThaumcraftApi.addInfusionCraftingRecipe("MYSTICCRYSTALGROWTH",
-                new ItemStack(ModBlocks.FLAWLESS_BUDDING_THAUMIC_CRYSTAL.get()), 2,
-                growth(16).add(Aspect.ORDER, 8), new ItemStack(ModBlocks.FLAWED_BUDDING_THAUMIC_CRYSTAL.get()),
-                tc("void_metal_ingot"), new ItemStack(ModItems.MYSTIC_PROCESSOR.get()), tc("salis_mundus"));
-        PRESS = ThaumcraftApi.addCrucibleRecipe("MYSTICCRYSTALCIRCUIT",
-                new ItemStack(ModItems.THAUMIC_PROCESSOR_PRESS.get()),
-                TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("thaumicenergistics", "inscriber_presses")),
-                new AspectList().add(Aspect.ORDER, 8).add(Aspect.MIND, 8).add(Aspect.MAGIC, 8));
-        DUST = ThaumcraftApi.addShapelessArcaneCraftingRecipe("MYSTICCRYSTALCIRCUIT",
-                new ItemStack(ModItems.MYSTIC_CRYSTAL_DUST.get(), 2),
-                new AspectList().add(Aspect.ENTROPY, 5), new ItemStack(ModItems.MYSTIC_CRYSTAL.get()));
         registerAspects();
     }
 

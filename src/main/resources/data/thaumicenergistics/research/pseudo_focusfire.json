@@ -1,0 +1,27 @@
+{
+  "item": "thaumcraft:focus_fire",
+  "flags": [
+    "stub",
+    "concealed"
+  ],
+  "col": -4,
+  "row": -7,
+  "complexity": 1,
+  "key": "PSEUDO_FOCUSFIRE",
+  "order": 207,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.FOCUSFIRE.1"
+    },
+    {
+      "type": "TEXT",
+      "text": "tc.research_page.FOCUSFIRE.2"
+    }
+  ],
+  "text_pages": [
+    "tc.research_page.FOCUSFIRE.1",
+    "tc.research_page.FOCUSFIRE.2"
+  ]
+}

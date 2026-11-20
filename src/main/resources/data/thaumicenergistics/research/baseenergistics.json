@@ -1,0 +1,20 @@
+{
+  "flags": [
+    "round",
+    "autoUnlock"
+  ],
+  "icon": "thaumicenergistics:textures/research/tab_icon.png",
+  "complexity": 1,
+  "key": "BASEENERGISTICS",
+  "order": 211,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.BASEENERGISTICS.stage.1"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.BASEENERGISTICS.stage.1"
+  ]
+}

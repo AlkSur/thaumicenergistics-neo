@@ -1,0 +1,14 @@
+{
+  "type": "thaumcraft:crucible",
+  "research": "CERTUS_DUPE",
+  "order": 308,
+  "aspects": {
+    "vitreus": 5,
+    "permutatio": 5
+  },
+  "catalyst": "ae2:certus_quartz_crystal",
+  "result": {
+    "id": "ae2:certus_quartz_crystal",
+    "count": 2
+  }
+}

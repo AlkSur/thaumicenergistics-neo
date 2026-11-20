@@ -1,0 +1,18 @@
+{
+  "type": "thaumcraft:infusion",
+  "research": "MYSTICCRYSTALGROWTH",
+  "order": 265,
+  "instability": 2,
+  "aspects": {
+    "vitreus": 24,
+    "praecantatio": 24,
+    "vacuos": 8
+  },
+  "central": "ae2:flawed_budding_quartz",
+  "components": [
+    "thaumcraft:void_metal_ingot",
+    "thaumicenergistics:mystic_processor",
+    "thaumcraft:salis_mundus"
+  ],
+  "result": "thaumicenergistics:flawed_budding_thaumic_crystal"
+}

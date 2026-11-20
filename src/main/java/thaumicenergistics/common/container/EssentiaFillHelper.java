@@ -26,6 +26,7 @@ public final class EssentiaFillHelper {
             IActionSource actionSource, Player player, ItemStack source, ResourceLocation aspectId) {
         var aspect = TCReflection.findAspectById(aspectId);
         if (source.isEmpty() || aspect == null || !ThEEssentiaContainers.isEssentiaContainer(source)
+                || !ThEEssentiaContainers.labelAllows(source, aspect)
                 || !EssentiaItemContainers.contents(source).isEmpty()) {
             return false;
         }

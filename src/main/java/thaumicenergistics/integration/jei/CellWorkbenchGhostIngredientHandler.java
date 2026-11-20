@@ -19,7 +19,7 @@ public class CellWorkbenchGhostIngredientHandler implements IGhostIngredientHand
     @Override
     public <I> List<Target<I>> getTargetsTyped(GuiEssentiaCellWorkbench gui, ITypedIngredient<I> ingredient, boolean doStart) {
         List<Target<I>> targets = new ArrayList<>();
-        if (!(ingredient.getIngredient() instanceof AspectIngredient)) {
+        if (JeiAspects.aspectOf(ingredient.getIngredient()) == null) {
             return targets;
         }
         // 63 个分区格都是拖放目标
@@ -36,8 +36,9 @@ public class CellWorkbenchGhostIngredientHandler implements IGhostIngredientHand
 
                 @Override
                 public void accept(I ingredient) {
-                    if (ingredient instanceof AspectIngredient ai && ai.aspect() != null) {
-                        ResourceLocation aspectId = TCReflection.getAspectId(ai.aspect());
+                    var aspect = JeiAspects.aspectOf(ingredient);
+                    if (aspect != null) {
+                        ResourceLocation aspectId = TCReflection.getAspectId(aspect);
                         if (aspectId != null) {
                             CellWorkbenchC2SPacket.sendAddAspect(aspectId);
                         }

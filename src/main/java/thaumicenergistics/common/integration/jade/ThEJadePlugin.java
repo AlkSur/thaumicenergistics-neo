@@ -27,6 +27,8 @@ public class ThEJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(AssemblerProvider.INSTANCE, TileArcaneAssembler.class);
         // 概率之脑：本轮奖励 + 下次抽奖倒计时
         registration.registerBlockDataProvider(BrainOfProbabilityProvider.INSTANCE, BrainOfProbabilityBlockEntity.class);
+        registration.registerBlockDataProvider(ReceiverProvider.INSTANCE,
+                thaumicenergistics.common.tiles.TileEssentiaProviderConnection.class);
     }
 
     @Override
@@ -45,9 +47,16 @@ public class ThEJadePlugin implements IWailaPlugin {
 
         Block assemblerBlock = ModBlocks.ARCANE_ASSEMBLER.get();
         registration.registerBlockComponent(AssemblerProvider.INSTANCE, assemblerBlock.getClass());
+        if (thaumicenergistics.common.integration.neoecoae.NeoEcoItems.enabled()) {
+            registration.registerBlockComponent(AssemblerProvider.INSTANCE,
+                    thaumicenergistics.common.blocks.ArcaneCraftingChamberBlock.class);
+        }
 
         // 概率之脑：本轮奖励 + 下次抽奖倒计时
         Block brainBlock = ModBlocks.BRAIN_OF_PROBABILITY.get();
         registration.registerBlockComponent(BrainOfProbabilityProvider.INSTANCE, brainBlock.getClass());
+
+        registration.registerBlockComponent(ReceiverProvider.INSTANCE,
+                ModBlocks.ESSENTIA_PROVIDER_CONNECTION.get().getClass());
     }
 }

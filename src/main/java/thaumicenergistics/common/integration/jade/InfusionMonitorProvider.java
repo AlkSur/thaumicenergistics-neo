@@ -108,7 +108,7 @@ public enum InfusionMonitorProvider implements IBlockComponentProvider, IServerD
 
         // 档位文字（后果描述）
         if (!tierText.isEmpty()) {
-            tooltip.add(Component.literal(tierText));
+            tooltip.add(Component.translatable(tierText));
         }
 
         // 源质缺口
@@ -116,7 +116,8 @@ public enum InfusionMonitorProvider implements IBlockComponentProvider, IServerD
             tooltip.add(Component.translatable("thaumicenergistics.jade.monitor.crafting"));
         }
         if (!shortages.isEmpty()) {
-            tooltip.add(Component.translatable("thaumicenergistics.jade.monitor.shortages", shortages));
+            tooltip.add(Component.translatable("thaumicenergistics.jade.monitor.shortages",
+                    thaumicenergistics.common.monitor.InfusionMonitorText.shortages(shortages)));
         } else if (totalNeeded > 0) {
             tooltip.add(Component.translatable("thaumicenergistics.jade.monitor.essence_ok"));
         }

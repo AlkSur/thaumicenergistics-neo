@@ -38,7 +38,8 @@ public final class ArcaneTerminalRecipeState {
 
     public static boolean hasEnoughVis(ItemStack stack, AspectList cost, Player player) {
         if (cost == null || cost.isEmpty()) return true;
-        if (stack.isEmpty() || !(stack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)) return false;
+        if (stack.isEmpty() || !(stack.getItem() instanceof TCFunctionalItems.WandCastingItem wand)
+                || !thaumcraft.common.blockentities.ArcaneWorkbenchBlockEntity.isValidWand(stack)) return false;
         var centivis = new AspectList();
         for (var aspect : cost.aspects()) centivis.add(aspect, cost.amount(aspect) * 100);
         return wand.consumeVisCost(stack, player, centivis, false, true);

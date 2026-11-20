@@ -1,0 +1,38 @@
+{
+  "item": "thaumicenergistics:thaumic_crystal_pickaxe",
+  "flags": [
+    "round"
+  ],
+  "col": 2,
+  "row": 2,
+  "complexity": 2,
+  "key": "THAUMICCRYSTALTOOLS",
+  "order": 215,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.THAUMICCRYSTALTOOLS.stage.1"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.THAUMICCRYSTALTOOLS.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "instrumentum",
+      "amount": 5
+    },
+    {
+      "aspect": "vitreus",
+      "amount": 5
+    },
+    {
+      "aspect": "praecantatio",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "MYSTICCRYSTALGROWTH"
+  ]
+}

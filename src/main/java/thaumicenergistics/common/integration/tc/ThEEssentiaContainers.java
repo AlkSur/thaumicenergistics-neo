@@ -41,7 +41,25 @@ public final class ThEEssentiaContainers {
 
     /** 要素罐子：TC 罐子统一类型（JarBlockItem）。 */
     public static boolean isJar(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem() instanceof JarBlockItem;
+        // The node-in-a-jar shares JarBlockItem but its block entity never reads Aspect/Amount:
+        // essentia written into it would vanish on placement (TEC-05).
+        return !stack.isEmpty() && stack.getItem() instanceof JarBlockItem
+                && stack.getItem() != thaumcraft.common.registry.TCItems.NODE_IN_A_JAR.get();
+    }
+
+    /** The aspect a labelled jar is restricted to, or null when the stack is not a labelled jar. */
+    @org.jetbrains.annotations.Nullable
+    public static thaumcraft.api.aspects.Aspect jarLabel(ItemStack stack) {
+        if (!isJar(stack)) return null;
+        var tag = thaumcraft.common.lib.utils.ItemCustomData.view(stack);
+        return tag.contains("AspectFilter")
+                ? thaumcraft.api.aspects.AspectMigration.resolveStored(tag.getString("AspectFilter")) : null;
+    }
+
+    /** A labelled jar takes only its label's aspect (TEC-06); everything else takes any aspect. */
+    public static boolean labelAllows(ItemStack stack, thaumcraft.api.aspects.Aspect aspect) {
+        var label = jarLabel(stack);
+        return label == null || label == aspect;
     }
 
     /** 是否源质容器（安瓿或罐子）——右键存入/装罐的唯一判定。 */

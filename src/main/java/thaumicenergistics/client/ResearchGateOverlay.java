@@ -45,11 +45,28 @@ public final class ResearchGateOverlay {
         pendingResearch = null;
     }
 
+    /**
+     * Judged by the menu, not the screen class: Neo ECOAE replaces AE2's confirm screen with its own
+     * (same CraftConfirmMenu), and the screen-class check cleared the message on the first frame (TEN-01).
+     */
+    private static boolean isCraftingScreen(net.minecraft.client.gui.screens.Screen screen) {
+        return screen instanceof CraftConfirmScreen || screen instanceof CraftErrorScreen
+                || screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> container
+                        && container.getMenu() instanceof CraftConfirmMenu;
+    }
+
+    /** Leaving the crafting screens (ESC to the world renders no screen) also ends the message (TEM-10). */
+    @SubscribeEvent
+    public static void onScreenClosing(ScreenEvent.Closing event) {
+        if (isCraftingScreen(event.getScreen())) {
+            clearPendingResearch();
+        }
+    }
+
     @SubscribeEvent
     public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
         // 玩家已离开合成屏（不是确认屏/错误屏）→ 清除拦截状态
-        if (!(event.getScreen() instanceof CraftConfirmScreen)
-                && !(event.getScreen() instanceof CraftErrorScreen)) {
+        if (!isCraftingScreen(event.getScreen())) {
             if (pendingResearch != null) {
                 clearPendingResearch();
             }
@@ -65,7 +82,9 @@ public final class ResearchGateOverlay {
         int width = mc.getWindow().getGuiScaledWidth();
 
         // 纯色无样式，保证与 MC 默认 GUI 字体一致
-        Component msg = Component.literal("当前研究节点未解锁：" + pendingResearch);
+        // Localised, and naming the research rather than its internal key (TEG-13).
+        Component msg = Component.translatable("thaumicenergistics.research_gate.locked",
+                Component.translatableWithFallback("tc.research_name." + pendingResearch, pendingResearch));
 
         int textWidth = mc.font.width(msg);
         int x = (width - textWidth) / 2;

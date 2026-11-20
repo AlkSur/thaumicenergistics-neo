@@ -1,0 +1,44 @@
+{
+  "item": "thaumicenergistics:focus_aewrench",
+  "flags": [
+    "round"
+  ],
+  "col": -3,
+  "row": -7,
+  "complexity": 3,
+  "key": "FOCUS_AEWRENCH",
+  "order": 225,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.FOCUS_AEWRENCH.stage.1"
+    },
+    {
+      "type": "ARCANE"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.FOCUS_AEWRENCH.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "instrumentum",
+      "amount": 5
+    },
+    {
+      "aspect": "potentia",
+      "amount": 5
+    },
+    {
+      "aspect": "machina",
+      "amount": 3
+    }
+  ],
+  "parents": [
+    "PSEUDO_FOCUSFIRE"
+  ],
+  "parents_hidden": [
+    "BASEENERGISTICS"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "item": "thaumicenergistics:mystic_processor",
+  "flags": [
+    "round"
+  ],
+  "col": 6,
+  "complexity": 2,
+  "key": "MYSTICPROCESSOR",
+  "order": 214,
+  "category": "THAUMICENERGISTICS",
+  "pages": [
+    {
+      "type": "TEXT",
+      "text": "tc.research_text.MYSTICPROCESSOR.stage.1"
+    }
+  ],
+  "text_pages": [
+    "tc.research_text.MYSTICPROCESSOR.stage.1"
+  ],
+  "aspects": [
+    {
+      "aspect": "cognitio",
+      "amount": 5
+    },
+    {
+      "aspect": "fabrico",
+      "amount": 5
+    },
+    {
+      "aspect": "machina",
+      "amount": 5
+    }
+  ],
+  "parents": [
+    "MYSTICCRYSTALCIRCUIT"
+  ]
+}

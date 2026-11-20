@@ -1,358 +1,71 @@
 package thaumicenergistics.common.integration.tc;
 
-import appeng.core.definitions.AEItems;
-import java.util.HashMap;
 import java.util.Map;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import thaumcraft.api.aspects.Aspect;
-import thaumcraft.api.aspects.AspectList;
-import thaumcraft.api.crafting.IArcaneRecipe;
 import thaumcraft.api.events.ResearchCompletedEvent;
-import thaumcraft.api.research.ResearchCategories;
-import thaumcraft.api.research.ResearchItem;
-import thaumcraft.api.research.ResearchPage;
 import thaumcraft.common.research.TCResearchManager;
-import thaumicenergistics.ThaumicEnergistics;
-import thaumicenergistics.common.features.RecipeRegistration;
-import thaumicenergistics.init.ModItems;
 
 /**
- * 注册研究分类、配方页和跨分类伪前置，并同步原版研究的解锁状态。
+ * Thaumic Energistics research. The category and every research entry are datapack files under
+ * data/thaumicenergistics/research_category and data/thaumicenergistics/research (TEL-03), so packs can move,
+ * re-page or replace them like Thaumcraft's own.
+ * <p>
+ * What stays in code: the PSEUDO_ stand-ins in TE's tab mirror Thaumcraft research in other tabs (their
+ * research files have no cost, so they cannot be started); completing the real research completes them.
  */
 public final class ThEThaumcraft {
-    private static final Logger LOG = LoggerFactory.getLogger("ThE-TC");
-    static final String TAB = "THAUMICENERGISTICS";
-    static final String MODID = ThaumicEnergistics.MODID;
+    private static final Logger LOG = LoggerFactory.getLogger("ThaumicEnergistics/Research");
 
-    /**
-     * 原版研究 key → 伪前置 key 的映射。
-     * 用于 ResearchCompletedEvent 事件监听：当原版研究解锁时，自动 complete 对应伪前置。
-     */
-    private static final Map<String, String> REAL_TO_PSEUDO = new HashMap<>();
+    /** Real Thaumcraft research key → TE stand-in key. */
+    private static final Map<String, String> REAL_TO_PSEUDO = Map.of(
+            "DISTILESSENTIA", "PSEUDO_DISTILESSENTIA",
+            "TUBEFILTER", "PSEUDO_TUBEFILTER",
+            "ALCHEMICALDUPLICATION", "PSEUDO_ALCHEMICALDUPLICATION",
+            "MIRROR", "PSEUDO_MIRROR",
+            "INFUSION", "PSEUDO_INFUSION",
+            "WARDEDARCANA", "PSEUDO_WARDEDARCANA",
+            "FOCUSFIRE", "PSEUDO_FOCUSFIRE",
+            "VISPOWER", "PSEUDO_VISPOWER",
+            "SCEPTRE", "PSEUDO_SCEPTRE",
+            "COREGATHER", "PSEUDO_COREGATHER");
 
     private ThEThaumcraft() {}
 
     public static void init() {
-        LOG.info("Registering ThaumicEnergistics research...");
-
-        ResearchCategories.registerCategory(TAB,
-                ResourceLocation.fromNamespaceAndPath(MODID, "textures/research/tab_icon.png"),
-                ResourceLocation.fromNamespaceAndPath(MODID, "textures/research/research_background.png"));
-
-        // ⚠ 必须先在当前 tab 注册伪前置节点（替代 TC 原版研究），
-        //   否则 setParents 跨分类引用时线画不出来。
-        registerPseudoParents();
-
-        // 注册事件监听：当 TC 原版研究解锁时，自动 complete 对应伪前置节点
         registerPseudoSync();
-
-        // 注册顺序沿袭 1.7.10 移植（决定研究 tab 内节点坐标布局），勿随意调整。
-        registerBaseEnergistics();
-        CrystalResearchRegistration.registerAll();
-        registerArcaneAssembler();
-        registerKnowledgeInscriber();
-        registerEssentiaStorage();
-        registerArcaneCraftingTerminal();
-        registerVisInterface();
-        registerInfusionProvider();
-        registerInfusionMonitor();
-        registerEssentiaProvider();
-        registerDigisentia();
-        registerFocusAEWrench();
-        registerCertusDupe();
-        registerEssentiaVibrationChamber();
-        registerDistillationEncoder();
-        registerGolemWifiBackpack();
-
-        // ~M6 新内容入树；删除重挂（WIRELESSESSENTIATERMINAL/VISCONNECTORCARD 节点已删）
-        registerWirelessArcaneCraftingTerminal();
-        registerEssentiaAccessCard();
-        registerGachaBox();
-
-        LOG.info("ThaumicEnergistics research registered.");
+        LOG.info("Thaumic Energistics research is loaded from data packs; pseudo prerequisite sync registered.");
     }
 
-    // 在 ThE 研究 tab 中创建占位节点，使跨分类连线正常。
-
-    private static void registerPseudoParents() {
-        // ALCHEMY
-        registerPseudo("DISTILESSENTIA", "ALCHEMY", -2, 0);
-        registerPseudo("TUBEFILTER", "ALCHEMY", -3, 0);
-        registerPseudo("ALCHEMICALDUPLICATION", "ALCHEMY", -5, -6);
-        // ARTIFICE
-        registerPseudo("MIRROR", "ARTIFICE", -4, 0);
-        registerPseudo("INFUSION", "ARTIFICE", -6, 0);
-        registerPseudo("WARDEDARCANA", "ARTIFICE", 1, 2);
-        // THAUMATURGY
-        registerPseudo("FOCUSFIRE", "THAUMATURGY", -4, -7);
-
-        registerPseudo("VISPOWER", "THAUMATURGY", 6, -3);
-        registerPseudo("SCEPTRE", "THAUMATURGY", 7, -3);
-        // GOLEMANCY
-        registerPseudo("COREGATHER", "GOLEMANCY", 1, -6);
+    public static Map<String, String> pseudoPrerequisites() {
+        return REAL_TO_PSEUDO;
     }
 
-    private static void registerPseudo(String realKey, String realCategory, int col, int row) {
-        String pseudoKey = "PSEUDO_" + realKey;
-        try {
-            PseudoResearchItem.newPseudo(pseudoKey, TAB, realKey, realCategory, col, row)
-                    .registerResearchItem();
-            // 记录映射，供事件监听使用
-            REAL_TO_PSEUDO.put(realKey, pseudoKey);
-        } catch (Exception e) {
-            LOG.warn("伪前置注册失败: PSEUDO_{} (TC:{}/{})", realKey, realCategory, realKey);
-        }
-    }
-
-    /** 通过完成事件同步伪前置。TC 研究索引不可变，修改 siblings 不会更新已注册条目。 */
     private static void registerPseudoSync() {
+        // Players who finished the real research before this mod was added never fire the completion event, so
+        // their pseudo prerequisites are filled in at login (TEA2-08).
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST,
+                (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent login) -> {
+                    var player = login.getEntity();
+                    REAL_TO_PSEUDO.forEach((realKey, pseudoKey) -> {
+                        try {
+                            if (TCResearchManager.has(player, realKey) && !TCResearchManager.has(player, pseudoKey)) {
+                                TCResearchManager.complete(player, pseudoKey, false);
+                            }
+                        } catch (Exception ignored) {
+                        }
+                    });
+                });
         NeoForge.EVENT_BUS.addListener(ResearchCompletedEvent.class, (ResearchCompletedEvent rc) -> {
             String completedKey = rc.researchKey();
-            // 跳过 clue 解锁（key 以 @ 开头）
-            if (completedKey.startsWith("@")) return;
-            // 跳过 PSEUDO_ 节点完成事件，防止 complete 触发二次事件造成连锁
-            if (completedKey.startsWith("PSEUDO_")) return;
+            if (completedKey.startsWith("@") || completedKey.startsWith("PSEUDO_")) return;
             String pseudoKey = REAL_TO_PSEUDO.get(completedKey);
             if (pseudoKey == null) return;
-            // 自动 complete 伪前置节点（不通知玩家）
             try {
                 TCResearchManager.complete(rc.player(), pseudoKey, false);
             } catch (Exception ignored) {
             }
         });
     }
-
-    //无前置
-    private static void registerBaseEnergistics() {
-        new ResearchItem("BASEENERGISTICS", TAB,
-                new AspectList(),
-                0, 0,
-                0,
-                ResourceLocation.fromNamespaceAndPath(MODID, "textures/research/tab_icon.png"))
-                .setRound().setAutoUnlock()
-                .setPages(new ResearchPage("tc.research_text.BASEENERGISTICS.stage.1"))
-                .registerResearchItem();
-    }
-
-    private static void registerArcaneAssembler() {
-        new ResearchItem("ARCANEASSEMBLER", TAB,
-                new AspectList().add(Aspect.CRAFT, 10).add(Aspect.MAGIC, 10)
-                        .add(Aspect.MECHANISM, 5).add(Aspect.ORDER, 5),
-                8, -4, 3, new ItemStack(ModItems.ARCANE_ASSEMBLER_ITEM.get()))
-                .setRound().setParents("VISINTERFACE", "PSEUDO_SCEPTRE")
-                .setPages(
-                        new ResearchPage("tc.research_text.ARCANEASSEMBLER.stage.1"),
-                        new ResearchPage(RecipeRegistration.ARCANE_ASSEMBLER),
-                        new ResearchPage("tc.research_text.ARCANEASSEMBLER.stage.2"))
-                .registerResearchItem();
-    }
-
-    private static void registerKnowledgeInscriber() {
-        new ResearchItem("KNOWLEDGEINSCRIBER", TAB,
-                new AspectList().add(Aspect.MIND, 10).add(Aspect.MECHANISM, 5).add(Aspect.MAGIC, 5),
-                8, -3, 3, new ItemStack(ModItems.KNOWLEDGE_INSCRIBER_ITEM.get()))
-                .setRound().setParents("ARCANEASSEMBLER")
-                .setPages(
-                        new ResearchPage("tc.research_text.KNOWLEDGEINSCRIBER.stage.1"),
-                        new ResearchPage(RecipeRegistration.KNOWLEDGE_CORE_ITEM),
-                        new ResearchPage(RecipeRegistration.KNOWLEDGE_INSCRIBER_BLOCK))
-                .registerResearchItem();
-    }
-
-    private static void registerEssentiaStorage() {
-        new ResearchItem("ESSENTIASTORAGE", TAB,
-                new AspectList().add(Aspect.ORDER, 1).add(Aspect.MAGIC, 1),
-                0, 2, 2, new ItemStack(ModItems.ESSENTIA_CELL_1K.get()))
-                .setRound().setParents("BASEENERGISTICS", "PSEUDO_DISTILESSENTIA", "PSEUDO_WARDEDARCANA")
-                .setPages(
-                        new ResearchPage("tc.research_text.ESSENTIASTORAGE.stage.1"),
-                        new ResearchPage(RecipeRegistration.ADVANCED_STORAGE_CASING),
-                        new ResearchPage(new IArcaneRecipe[]{RecipeRegistration.ESSENTIA_CELL_1M,
-                                RecipeRegistration.ESSENTIA_CELL_4M, RecipeRegistration.ESSENTIA_CELL_16M,
-                                RecipeRegistration.ESSENTIA_CELL_64M, RecipeRegistration.ESSENTIA_CELL_256M}),
-                        new ResearchPage(RecipeRegistration.STORAGE_COMPONENT_1K),
-                        new ResearchPage(new IArcaneRecipe[]{RecipeRegistration.STORAGE_COMPONENT_4K, RecipeRegistration.STORAGE_COMPONENT_16K, RecipeRegistration.STORAGE_COMPONENT_64K,
-                                RecipeRegistration.STORAGE_COMPONENT_256K, RecipeRegistration.STORAGE_COMPONENT_1M, RecipeRegistration.STORAGE_COMPONENT_4M, RecipeRegistration.STORAGE_COMPONENT_16M, RecipeRegistration.STORAGE_COMPONENT_64M, RecipeRegistration.STORAGE_COMPONENT_256M}))
-                .registerResearchItem();
-    }
-
-    private static void registerArcaneCraftingTerminal() {
-        new ResearchItem("ARCANECRAFTINGTERMINAL", TAB,
-                new AspectList().add(Aspect.CRAFT, 10).add(Aspect.MAGIC, 10).add(Aspect.MECHANISM, 5),
-                4, -4, 2, new ItemStack(ModItems.ARCANE_CRAFTING_TERMINAL_ITEM.get()))
-                .setRound().setParents("BASEENERGISTICS")
-                .setPages(
-                        new ResearchPage("tc.research_text.ARCANECRAFTINGTERMINAL.stage.1"),
-                        new ResearchPage(RecipeRegistration.ARCANE_CRAFTING_TERMINAL),
-                        new ResearchPage("tc.research_text.ARCANECRAFTINGTERMINAL.stage.2"))
-                .registerResearchItem();
-    }
-
-    private static void registerVisInterface() {
-        new ResearchItem("VISINTERFACE", TAB,
-                new AspectList().add(Aspect.AURA, 10).add(Aspect.MAGIC, 5).add(Aspect.MECHANISM, 5),
-                6, -4, 3, new ItemStack(ModItems.VIS_INTERFACE.get()))
-                .setRound().setParents("ARCANECRAFTINGTERMINAL", "PSEUDO_VISPOWER")
-                .setPages(
-                        new ResearchPage("tc.research_text.VISINTERFACE.stage.1"),
-                        new ResearchPage(RecipeRegistration.VIS_INTERFACE))
-                .registerResearchItem();
-    }
-
-    private static void registerInfusionProvider() {
-        new ResearchItem("INFUSIONPROVIDER", TAB,
-                new AspectList().add(Aspect.MECHANISM, 10).add(Aspect.MAGIC, 10)
-                        .add(Aspect.ORDER, 8).add(Aspect.EXCHANGE, 5),
-                -5, -2, 3, new ItemStack(ModItems.INFUSION_PROVIDER_ITEM.get()))
-                .setRound().setParents("ESSENTIAACCESSCARD", "PSEUDO_INFUSION", "PSEUDO_MIRROR")
-                .setPages(
-                        new ResearchPage("tc.research_text.INFUSIONPROVIDER.stage.1"),
-                        new ResearchPage(RecipeRegistration.INFUSION_PROVIDER),
-                        new ResearchPage("tc.research_text.INFUSIONPROVIDER.stage.2"))
-                .registerResearchItem();
-    }
-
-    private static void registerInfusionMonitor() {
-        new ResearchItem("INFUSIONMONITOR", TAB,
-                new AspectList().add(Aspect.MAGIC, 4).add(Aspect.AURA, 4).add(Aspect.SENSES, 6),
-                -7, -2, 1, new ItemStack(ModItems.INFUSION_MONITOR_ITEM.get()))
-                .setRound().setParents("INFUSIONPROVIDER")
-                .setPages(
-                        new ResearchPage("tc.research_text.INFUSIONMONITOR.stage.1"),
-                        new ResearchPage(RecipeRegistration.INFUSION_MONITOR),
-                        new ResearchPage("tc.research_text.INFUSIONMONITOR.stage.2"))
-                .registerResearchItem();
-    }
-
-    private static void registerEssentiaProvider() {
-        new ResearchItem("ESSENTIAPROVIDER", TAB,
-                new AspectList().add(Aspect.MECHANISM, 8).add(Aspect.MAGIC, 8).add(Aspect.EXCHANGE, 5),
-                -2, -4, 3, new ItemStack(ModItems.ESSENTIA_PROVIDER_ITEM.get()))
-                .setRound().setParents("ESSENTIAACCESSCARD")
-                .setPages(
-                        // 源质供应器：介绍+用法 / 配方
-                        new ResearchPage("tc.research_text.ESSENTIAPROVIDER.stage.1"),
-                        new ResearchPage(RecipeRegistration.ESSENTIA_PROVIDER),
-                        // 源质无线接收器：介绍+用法 / 配方
-                        new ResearchPage("tc.research_text.ESSENTIAPROVIDER.connection.stage.1"),
-                        new ResearchPage(RecipeRegistration.ESSENTIA_PROVIDER_CONNECTION),
-                        // 源质无线绑定工具：介绍+用法 / 配方
-                        new ResearchPage("tc.research_text.ESSENTIAPROVIDER.tool.stage.1"),
-                        new ResearchPage(RecipeRegistration.WIRELESS_CONNECTOR))
-                .registerResearchItem();
-    }
-
-    private static void registerDigisentia() {
-        new ResearchItem("DIGISENTIA", TAB,
-                new AspectList().add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5).add(Aspect.MAGIC, 3),
-                0, -2, 1, new ItemStack(ModItems.DIFFUSION_CORE.get()))
-                .setRound().setParents("BASEENERGISTICS", "PSEUDO_DISTILESSENTIA")
-                .setPages(
-                        new ResearchPage("tc.research_text.DIGISENTIA.stage.1"),
-                        new ResearchPage(RecipeRegistration.DIFFUSION_CORE),
-                        new ResearchPage(RecipeRegistration.COALESCENCE_CORE),
-                        new ResearchPage("tc.research_text.DIGISENTIA.stage.2"))
-                .registerResearchItem();
-    }
-
-    private static void registerFocusAEWrench() {
-        new ResearchItem("FOCUS_AEWRENCH", TAB,
-                new AspectList().add(Aspect.TOOL, 5).add(Aspect.ENERGY, 5).add(Aspect.MECHANISM, 3),
-                -3, -7, 3, new ItemStack(ModItems.FOCUS_AEWRENCH.get()))
-                .setRound().setParents("PSEUDO_FOCUSFIRE").setParentsHidden("BASEENERGISTICS")
-                .setPages(
-                        new ResearchPage("tc.research_text.FOCUS_AEWRENCH.stage.1"),
-                        new ResearchPage(RecipeRegistration.FOCUS_AEWRENCH_RECIPE))
-                .registerResearchItem();
-    }
-
-    private static void registerCertusDupe() {
-        new ResearchItem("CERTUS_DUPE", TAB,
-                new AspectList().add(Aspect.CRYSTAL, 5).add(Aspect.MAGIC, 5).add(Aspect.EXCHANGE, 5),
-                -5, -5, 2, new ItemStack(AEItems.CERTUS_QUARTZ_CRYSTAL.asItem()))
-                .setRound().setParents("PSEUDO_ALCHEMICALDUPLICATION").setParentsHidden("BASEENERGISTICS")
-                .setPages(
-                        new ResearchPage("tc.research_text.CERTUS_DUPE.stage.1"),
-                        new ResearchPage(RecipeRegistration.CERTUS_DUPE_RECIPE))
-                .registerResearchItem();
-    }
-
-    private static void registerEssentiaVibrationChamber() {
-        new ResearchItem("ESSENTIAVIBRATIONCHAMBER", TAB,
-                new AspectList().add(Aspect.ENERGY, 8).add(Aspect.MECHANISM, 5).add(Aspect.FIRE, 3),
-                1, -4, 3, new ItemStack(ModItems.ESSENTIA_VIBRATION_CHAMBER_ITEM.get()))
-                .setRound().setParents("DIGISENTIA")
-                .setPages(
-                        new ResearchPage("tc.research_text.ESSENTIAVIBRATIONCHAMBER.stage.1"),
-                        new ResearchPage(RecipeRegistration.ESSENTIA_VIBRATION_CHAMBER))
-                .registerResearchItem();
-    }
-
-    private static void registerDistillationEncoder() {
-        new ResearchItem("DISTILLATIONENCODER", TAB,
-                new AspectList().add(Aspect.MECHANISM, 5).add(Aspect.ORDER, 5).add(Aspect.ENTROPY, 5),
-                -4, -4, 3, new ItemStack(ModItems.DISTILLATION_ENCODER_ITEM.get()))
-                .setRound().setParents("ESSENTIAACCESSCARD")
-                .setPages(
-                        new ResearchPage("tc.research_text.DISTILLATIONENCODER.stage.1"),
-                        new ResearchPage(RecipeRegistration.DISTILLATION_ENCODER_BLOCK))
-                .registerResearchItem();
-    }
-
-    private static void registerGolemWifiBackpack() {
-        new ResearchItem("GOLEMWIFIBACKPACK", TAB,
-                new AspectList().add(Aspect.MAGIC, 5).add(Aspect.MECHANISM, 5).add(Aspect.MIND, 3),
-                0, -6, 3, new ItemStack(ModItems.GOLEM_WIFI_BACKPACK.get()))
-                .setRound().setParents("PSEUDO_COREGATHER").setParentsHidden("DIGISENTIA")
-                .setPages(
-                        new ResearchPage("tc.research_text.GOLEMWIFI.stage.1"),
-                        new ResearchPage(RecipeRegistration.GOLEM_WIFI_BACKPACK_RECIPE))
-                .registerResearchItem();
-    }
-
-    private static void registerWirelessArcaneCraftingTerminal() {
-        new ResearchItem("WIRELESSARCANECRAFTINGTERMINAL", TAB,
-                new AspectList().add(Aspect.CRAFT, 8).add(Aspect.MAGIC, 8).add(Aspect.MECHANISM, 5),
-                5, -5, 2, new ItemStack(ModItems.WIRELESS_ARCANE_CRAFTING_TERMINAL.get()))
-                .setRound().setParents("ARCANECRAFTINGTERMINAL")
-                .setPages(
-                        new ResearchPage("tc.research_text.WIRELESSARCANECRAFTINGTERMINAL.stage.1"),
-                        new ResearchPage(RecipeRegistration.WIRELESS_ARCANE_CRAFTING_TERMINAL),
-                        new ResearchPage("tc.research_text.WIRELESSARCANECRAFTINGTERMINAL.stage.2"))
-                .registerResearchItem();
-    }
-
-    // 坐标 = 原 ESSENTIABUSES (-2,-2)；前置 = 原 ESSENTIABUSES 前置（DIGISENTIA + PSEUDO_TUBEFILTER），
-    // 原 PSEUDO_INFUSION/PSEUDO_MIRROR 前置丢弃；原 ESSENTIABUSES 三后继（INFUSIONPROVIDER/
-    // ESSENTIAPROVIDER/DISTILLATIONENCODER）与三总线配方键已改挂本节点。
-    private static void registerEssentiaAccessCard() {
-        new ResearchItem("ESSENTIAACCESSCARD", TAB,
-                new AspectList().add(Aspect.MIND, 5).add(Aspect.EXCHANGE, 5).add(Aspect.MAGIC, 3),
-                -2, -2, 2, new ItemStack(ModItems.ESSENTIA_UPGRADE_CARD.get()))
-                .setRound().setParents("DIGISENTIA", "PSEUDO_TUBEFILTER")
-                .setPages(
-                        new ResearchPage("tc.research_text.ESSENTIAACCESSCARD.stage.1"),
-                        new ResearchPage(RecipeRegistration.ESSENTIA_UPGRADE_CARD),
-                        new ResearchPage(RecipeRegistration.ESSENTIA_LEVEL_EMITTER))
-                .registerResearchItem();
-    }
-
-    // 配方页改挂注魔配方（catalyst=知识核心，罐装脑走方块交互不入配方）
-
-    private static void registerGachaBox() {
-        new ResearchItem("GACHABOX", TAB,
-                new AspectList().add(Aspect.MIND, 8).add(Aspect.ENTROPY, 5).add(Aspect.MAGIC, 5),
-                -1, -4, 3, new ItemStack(ModItems.BRAIN_OF_PROBABILITY_ITEM.get()))
-                .setRound().setParents("DIGISENTIA")
-                .setPages(
-                        new ResearchPage("tc.research_text.GACHABOX.stage.1"),
-                        new ResearchPage(RecipeRegistration.GACHA_BOX),
-                        new ResearchPage("tc.research_text.GACHABOX.stage.2"))
-                .registerResearchItem();
-    }
-
 }

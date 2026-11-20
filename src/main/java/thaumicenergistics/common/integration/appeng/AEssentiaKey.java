@@ -7,8 +7,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -24,14 +22,18 @@ import thaumcraft.api.aspects.Aspect;
 public final class AEssentiaKey extends AEKey {
 
     /** id → key 实例的缓存；AEssentiaKey 不可变，且 equals/hashCode 基于 id。 */
-    private static final Map<ResourceLocation, AEssentiaKey> CACHE = new ConcurrentHashMap<>();
+    // Weak interners: canonical while any key is alive, collected afterwards. Ids come from saves and
+    // packets, so a strong cache would let a client grow server memory without bound (TEC-07).
+    private static final com.google.common.collect.Interner<AEssentiaKey> CACHE =
+            com.google.common.collect.Interners.newWeakInterner();
 
     /**
      * 规范化 id 实例：所有同 id 的 AEssentiaKey 共享同一 ResourceLocation 实例。
      * AE2 的 KeyCounter 内部按 {@code getPrimaryKey} 的引用相等分组（Reference2ObjectMap），
      * 存储（NBT 反序列化）与 config（TCReflection 生成）的 id 若不共享实例会导致 AE2 tooltip 去重失败（同方面重复显示）。
      */
-    private static final Map<ResourceLocation, ResourceLocation> ID_CACHE = new ConcurrentHashMap<>();
+    private static final com.google.common.collect.Interner<ResourceLocation> ID_CACHE =
+            com.google.common.collect.Interners.newWeakInterner();
 
     public static final MapCodec<AEssentiaKey> MAP_CODEC = RecordCodecBuilder.mapCodec(
             builder -> builder.group(
@@ -77,7 +79,7 @@ public final class AEssentiaKey extends AEKey {
     }
 
     public AEssentiaKey(ResourceLocation id) {
-        this.id = ID_CACHE.computeIfAbsent(id, k -> k);
+        this.id = ID_CACHE.intern(id);
     }
 
     @Override
@@ -133,6 +135,6 @@ public final class AEssentiaKey extends AEKey {
     }
 
     public static AEssentiaKey of(ResourceLocation id) {
-        return CACHE.computeIfAbsent(id, AEssentiaKey::new);
+        return CACHE.intern(new AEssentiaKey(id));
     }
 }
